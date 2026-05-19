@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { Subscription, SubscriptionData, defaultCategories } from './types'
+import { Subscription, SubscriptionData, SubscriptionStatus, defaultCategories } from './types'
 import { v4 as uuidv4 } from 'uuid'
 
 const dataDir = path.join(process.cwd(), 'data')
@@ -80,19 +80,35 @@ export function createSubscription(subscriptionData: Omit<Subscription, 'id' | '
 }
 
 export function updateSubscription(id: string, updates: Partial<Omit<Subscription, 'id' | 'createdAt'>>): Subscription | null {
+  // Validate name if provided
+  if (updates.name !== undefined && (typeof updates.name !== 'string' || updates.name.trim() === '')) {
+    throw new Error('Subscription name must be a non-empty string')
+  }
+
+  // Validate price if provided
+  if (updates.price !== undefined && (typeof updates.price !== 'number' || updates.price < 0)) {
+    throw new Error('Price must be a non-negative number')
+  }
+
+  // Validate status if provided
+  const validStatuses: SubscriptionStatus[] = ['active', 'paused', 'cancelled']
+  if (updates.status !== undefined && !validStatuses.includes(updates.status)) {
+    throw new Error('Invalid status value')
+  }
+
   const data = readData()
   const index = data.subscriptions.findIndex(s => s.id === id)
-  
+
   if (index === -1) {
     return null
   }
-  
+
   data.subscriptions[index] = {
     ...data.subscriptions[index],
     ...updates,
     updatedAt: new Date().toISOString()
   }
-  
+
   writeData(data)
   return data.subscriptions[index]
 }
