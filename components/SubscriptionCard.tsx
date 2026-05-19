@@ -1,0 +1,101 @@
+"use client"
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Subscription } from "@/lib/types"
+import { formatDate, isExpiringSoon, getDaysUntilRenewal } from "@/lib/utils"
+import { Edit, Trash2 } from "lucide-react"
+
+interface SubscriptionCardProps {
+  subscription: Subscription
+  onEdit: (subscription: Subscription) => void
+  onDelete: (id: string) => void
+}
+
+function getStatusBadgeVariant(status: Subscription['status']): "success" | "warning" | "outline" {
+  switch (status) {
+    case 'active':
+      return 'success'
+    case 'paused':
+      return 'warning'
+    case 'cancelled':
+      return 'outline'
+    default:
+      return 'outline'
+  }
+}
+
+function getStatusLabel(status: Subscription['status']): string {
+  switch (status) {
+    case 'active':
+      return '活跃'
+    case 'paused':
+      return '暂停'
+    case 'cancelled':
+      return '已取消'
+    default:
+      return status
+  }
+}
+
+export function SubscriptionCard({ subscription, onEdit, onDelete }: SubscriptionCardProps) {
+  const expiringSoon = isExpiringSoon(subscription.renewalDate)
+  const daysUntilRenewal = getDaysUntilRenewal(subscription.renewalDate)
+  
+  return (
+    <Card className={`${expiringSoon ? 'border-orange-500 border-2' : ''}`}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-lg font-medium">{subscription.name}</CardTitle>
+        <Badge variant={getStatusBadgeVariant(subscription.status)}>
+          {getStatusLabel(subscription.status)}
+        </Badge>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">分类</span>
+            <span className="text-sm font-medium">{subscription.category}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">价格</span>
+            <span className="text-sm font-medium">¥{subscription.price.toFixed(2)}/月</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">续费日期</span>
+            <span className={`text-sm font-medium ${expiringSoon ? 'text-orange-500' : ''}`}>
+              {formatDate(subscription.renewalDate)}
+              {expiringSoon && (
+                <span className="ml-1">({daysUntilRenewal}天后)</span>
+              )}
+            </span>
+          </div>
+          {subscription.notes && (
+            <div className="pt-2">
+              <span className="text-sm text-muted-foreground">备注</span>
+              <p className="text-sm mt-1">{subscription.notes}</p>
+            </div>
+          )}
+          <div className="flex gap-2 pt-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => onEdit(subscription)}
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              编辑
+            </Button>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={() => onDelete(subscription.id)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              删除
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
