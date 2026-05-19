@@ -28,8 +28,15 @@ export function readData(): SubscriptionData {
     return initialData
   }
   
-  const fileContent = fs.readFileSync(dataFile, 'utf-8')
-  return JSON.parse(fileContent) as SubscriptionData
+  try {
+    const fileContent = fs.readFileSync(dataFile, 'utf-8')
+    return JSON.parse(fileContent) as SubscriptionData
+  } catch (error) {
+    console.error('Failed to parse data file:', error)
+    const initialData = getInitialData()
+    fs.writeFileSync(dataFile, JSON.stringify(initialData, null, 2))
+    return initialData
+  }
 }
 
 export function writeData(data: SubscriptionData): void {
@@ -48,6 +55,14 @@ export function getSubscriptionById(id: string): Subscription | null {
 }
 
 export function createSubscription(subscriptionData: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'>): Subscription {
+  if (!subscriptionData.name || subscriptionData.name.trim() === '') {
+    throw new Error('Subscription name is required')
+  }
+  
+  if (typeof subscriptionData.price !== 'number' || subscriptionData.price < 0) {
+    throw new Error('Price must be a non-negative number')
+  }
+  
   const data = readData()
   const now = new Date().toISOString()
   
