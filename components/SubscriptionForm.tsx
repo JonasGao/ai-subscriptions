@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Subscription, SubscriptionFormData, SubscriptionStatus, defaultCategories } from "@/lib/types"
+import { Subscription, SubscriptionFormData, SubscriptionStatus, defaultCategories, Provider, defaultProviders } from "@/lib/types"
 
 interface SubscriptionFormProps {
   open: boolean
@@ -31,6 +31,8 @@ interface SubscriptionFormProps {
 const initialFormData: SubscriptionFormData = {
   name: '',
   category: defaultCategories[0],
+  provider: 'other',
+  providerCustom: '',
   price: 0,
   startDate: '',
   renewalDate: '',
@@ -46,12 +48,22 @@ export function SubscriptionForm({
   onSubmit,
 }: SubscriptionFormProps) {
   const [formData, setFormData] = useState<SubscriptionFormData>(initialFormData)
+  const [providers, setProviders] = useState<Provider[]>(defaultProviders)
+  
+  useEffect(() => {
+    fetch('/api/providers')
+      .then(res => res.json())
+      .then(data => setProviders(data))
+      .catch(() => setProviders(defaultProviders))
+  }, [])
   
   useEffect(() => {
     if (subscription) {
       setFormData({
         name: subscription.name,
         category: subscription.category,
+        provider: subscription.provider || 'other',
+        providerCustom: subscription.providerCustom || '',
         price: subscription.price,
         startDate: subscription.startDate,
         renewalDate: subscription.renewalDate,
@@ -75,6 +87,8 @@ export function SubscriptionForm({
       [field]: value
     }))
   }
+  
+  const showCustomProvider = formData.provider === 'other'
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -114,6 +128,37 @@ export function SubscriptionForm({
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="provider">提供商 *</Label>
+              <Select
+                value={formData.provider}
+                onValueChange={(value) => handleInputChange('provider', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择提供商" />
+                </SelectTrigger>
+                <SelectContent>
+                  {providers.map((provider) => (
+                    <SelectItem key={provider.id} value={provider.id}>
+                      {provider.name}
+                      {provider.description && ` - ${provider.description}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {showCustomProvider && (
+              <div className="grid gap-2">
+                <Label htmlFor="providerCustom">自定义提供商名称 *</Label>
+                <Input
+                  id="providerCustom"
+                  value={formData.providerCustom}
+                  onChange={(e) => handleInputChange('providerCustom', e.target.value)}
+                  placeholder="输入自定义提供商名称"
+                  required={showCustomProvider}
+                />
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="price">价格 (¥/月) *</Label>
               <Input

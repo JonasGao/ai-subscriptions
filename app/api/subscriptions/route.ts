@@ -47,6 +47,8 @@ export async function POST(request: NextRequest) {
     const newSubscription = createSubscription({
       name: body.name,
       category: body.category,
+      provider: body.provider || 'other',
+      providerCustom: body.providerCustom,
       price: body.price,
       startDate: body.startDate,
       renewalDate: body.renewalDate,

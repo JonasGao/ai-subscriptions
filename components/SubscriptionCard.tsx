@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Subscription } from "@/lib/types"
+import { Subscription, defaultProviders } from "@/lib/types"
 import { formatDate, isExpiringSoon, getDaysUntilRenewal } from "@/lib/utils"
 import { Edit, Trash2 } from "lucide-react"
 
@@ -39,9 +39,18 @@ function getStatusLabel(status: Subscription['status']): string {
   }
 }
 
+function getProviderName(provider: string, providerCustom?: string): string {
+  if (provider === 'other' && providerCustom) {
+    return providerCustom
+  }
+  const found = defaultProviders.find(p => p.id === provider)
+  return found?.name || provider
+}
+
 export function SubscriptionCard({ subscription, onEdit, onDelete }: SubscriptionCardProps) {
   const expiringSoon = isExpiringSoon(subscription.renewalDate)
   const daysUntilRenewal = getDaysUntilRenewal(subscription.renewalDate)
+  const providerName = getProviderName(subscription.provider, subscription.providerCustom)
   
   return (
     <Card className={`${expiringSoon ? 'border-orange-500 border-2' : ''}`}>
@@ -53,6 +62,10 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">提供商</span>
+            <span className="text-sm font-medium">{providerName}</span>
+          </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">分类</span>
             <span className="text-sm font-medium">{subscription.category}</span>

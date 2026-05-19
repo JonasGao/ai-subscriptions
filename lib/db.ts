@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
-import { Subscription, SubscriptionData, SubscriptionStatus, defaultCategories } from './types'
+import { Subscription, SubscriptionData, SubscriptionStatus, defaultCategories, defaultProviders } from './types'
+import { Provider } from './types'
 import { v4 as uuidv4 } from 'uuid'
 
 const dataDir = path.join(process.cwd(), 'data')
@@ -141,4 +142,8 @@ export function addCategory(category: string): string[] {
   data.categories.push(category)
   writeData(data)
   return data.categories
+}
+
+export function getProviders(): Provider[] {
+  return defaultProviders
 }
