@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSubscriptions, createSubscription } from '@/lib/db'
-import { SubscriptionFormData } from '@/lib/types'
+import { SubscriptionFormData, SubscriptionType } from '@/lib/types'
 
 export async function GET() {
   try {
@@ -19,15 +19,13 @@ export async function POST(request: NextRequest) {
   try {
     const body: SubscriptionFormData = await request.json()
     
-    // Validate required fields
-    if (!body.name || !body.category || body.price === undefined || !body.startDate || !body.renewalDate) {
+    if (!body.name || !body.category || body.price === undefined) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: name, category, price' },
         { status: 400 }
       )
     }
     
-    // Validate types
     if (typeof body.price !== 'number' || body.price < 0) {
       return NextResponse.json(
         { error: 'Price must be a non-negative number' },
@@ -35,13 +33,30 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Validate date format (YYYY-MM-DD)
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-    if (!dateRegex.test(body.startDate) || !dateRegex.test(body.renewalDate)) {
+    const validTypes: SubscriptionType[] = ['recurring', 'one-time']
+    if (body.subscriptionType && !validTypes.includes(body.subscriptionType)) {
       return NextResponse.json(
-        { error: 'Dates must be in YYYY-MM-DD format' },
+        { error: 'Invalid subscriptionType. Must be one of: recurring, one-time' },
         { status: 400 }
       )
+    }
+    
+    const isRecurring = body.subscriptionType === 'recurring'
+    if (isRecurring) {
+      if (!body.startDate || !body.renewalDate) {
+        return NextResponse.json(
+          { error: 'startDate and renewalDate are required for recurring subscriptions' },
+          { status: 400 }
+        )
+      }
+      
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+      if (!dateRegex.test(body.startDate) || !dateRegex.test(body.renewalDate)) {
+        return NextResponse.json(
+          { error: 'Dates must be in YYYY-MM-DD format' },
+          { status: 400 }
+        )
+      }
     }
     
     const newSubscription = createSubscription({
@@ -49,6 +64,7 @@ export async function POST(request: NextRequest) {
       category: body.category,
       provider: body.provider || 'other',
       providerCustom: body.providerCustom,
+      subscriptionType: body.subscriptionType || 'recurring',
       price: body.price,
       startDate: body.startDate,
       renewalDate: body.renewalDate,

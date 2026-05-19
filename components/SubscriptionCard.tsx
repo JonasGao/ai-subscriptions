@@ -47,10 +47,17 @@ function getProviderName(provider: string, providerCustom?: string): string {
   return found?.name || provider
 }
 
+function getTypeLabel(type: string): string {
+  return type === 'recurring' ? '周期性' : '一次性'
+}
+
 export function SubscriptionCard({ subscription, onEdit, onDelete }: SubscriptionCardProps) {
-  const expiringSoon = subscription.renewalDate ? isExpiringSoon(subscription.renewalDate) : false
-  const daysUntilRenewal = subscription.renewalDate ? getDaysUntilRenewal(subscription.renewalDate) : null
+  const isRecurring = subscription.subscriptionType === 'recurring'
+  const expiringSoon = isRecurring && subscription.renewalDate ? isExpiringSoon(subscription.renewalDate) : false
+  const daysUntilRenewal = isRecurring && subscription.renewalDate ? getDaysUntilRenewal(subscription.renewalDate) : null
   const providerName = getProviderName(subscription.provider, subscription.providerCustom)
+  const typeLabel = getTypeLabel(subscription.subscriptionType)
+  const priceLabel = isRecurring ? `¥${subscription.price.toFixed(2)}/月` : `¥${subscription.price.toFixed(2)}`
   
   return (
     <Card className={`flex flex-col ${expiringSoon ? 'border-orange-500 border-2' : ''}`}>
@@ -71,10 +78,14 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
             <span className="text-sm font-medium">{subscription.category}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">价格</span>
-            <span className="text-sm font-medium">¥{subscription.price.toFixed(2)}/月</span>
+            <span className="text-sm text-muted-foreground">类型</span>
+            <Badge variant="outline" className="text-xs">{typeLabel}</Badge>
           </div>
-          {subscription.renewalDate && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">{isRecurring ? '价格' : '充值金额'}</span>
+            <span className="text-sm font-medium">{priceLabel}</span>
+          </div>
+          {isRecurring && subscription.renewalDate && (
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">续费日期</span>
               <span className={`text-sm font-medium ${expiringSoon ? 'text-orange-500' : ''}`}>

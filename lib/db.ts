@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { Subscription, SubscriptionData, SubscriptionStatus, defaultCategories, defaultProviders } from './types'
+import { Subscription, SubscriptionData, SubscriptionStatus, SubscriptionType, defaultCategories, defaultProviders } from './types'
 import { Provider } from './types'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -31,7 +31,14 @@ export function readData(): SubscriptionData {
   
   try {
     const fileContent = fs.readFileSync(dataFile, 'utf-8')
-    return JSON.parse(fileContent) as SubscriptionData
+    const data = JSON.parse(fileContent) as SubscriptionData
+    
+    data.subscriptions = data.subscriptions.map(sub => ({
+      ...sub,
+      subscriptionType: sub.subscriptionType || 'recurring'
+    }))
+    
+    return data
   } catch (error) {
     console.error('Failed to parse data file:', error)
     const initialData = getInitialData()
@@ -64,11 +71,17 @@ export function createSubscription(subscriptionData: Omit<Subscription, 'id' | '
     throw new Error('Price must be a non-negative number')
   }
   
+  const validTypes: SubscriptionType[] = ['recurring', 'one-time']
+  if (subscriptionData.subscriptionType && !validTypes.includes(subscriptionData.subscriptionType)) {
+    throw new Error('Invalid subscriptionType')
+  }
+  
   const data = readData()
   const now = new Date().toISOString()
   
   const newSubscription: Subscription = {
     ...subscriptionData,
+    subscriptionType: subscriptionData.subscriptionType || 'recurring',
     id: uuidv4(),
     createdAt: now,
     updatedAt: now
@@ -81,20 +94,22 @@ export function createSubscription(subscriptionData: Omit<Subscription, 'id' | '
 }
 
 export function updateSubscription(id: string, updates: Partial<Omit<Subscription, 'id' | 'createdAt'>>): Subscription | null {
-  // Validate name if provided
   if (updates.name !== undefined && (typeof updates.name !== 'string' || updates.name.trim() === '')) {
     throw new Error('Subscription name must be a non-empty string')
   }
 
-  // Validate price if provided
   if (updates.price !== undefined && (typeof updates.price !== 'number' || updates.price < 0)) {
     throw new Error('Price must be a non-negative number')
   }
 
-  // Validate status if provided
   const validStatuses: SubscriptionStatus[] = ['active', 'paused', 'cancelled']
   if (updates.status !== undefined && !validStatuses.includes(updates.status)) {
     throw new Error('Invalid status value')
+  }
+
+  const validTypes: SubscriptionType[] = ['recurring', 'one-time']
+  if (updates.subscriptionType !== undefined && !validTypes.includes(updates.subscriptionType)) {
+    throw new Error('Invalid subscriptionType value')
   }
 
   const data = readData()

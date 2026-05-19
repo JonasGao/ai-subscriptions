@@ -8,12 +8,18 @@ export function cn(...inputs: ClassValue[]) {
 
 export function calculateMonthlyTotal(subscriptions: Subscription[]): number {
   return subscriptions
-    .filter(s => s.status === 'active')
+    .filter(s => s.status === 'active' && s.subscriptionType === 'recurring')
     .reduce((total, s) => total + s.price, 0)
 }
 
 export function calculateYearlyTotal(subscriptions: Subscription[]): number {
   return calculateMonthlyTotal(subscriptions) * 12
+}
+
+export function calculateOneTimeTotal(subscriptions: Subscription[]): number {
+  return subscriptions
+    .filter(s => s.status === 'active' && s.subscriptionType === 'one-time')
+    .reduce((total, s) => total + s.price, 0)
 }
 
 export function calculateCategoryStats(subscriptions: Subscription[]): Record<string, number> {

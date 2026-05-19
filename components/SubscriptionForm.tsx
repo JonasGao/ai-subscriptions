@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Subscription, SubscriptionFormData, SubscriptionStatus, defaultCategories, Provider, defaultProviders } from "@/lib/types"
+import { Subscription, SubscriptionFormData, SubscriptionStatus, SubscriptionType, defaultCategories, Provider, defaultProviders } from "@/lib/types"
 
 interface SubscriptionFormProps {
   open: boolean
@@ -33,6 +33,7 @@ const initialFormData: SubscriptionFormData = {
   category: defaultCategories[0],
   provider: 'other',
   providerCustom: '',
+  subscriptionType: 'recurring',
   price: 0,
   startDate: '',
   renewalDate: '',
@@ -64,9 +65,10 @@ export function SubscriptionForm({
         category: subscription.category,
         provider: subscription.provider || 'other',
         providerCustom: subscription.providerCustom || '',
+        subscriptionType: subscription.subscriptionType || 'recurring',
         price: subscription.price,
-        startDate: subscription.startDate,
-        renewalDate: subscription.renewalDate,
+        startDate: subscription.startDate || '',
+        renewalDate: subscription.renewalDate || '',
         status: subscription.status,
         notes: subscription.notes || '',
       })
@@ -89,6 +91,9 @@ export function SubscriptionForm({
   }
   
   const showCustomProvider = formData.provider === 'other'
+  const isRecurring = formData.subscriptionType === 'recurring'
+  
+  const priceLabel = isRecurring ? '价格 (¥/月)' : '充值金额 (¥)'
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -160,7 +165,22 @@ export function SubscriptionForm({
               </div>
             )}
             <div className="grid gap-2">
-              <Label htmlFor="price">价格 (¥/月) *</Label>
+              <Label htmlFor="subscriptionType">订阅类型 *</Label>
+              <Select
+                value={formData.subscriptionType}
+                onValueChange={(value) => handleInputChange('subscriptionType', value as SubscriptionType)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择订阅类型" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recurring">周期性订阅</SelectItem>
+                  <SelectItem value="one-time">一次性充值</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="price">{priceLabel} *</Label>
               <Input
                 id="price"
                 type="number"
@@ -172,24 +192,28 @@ export function SubscriptionForm({
                 required
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="startDate">开始日期</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={formData.startDate || ''}
-                onChange={(e) => handleInputChange('startDate', e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="renewalDate">续费日期</Label>
-              <Input
-                id="renewalDate"
-                type="date"
-                value={formData.renewalDate || ''}
-                onChange={(e) => handleInputChange('renewalDate', e.target.value)}
-              />
-            </div>
+            {isRecurring && (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="startDate">开始日期</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={formData.startDate || ''}
+                    onChange={(e) => handleInputChange('startDate', e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="renewalDate">续费日期</Label>
+                  <Input
+                    id="renewalDate"
+                    type="date"
+                    value={formData.renewalDate || ''}
+                    onChange={(e) => handleInputChange('renewalDate', e.target.value)}
+                  />
+                </div>
+              </>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="status">状态</Label>
               <Select
