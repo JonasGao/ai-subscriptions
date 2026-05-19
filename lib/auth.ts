@@ -13,6 +13,7 @@ interface AuthData {
   passwordHash: string
   createdAt: string
   updatedAt: string
+  isInitial: boolean
 }
 
 function ensureDataDir(): void {
@@ -33,7 +34,8 @@ function getAuthData(): AuthData {
       username: "admin",
       passwordHash,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
+      isInitial: true
     }
 
     fs.writeFileSync(authFile, JSON.stringify(initialData, null, 2))
@@ -42,6 +44,31 @@ function getAuthData(): AuthData {
 
   const fileContent = fs.readFileSync(authFile, "utf-8")
   return JSON.parse(fileContent) as AuthData
+}
+
+export function isInitialPassword(): boolean {
+  const authData = getAuthData()
+  return authData.isInitial === true
+}
+
+export function changePassword(oldPassword: string, newPassword: string): boolean {
+  const authData = getAuthData()
+  
+  const isValid = bcrypt.compareSync(oldPassword, authData.passwordHash)
+  if (!isValid) {
+    return false
+  }
+  
+  if (newPassword.length < 6) {
+    throw new Error("密码长度至少6位")
+  }
+  
+  authData.passwordHash = bcrypt.hashSync(newPassword, 10)
+  authData.updatedAt = new Date().toISOString()
+  authData.isInitial = false
+  
+  fs.writeFileSync(authFile, JSON.stringify(authData, null, 2))
+  return true
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -75,7 +102,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return {
           id: "1",
           name: authData.username,
-          email: `${authData.username}@local`
+          email: `${authData.username}@local`,
+          isInitial: authData.isInitial
         }
       }
     })
@@ -85,12 +113,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     jwt({ token, user }) {
       if (user) {
         token.id = user.id
+        token.isInitial = user.isInitial
       }
       return token
     },
     session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
+        session.user.isInitial = token.isInitial as boolean
       }
       return session
     }

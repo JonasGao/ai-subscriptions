@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [isInitial, setIsInitial] = useState(false)
+  const [checkingInitial, setCheckingInitial] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/auth/is-initial")
+      .then(res => res.json())
+      .then(data => {
+        setIsInitial(data.isInitial)
+        setCheckingInitial(false)
+      })
+      .catch(() => setCheckingInitial(false))
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,7 +43,14 @@ export default function LoginPage() {
       if (result?.error) {
         setError("用户名或密码错误")
       } else {
-        router.push("/")
+        const sessionRes = await fetch("/api/auth/session")
+        const session = await sessionRes.json()
+        
+        if (session?.user?.isInitial) {
+          router.push("/change-password?force=1")
+        } else {
+          router.push("/")
+        }
         router.refresh()
       }
     } catch {
@@ -39,6 +58,14 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (checkingInitial) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">加载中...</div>
+      </div>
+    )
   }
 
   return (
@@ -82,9 +109,11 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "登录中..." : "登录"}
             </Button>
-            <div className="text-sm text-muted-foreground text-center">
-              默认账号: admin / admin123
-            </div>
+            {isInitial && (
+              <div className="text-sm text-muted-foreground text-center">
+                默认账号: admin / admin123
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>

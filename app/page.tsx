@@ -9,7 +9,8 @@ import { CategoryFilter } from "@/components/CategoryFilter"
 import { SubscriptionForm } from "@/components/SubscriptionForm"
 import { Subscription, SubscriptionFormData } from "@/lib/types"
 import { defaultCategories } from "@/lib/types"
-import { Plus } from "lucide-react"
+import { Plus, Settings } from "lucide-react"
+import Link from "next/link"
 
 export default function Home() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
@@ -141,10 +142,17 @@ export default function Home() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">AI订阅管理</h1>
-          <Button onClick={handleAddNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            添加订阅
-          </Button>
+          <div className="flex gap-2">
+            <Link href="/change-password">
+              <Button variant="outline" size="icon">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Button onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              添加订阅
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
