@@ -19,7 +19,7 @@ export function SubscriptionList({ subscriptions, onEdit, onDelete }: Subscripti
   }
   
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-stretch">
       {subscriptions.map((subscription) => (
         <SubscriptionCard
           key={subscription.id}

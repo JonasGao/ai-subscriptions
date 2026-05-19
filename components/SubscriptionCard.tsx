@@ -53,15 +53,15 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
   const providerName = getProviderName(subscription.provider, subscription.providerCustom)
   
   return (
-    <Card className={`${expiringSoon ? 'border-orange-500 border-2' : ''}`}>
+    <Card className={`flex flex-col ${expiringSoon ? 'border-orange-500 border-2' : ''}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-lg font-medium">{subscription.name}</CardTitle>
         <Badge variant={getStatusBadgeVariant(subscription.status)}>
           {getStatusLabel(subscription.status)}
         </Badge>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
+      <CardContent className="flex flex-col flex-1">
+        <div className="space-y-2 flex-1">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">提供商</span>
             <span className="text-sm font-medium">{providerName}</span>
@@ -89,24 +89,24 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
               <p className="text-sm mt-1">{subscription.notes}</p>
             </div>
           )}
-          <div className="flex gap-2 pt-4">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => onEdit(subscription)}
-            >
-              <Edit className="h-4 w-4 mr-1" />
-              编辑
-            </Button>
-            <Button 
-              variant="destructive" 
-              size="sm" 
-              onClick={() => onDelete(subscription.id)}
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              删除
-            </Button>
-          </div>
+        </div>
+        <div className="flex gap-2 pt-4 mt-auto">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => onEdit(subscription)}
+          >
+            <Edit className="h-4 w-4 mr-1" />
+            编辑
+          </Button>
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={() => onDelete(subscription.id)}
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            删除
+          </Button>
         </div>
       </CardContent>
     </Card>
