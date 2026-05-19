@@ -44,7 +44,8 @@ export function isExpiringSoon(renewalDate: string): boolean {
   return days >= 0 && days <= 7
 }
 
-export function formatDate(dateString: string): string {
+export function formatDate(dateString?: string): string {
+  if (!dateString) return '-'
   const date = new Date(dateString)
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',

@@ -48,8 +48,8 @@ function getProviderName(provider: string, providerCustom?: string): string {
 }
 
 export function SubscriptionCard({ subscription, onEdit, onDelete }: SubscriptionCardProps) {
-  const expiringSoon = isExpiringSoon(subscription.renewalDate)
-  const daysUntilRenewal = getDaysUntilRenewal(subscription.renewalDate)
+  const expiringSoon = subscription.renewalDate ? isExpiringSoon(subscription.renewalDate) : false
+  const daysUntilRenewal = subscription.renewalDate ? getDaysUntilRenewal(subscription.renewalDate) : null
   const providerName = getProviderName(subscription.provider, subscription.providerCustom)
   
   return (
@@ -74,15 +74,17 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
             <span className="text-sm text-muted-foreground">价格</span>
             <span className="text-sm font-medium">¥{subscription.price.toFixed(2)}/月</span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">续费日期</span>
-            <span className={`text-sm font-medium ${expiringSoon ? 'text-orange-500' : ''}`}>
-              {formatDate(subscription.renewalDate)}
-              {expiringSoon && (
-                <span className="ml-1">({daysUntilRenewal}天后)</span>
-              )}
-            </span>
-          </div>
+          {subscription.renewalDate && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">续费日期</span>
+              <span className={`text-sm font-medium ${expiringSoon ? 'text-orange-500' : ''}`}>
+                {formatDate(subscription.renewalDate)}
+                {expiringSoon && daysUntilRenewal !== null && (
+                  <span className="ml-1">({daysUntilRenewal}天后)</span>
+                )}
+              </span>
+            </div>
+          )}
           {subscription.notes && (
             <div className="pt-2">
               <span className="text-sm text-muted-foreground">备注</span>

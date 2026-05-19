@@ -5,8 +5,8 @@ export interface Subscription {
   provider: string
   providerCustom?: string
   price: number
-  startDate: string
-  renewalDate: string
+  startDate?: string
+  renewalDate?: string
   status: 'active' | 'paused' | 'cancelled'
   notes?: string
   createdAt: string
@@ -61,8 +61,8 @@ export interface SubscriptionFormData {
   provider: string
   providerCustom?: string
   price: number
-  startDate: string
-  renewalDate: string
+  startDate?: string
+  renewalDate?: string
   status: SubscriptionStatus
   notes?: string
 }
