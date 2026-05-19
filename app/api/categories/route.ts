@@ -18,21 +18,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    if (!body.category) {
-      return NextResponse.json(
-        { error: 'Category name is required' },
-        { status: 400 }
-      )
-    }
+    const trimmedCategory = typeof body.category === 'string' ? body.category.trim() : ''
     
-    if (typeof body.category !== 'string' || body.category.trim() === '') {
+    if (trimmedCategory === '') {
       return NextResponse.json(
         { error: 'Category must be a non-empty string' },
         { status: 400 }
       )
     }
     
-    const categories = addCategory(body.category)
+    const categories = addCategory(trimmedCategory)
     return NextResponse.json(categories, { status: 201 })
   } catch (error) {
     console.error('POST /api/categories error:', error)
