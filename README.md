@@ -10,6 +10,7 @@
 - **状态跟踪**: 支持活跃、暂停、已取消三种状态
 - **续费提醒**: 自动标记即将续费的订阅（7天内）
 - **筛选功能**: 按分类和状态筛选订阅
+- **优先级管理**: 多场景优先级配置，支持拖拽排序
 - **数据持久化**: 本地JSON文件存储数据
 
 ## 技术栈
@@ -85,6 +86,16 @@ npm run dev
 - 页面顶部显示月度总支出、年度总支出和活跃订阅数
 - 右侧饼图展示各分类支出占比
 
+### 优先级管理
+
+1. **创建场景**: 点击"+"按钮，输入场景名称（如"工作日"、"周末"）
+2. **添加订阅**: 从可用订阅列表中点击订阅添加到场景
+3. **调整优先级**: 拖拽订阅项调整使用优先级顺序
+4. **移除订阅**: 点击订阅项的"X"按钮从场景中移除
+5. **重命名场景**: 点击编辑按钮修改场景名称
+6. **删除场景**: 点击删除按钮移除场景
+7. **切换场景**: 使用下拉框切换不同使用场景
+
 ## 项目结构
 
 ```
@@ -106,13 +117,18 @@ ai-subscriptions/
 │   ├── SubscriptionCard.tsx   # 订阅卡片
 │   ├── SubscriptionForm.tsx   # 订阅表单
 │   ├── SubscriptionList.tsx   # 订阅列表
-│   └── CategoryFilter.tsx     # 分类筛选
+│   ├── CategoryFilter.tsx     # 分类筛选
+│   ├── PriorityManager.tsx    # 优先级管理主组件
+│   └── SortablePriorityList.tsx # 可拖拽优先级列表
 ├── lib/
-│   ├── db.ts                  # 数据存储逻辑
+│   ├── db.ts                  # 订阅数据存储逻辑
+│   ├── priorities.ts          # 优先级数据存储逻辑
 │   ├── types.ts               # 类型定义
 │   └── utils.ts               # 工具函数
 ├── data/
-│   └── subscriptions.json     # 数据文件（自动生成）
+│   ├── subscriptions.json     # 订阅数据文件（自动生成）
+│   └── priorities.json        # 优先级数据文件（自动生成）
+├── Makefile                   # systemd 服务管理脚本
 └── package.json
 ```
 
@@ -137,6 +153,60 @@ npm run build
 
 ```bash
 npm start
+```
+
+### systemd 服务管理
+
+项目支持安装为用户级 systemd 服务，实现后台运行和开机自启。
+
+**安装服务：**
+```bash
+make install
+```
+
+**启动服务：**
+```bash
+make start
+```
+
+**停止服务：**
+```bash
+make stop
+```
+
+**重启服务：**
+```bash
+make restart
+```
+
+**查看状态：**
+```bash
+make status
+```
+
+**查看日志：**
+```bash
+make logs
+```
+
+**设置开机自启：**
+```bash
+make enable
+```
+
+**取消开机自启：**
+```bash
+make disable
+```
+
+**卸载服务：**
+```bash
+make uninstall
+```
+
+**查看所有命令：**
+```bash
+make help
 ```
 
 ## 开发命令
