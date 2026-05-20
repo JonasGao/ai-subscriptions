@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSubscriptions, createSubscription } from '@/lib/db'
-import { SubscriptionFormData, SubscriptionType } from '@/lib/types'
+import { SubscriptionFormData, SubscriptionType, BillingCycle } from '@/lib/types'
 
 export async function GET() {
   try {
@@ -57,6 +57,21 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
+      
+      if (!body.billingCycle) {
+        return NextResponse.json(
+          { error: 'billingCycle is required for recurring subscriptions' },
+          { status: 400 }
+        )
+      }
+      
+      const validBillingCycles: BillingCycle[] = ['monthly', 'yearly']
+      if (!validBillingCycles.includes(body.billingCycle)) {
+        return NextResponse.json(
+          { error: 'Invalid billingCycle. Must be one of: monthly, yearly' },
+          { status: 400 }
+        )
+      }
     }
     
     const newSubscription = createSubscription({
@@ -65,6 +80,7 @@ export async function POST(request: NextRequest) {
       provider: body.provider || 'other',
       providerCustom: body.providerCustom,
       subscriptionType: body.subscriptionType || 'recurring',
+      billingCycle: body.billingCycle,
       price: body.price,
       startDate: body.startDate,
       renewalDate: body.renewalDate,
