@@ -195,21 +195,23 @@ export function SubscriptionForm({
             {isRecurring && (
               <>
                 <div className="grid gap-2">
-                  <Label htmlFor="startDate">开始日期</Label>
+                  <Label htmlFor="startDate">开始日期 *</Label>
                   <Input
                     id="startDate"
                     type="date"
                     value={formData.startDate || ''}
                     onChange={(e) => handleInputChange('startDate', e.target.value)}
+                    required
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="renewalDate">续费日期</Label>
+                  <Label htmlFor="renewalDate">续费日期 *</Label>
                   <Input
                     id="renewalDate"
                     type="date"
                     value={formData.renewalDate || ''}
                     onChange={(e) => handleInputChange('renewalDate', e.target.value)}
+                    required
                   />
                 </div>
               </>

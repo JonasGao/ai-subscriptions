@@ -9,7 +9,7 @@ import { CategoryFilter } from "@/components/CategoryFilter"
 import { SubscriptionForm } from "@/components/SubscriptionForm"
 import { Subscription, SubscriptionFormData } from "@/lib/types"
 import { defaultCategories } from "@/lib/types"
-import { Plus, Settings } from "lucide-react"
+import { Plus, Settings, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { PriorityManager } from "@/components/PriorityManager"
 
@@ -21,6 +21,7 @@ export default function Home() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null)
   const [loading, setLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // Load subscriptions and categories on mount
   useEffect(() => {
@@ -60,9 +61,9 @@ export default function Home() {
 
   // Handle form submission (create or update)
   const handleFormSubmit = async (data: SubscriptionFormData) => {
+    setErrorMessage(null)
     try {
       if (editingSubscription) {
-        // Update existing subscription
         const response = await fetch(`/api/subscriptions/${editingSubscription.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -74,9 +75,11 @@ export default function Home() {
           setSubscriptions(prev => 
             prev.map(s => s.id === updated.id ? updated : s)
           )
+        } else {
+          const errorData = await response.json()
+          setErrorMessage(errorData.error || '保存失败')
         }
       } else {
-        // Create new subscription
         const response = await fetch('/api/subscriptions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -87,14 +90,17 @@ export default function Home() {
           const newSub = await response.json()
           setSubscriptions(prev => [...prev, newSub])
           
-          // Add new category if not exists
           if (!categories.includes(data.category)) {
             setCategories(prev => [...prev, data.category])
           }
+        } else {
+          const errorData = await response.json()
+          setErrorMessage(errorData.error || '保存失败')
         }
       }
     } catch (error) {
       console.error('Failed to save subscription:', error)
+      setErrorMessage('保存订阅时发生错误')
     } finally {
       setEditingSubscription(null)
     }
@@ -155,6 +161,20 @@ export default function Home() {
             </Button>
           </div>
         </div>
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            <span>{errorMessage}</span>
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="ml-auto text-red-700 hover:text-red-900"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <StatsCards subscriptions={subscriptions} />
