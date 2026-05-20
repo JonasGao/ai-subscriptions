@@ -102,14 +102,14 @@ export function SubscriptionForm({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>
             {subscription ? '编辑订阅' : '添加订阅'}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-3 py-3">
             <div className="grid gap-2">
               <Label htmlFor="name">名称 *</Label>
               <Input
@@ -120,42 +120,43 @@ export function SubscriptionForm({
                 required
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="category">分类 *</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => handleInputChange('category', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="选择分类" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="provider">提供商 *</Label>
-              <Select
-                value={formData.provider}
-                onValueChange={(value) => handleInputChange('provider', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="选择提供商" />
-                </SelectTrigger>
-                <SelectContent>
-                  {providers.map((provider) => (
-                    <SelectItem key={provider.id} value={provider.id}>
-                      {provider.name}
-                      {provider.description && ` - ${provider.description}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="category">分类 *</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) => handleInputChange('category', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择分类" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="provider">提供商 *</Label>
+                <Select
+                  value={formData.provider}
+                  onValueChange={(value) => handleInputChange('provider', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择提供商" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {providers.map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        {provider.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             {showCustomProvider && (
               <div className="grid gap-2">
@@ -169,53 +170,92 @@ export function SubscriptionForm({
                 />
               </div>
             )}
-            <div className="grid gap-2">
-              <Label htmlFor="subscriptionType">订阅类型 *</Label>
-              <Select
-                value={formData.subscriptionType}
-                onValueChange={(value) => handleInputChange('subscriptionType', value as SubscriptionType)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="选择订阅类型" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recurring">周期性订阅</SelectItem>
-                  <SelectItem value="one-time">一次性充值</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {isRecurring && (
+            <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-2">
-                <Label htmlFor="billingCycle">计费周期 *</Label>
+                <Label htmlFor="subscriptionType">订阅类型 *</Label>
                 <Select
-                  value={billingCycle}
-                  onValueChange={(value) => handleInputChange('billingCycle', value as BillingCycle)}
+                  value={formData.subscriptionType}
+                  onValueChange={(value) => handleInputChange('subscriptionType', value as SubscriptionType)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="选择计费周期" />
+                    <SelectValue placeholder="选择类型" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="monthly">月度</SelectItem>
-                    <SelectItem value="yearly">年度</SelectItem>
+                    <SelectItem value="recurring">周期性</SelectItem>
+                    <SelectItem value="one-time">一次性</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            )}
-            <div className="grid gap-2">
-              <Label htmlFor="price">{priceLabel} *</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price}
-                onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
-                placeholder="0.00"
-                required
-              />
+              {isRecurring ? (
+                <div className="grid gap-2">
+                  <Label htmlFor="billingCycle">计费周期 *</Label>
+                  <Select
+                    value={billingCycle}
+                    onValueChange={(value) => handleInputChange('billingCycle', value as BillingCycle)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择周期" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">月度</SelectItem>
+                      <SelectItem value="yearly">年度</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="grid gap-2">
+                  <Label htmlFor="status">状态</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => handleInputChange('status', value as SubscriptionStatus)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择状态" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">活跃</SelectItem>
+                      <SelectItem value="paused">暂停</SelectItem>
+                      <SelectItem value="cancelled">已取消</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="price">{priceLabel} *</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price}
+                  onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+              {isRecurring && (
+                <div className="grid gap-2">
+                  <Label htmlFor="status">状态</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => handleInputChange('status', value as SubscriptionStatus)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择状态" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">活跃</SelectItem>
+                      <SelectItem value="paused">暂停</SelectItem>
+                      <SelectItem value="cancelled">已取消</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             {isRecurring && (
-              <>
+              <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-2">
                   <Label htmlFor="startDate">开始日期 *</Label>
                   <Input
@@ -236,24 +276,8 @@ export function SubscriptionForm({
                     required
                   />
                 </div>
-              </>
+              </div>
             )}
-            <div className="grid gap-2">
-              <Label htmlFor="status">状态</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => handleInputChange('status', value as SubscriptionStatus)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="选择状态" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">活跃</SelectItem>
-                  <SelectItem value="paused">暂停</SelectItem>
-                  <SelectItem value="cancelled">已取消</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <div className="grid gap-2">
               <Label htmlFor="notes">备注</Label>
               <Input
