@@ -7,19 +7,25 @@ import { CategoryPieChart } from "@/components/CategoryPieChart"
 import { SubscriptionList } from "@/components/SubscriptionList"
 import { CategoryFilter } from "@/components/CategoryFilter"
 import { SubscriptionForm } from "@/components/SubscriptionForm"
-import { Subscription, SubscriptionFormData } from "@/lib/types"
+import { ToolList } from "@/components/ToolList"
+import { ToolForm } from "@/components/ToolForm"
+import { Subscription, SubscriptionFormData, Tool, ToolFormData } from "@/lib/types"
 import { defaultCategories } from "@/lib/types"
-import { Plus, Settings, AlertTriangle } from "lucide-react"
+import { Plus, Settings, AlertTriangle, CreditCard, Wrench } from "lucide-react"
 import Link from "next/link"
 import { PriorityManager } from "@/components/PriorityManager"
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<'subscriptions' | 'tools'>('subscriptions')
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
+  const [tools, setTools] = useState<Tool[]>([])
   const [categories, setCategories] = useState<string[]>(defaultCategories)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [formOpen, setFormOpen] = useState(false)
+  const [toolFormOpen, setToolFormOpen] = useState(false)
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null)
+  const [editingTool, setEditingTool] = useState<Tool | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -31,9 +37,10 @@ export default function Home() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [subsRes, catsRes] = await Promise.all([
+      const [subsRes, catsRes, toolsRes] = await Promise.all([
         fetch('/api/subscriptions'),
-        fetch('/api/categories')
+        fetch('/api/categories'),
+        fetch('/api/tools')
       ])
       
       if (subsRes.ok) {
@@ -44,6 +51,11 @@ export default function Home() {
       if (catsRes.ok) {
         const catsData = await catsRes.json()
         setCategories(catsData)
+      }
+
+      if (toolsRes.ok) {
+        const toolsData = await toolsRes.json()
+        setTools(toolsData)
       }
     } catch (error) {
       console.error('Failed to load data:', error)
@@ -133,6 +145,73 @@ export default function Home() {
     setFormOpen(true)
   }
 
+  // Tool handlers
+  const handleToolFormSubmit = async (data: ToolFormData) => {
+    setErrorMessage(null)
+    try {
+      if (editingTool) {
+        const response = await fetch(`/api/tools/${editingTool.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        })
+        
+        if (response.ok) {
+          const updated = await response.json()
+          setTools(prev => 
+            prev.map(t => t.id === updated.id ? updated : t)
+          )
+        } else {
+          const errorData = await response.json()
+          setErrorMessage(errorData.error || '保存失败')
+        }
+      } else {
+        const response = await fetch('/api/tools', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        })
+        
+        if (response.ok) {
+          const newTool = await response.json()
+          setTools(prev => [...prev, newTool])
+        } else {
+          const errorData = await response.json()
+          setErrorMessage(errorData.error || '保存失败')
+        }
+      }
+    } catch (error) {
+      console.error('Failed to save tool:', error)
+      setErrorMessage('保存工具时发生错误')
+    } finally {
+      setEditingTool(null)
+    }
+  }
+
+  const handleEditTool = (tool: Tool) => {
+    setEditingTool(tool)
+    setToolFormOpen(true)
+  }
+
+  const handleDeleteTool = async (id: string) => {
+    try {
+      const response = await fetch(`/api/tools/${id}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        setTools(prev => prev.filter(t => t.id !== id))
+      }
+    } catch (error) {
+      console.error('Failed to delete tool:', error)
+    }
+  }
+
+  const handleAddNewTool = () => {
+    setEditingTool(null)
+    setToolFormOpen(true)
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto py-8 px-4">
@@ -150,15 +229,41 @@ export default function Home() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">AI订阅管理</h1>
           <div className="flex gap-2">
+            {/* Tab Buttons */}
+            <div className="flex gap-1 border rounded-md p-1">
+              <Button
+                variant={activeTab === 'subscriptions' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('subscriptions')}
+              >
+                <CreditCard className="h-4 w-4 mr-1" />
+                订阅
+              </Button>
+              <Button
+                variant={activeTab === 'tools' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('tools')}
+              >
+                <Wrench className="h-4 w-4 mr-1" />
+                工具
+              </Button>
+            </div>
             <Link href="/change-password">
               <Button variant="outline" size="icon">
                 <Settings className="h-4 w-4" />
               </Button>
             </Link>
-            <Button onClick={handleAddNew}>
-              <Plus className="h-4 w-4 mr-2" />
-              添加订阅
-            </Button>
+            {activeTab === 'subscriptions' ? (
+              <Button onClick={handleAddNew}>
+                <Plus className="h-4 w-4 mr-2" />
+                添加订阅
+              </Button>
+            ) : (
+              <Button onClick={handleAddNewTool}>
+                <Plus className="h-4 w-4 mr-2" />
+                添加工具
+              </Button>
+            )}
           </div>
         </div>
 
@@ -176,41 +281,67 @@ export default function Home() {
           </div>
         )}
 
-        {/* Stats Cards */}
-        <StatsCards subscriptions={subscriptions} />
+        {/* Subscriptions Tab */}
+        {activeTab === 'subscriptions' && (
+          <>
+            {/* Stats Cards */}
+            <StatsCards subscriptions={subscriptions} />
 
-        {/* Filters */}
-        <CategoryFilter
-          categories={categories}
-          selectedCategory={selectedCategory}
-          selectedStatus={selectedStatus}
-          onCategoryChange={setSelectedCategory}
-          onStatusChange={setSelectedStatus}
-        />
-
-        {/* Main Content Grid */}
-        <div className="grid gap-6 lg:grid-cols-4">
-          {/* Subscription List */}
-          <div className="lg:col-span-2">
-            <h2 className="text-xl font-semibold mb-4">订阅列表</h2>
-            <SubscriptionList
-              subscriptions={filteredSubscriptions}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
+            {/* Filters */}
+            <CategoryFilter
+              categories={categories}
+              selectedCategory={selectedCategory}
+              selectedStatus={selectedStatus}
+              onCategoryChange={setSelectedCategory}
+              onStatusChange={setSelectedStatus}
             />
-          </div>
 
-          {/* Priority Manager */}
-          <div className="lg:col-span-1">
-            <h2 className="text-xl font-semibold mb-4">优先级管理</h2>
-            <PriorityManager subscriptions={subscriptions} />
-          </div>
+            {/* Main Content Grid */}
+            <div className="grid gap-6 lg:grid-cols-4">
+              {/* Subscription List */}
+              <div className="lg:col-span-2">
+                <h2 className="text-xl font-semibold mb-4">订阅列表</h2>
+                <SubscriptionList
+                  subscriptions={filteredSubscriptions}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              </div>
 
-          {/* Pie Chart */}
-          <div className="lg:col-span-1">
-            <CategoryPieChart subscriptions={subscriptions} />
+              {/* Priority Manager */}
+              <div className="lg:col-span-1">
+                <h2 className="text-xl font-semibold mb-4">优先级管理</h2>
+                <PriorityManager subscriptions={subscriptions} />
+              </div>
+
+              {/* Pie Chart */}
+              <div className="lg:col-span-1">
+                <CategoryPieChart subscriptions={subscriptions} />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Tools Tab */}
+        {activeTab === 'tools' && (
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Tool List */}
+            <div className="lg:col-span-2">
+              <h2 className="text-xl font-semibold mb-4">工具列表</h2>
+              <ToolList
+                tools={tools}
+                onEdit={handleEditTool}
+                onDelete={handleDeleteTool}
+              />
+            </div>
+
+            {/* Priority Manager */}
+            <div className="lg:col-span-1">
+              <h2 className="text-xl font-semibold mb-4">优先级管理</h2>
+              <PriorityManager subscriptions={subscriptions} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Subscription Form Dialog */}
         <SubscriptionForm
@@ -219,6 +350,15 @@ export default function Home() {
           subscription={editingSubscription}
           categories={categories}
           onSubmit={handleFormSubmit}
+        />
+
+        {/* Tool Form Dialog */}
+        <ToolForm
+          open={toolFormOpen}
+          onOpenChange={setToolFormOpen}
+          tool={editingTool}
+          categories={categories}
+          onSubmit={handleToolFormSubmit}
         />
       </div>
     </div>

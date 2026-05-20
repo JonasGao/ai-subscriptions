@@ -89,3 +89,24 @@ export interface PriorityData {
 export interface PrioritySceneFormData {
   name: string
 }
+
+export interface Tool {
+  id: string
+  name: string
+  category: string
+  provider: string
+  providerCustom?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ToolData {
+  tools: Tool[]
+}
+
+export interface ToolFormData {
+  name: string
+  category: string
+  provider: string
+  providerCustom?: string
+}
