@@ -5,6 +5,7 @@ export interface Subscription {
   provider: string
   providerCustom?: string
   subscriptionType: 'recurring' | 'one-time'
+  billingCycle?: BillingCycle
   price: number
   startDate?: string
   renewalDate?: string
@@ -16,6 +17,7 @@ export interface Subscription {
 
 export type SubscriptionStatus = 'active' | 'paused' | 'cancelled'
 export type SubscriptionType = 'recurring' | 'one-time'
+export type BillingCycle = 'monthly' | 'yearly'
 
 export interface SubscriptionData {
   subscriptions: Subscription[]
@@ -64,6 +66,7 @@ export interface SubscriptionFormData {
   provider: string
   providerCustom?: string
   subscriptionType: SubscriptionType
+  billingCycle?: BillingCycle
   price: number
   startDate?: string
   renewalDate?: string
