@@ -11,6 +11,7 @@ import { Subscription, SubscriptionFormData } from "@/lib/types"
 import { defaultCategories } from "@/lib/types"
 import { Plus, Settings } from "lucide-react"
 import Link from "next/link"
+import { PriorityManager } from "@/components/PriorityManager"
 
 export default function Home() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
@@ -168,7 +169,7 @@ export default function Home() {
         />
 
         {/* Main Content Grid */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-4">
           {/* Subscription List */}
           <div className="lg:col-span-2">
             <h2 className="text-xl font-semibold mb-4">订阅列表</h2>
@@ -177,6 +178,12 @@ export default function Home() {
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
+          </div>
+
+          {/* Priority Manager */}
+          <div className="lg:col-span-1">
+            <h2 className="text-xl font-semibold mb-4">优先级管理</h2>
+            <PriorityManager subscriptions={subscriptions} />
           </div>
 
           {/* Pie Chart */}
