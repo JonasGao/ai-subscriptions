@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Subscription, SubscriptionFormData, SubscriptionStatus, SubscriptionType, defaultCategories, Provider, defaultProviders } from "@/lib/types"
+import { Subscription, SubscriptionFormData, SubscriptionStatus, SubscriptionType, BillingCycle, defaultCategories, Provider, defaultProviders } from "@/lib/types"
 
 interface SubscriptionFormProps {
   open: boolean
@@ -34,6 +34,7 @@ const initialFormData: SubscriptionFormData = {
   provider: 'other',
   providerCustom: '',
   subscriptionType: 'recurring',
+  billingCycle: 'monthly',
   price: 0,
   startDate: '',
   renewalDate: '',
@@ -66,6 +67,7 @@ export function SubscriptionForm({
         provider: subscription.provider || 'other',
         providerCustom: subscription.providerCustom || '',
         subscriptionType: subscription.subscriptionType || 'recurring',
+        billingCycle: subscription.billingCycle || 'monthly',
         price: subscription.price,
         startDate: subscription.startDate || '',
         renewalDate: subscription.renewalDate || '',
@@ -92,8 +94,11 @@ export function SubscriptionForm({
   
   const showCustomProvider = formData.provider === 'other'
   const isRecurring = formData.subscriptionType === 'recurring'
+  const billingCycle = formData.billingCycle || 'monthly'
   
-  const priceLabel = isRecurring ? '价格 (¥/月)' : '充值金额 (¥)'
+  const priceLabel = isRecurring 
+    ? (billingCycle === 'yearly' ? '价格 (¥/年)' : '价格 (¥/月)')
+    : '充值金额 (¥)'
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -179,6 +184,23 @@ export function SubscriptionForm({
                 </SelectContent>
               </Select>
             </div>
+            {isRecurring && (
+              <div className="grid gap-2">
+                <Label htmlFor="billingCycle">计费周期 *</Label>
+                <Select
+                  value={billingCycle}
+                  onValueChange={(value) => handleInputChange('billingCycle', value as BillingCycle)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择计费周期" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">月度</SelectItem>
+                    <SelectItem value="yearly">年度</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="price">{priceLabel} *</Label>
               <Input
