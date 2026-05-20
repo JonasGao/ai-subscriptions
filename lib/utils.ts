@@ -9,11 +9,23 @@ export function cn(...inputs: ClassValue[]) {
 export function calculateMonthlyTotal(subscriptions: Subscription[]): number {
   return subscriptions
     .filter(s => s.status === 'active' && s.subscriptionType === 'recurring')
-    .reduce((total, s) => total + s.price, 0)
+    .reduce((total, s) => {
+      const monthlyPrice = s.billingCycle === 'yearly' 
+        ? s.price / 12 
+        : s.price
+      return total + monthlyPrice
+    }, 0)
 }
 
 export function calculateYearlyTotal(subscriptions: Subscription[]): number {
-  return calculateMonthlyTotal(subscriptions) * 12
+  return subscriptions
+    .filter(s => s.status === 'active' && s.subscriptionType === 'recurring')
+    .reduce((total, s) => {
+      const yearlyPrice = s.billingCycle === 'monthly' 
+        ? s.price * 12 
+        : s.price
+      return total + yearlyPrice
+    }, 0)
 }
 
 export function calculateOneTimeTotal(subscriptions: Subscription[]): number {
@@ -31,7 +43,14 @@ export function calculateCategoryStats(subscriptions: Subscription[]): Record<st
       if (!stats[s.category]) {
         stats[s.category] = 0
       }
-      stats[s.category] += s.price
+      if (s.subscriptionType === 'recurring') {
+        const monthlyPrice = s.billingCycle === 'yearly' 
+          ? s.price / 12 
+          : s.price
+        stats[s.category] += monthlyPrice
+      } else {
+        stats[s.category] += s.price
+      }
     })
   
   return stats
