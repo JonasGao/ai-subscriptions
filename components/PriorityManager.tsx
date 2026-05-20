@@ -272,141 +272,143 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
         </Card>
       )}
 
-      {/* Scene cards */}
-      {scenes.map((scene) => {
-        const isSelected = scene.id === selectedSceneId
-        const isEditing = editingSceneId === scene.id
-        const sceneSubscriptions = subscriptions.filter(s => scene.subscriptionOrder.includes(s.id))
-        const availableSubs = getAvailableSubscriptions(scene.id)
+      {/* Scene cards grid */}
+      {scenes.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-stretch">
+          {scenes.map((scene) => {
+            const isSelected = scene.id === selectedSceneId
+            const isEditing = editingSceneId === scene.id
+            const sceneSubscriptions = subscriptions.filter(s => scene.subscriptionOrder.includes(s.id))
+            const availableSubs = getAvailableSubscriptions(scene.id)
 
-        return (
-          <Card 
-            key={scene.id}
-            className={`cursor-pointer transition-all ${isSelected ? 'border-primary ring-1 ring-primary' : ''}`}
-            onClick={() => setSelectedSceneId(scene.id)}
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                {isEditing ? (
-                  <div className="flex gap-2 flex-1">
-                    <Input
-                      value={editingSceneName}
-                      onChange={(e) => setEditingSceneName(e.target.value)}
-                      placeholder="场景名称"
-                      className="flex-1"
-                      autoFocus
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <Button 
-                      size="sm" 
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleRenameScene()
-                      }}
-                    >
-                      <Check className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setEditingSceneId('')
-                        setEditingSceneName('')
-                      }}
-                    >
-                      <XIcon className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <CardTitle className="text-base">{scene.name}</CardTitle>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
+            return (
+              <Card 
+                key={scene.id}
+                className={`flex flex-col cursor-pointer transition-all ${isSelected ? 'border-primary ring-1 ring-primary' : ''}`}
+                onClick={() => setSelectedSceneId(scene.id)}
+              >
+                <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
+                  {isEditing ? (
+                    <div className="flex gap-2 flex-1">
+                      <Input
+                        value={editingSceneName}
+                        onChange={(e) => setEditingSceneName(e.target.value)}
+                        placeholder="场景名称"
+                        className="flex-1"
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <Button 
+                        size="icon" 
                         onClick={(e) => {
                           e.stopPropagation()
-                          setEditingSceneId(scene.id)
-                          setEditingSceneName(scene.name)
+                          handleRenameScene()
                         }}
                       >
-                        <Edit2 className="h-4 w-4" />
+                        <Check className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="icon"
-                        className="h-8 w-8"
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleDeleteScene(scene.id)
+                          setEditingSceneId('')
+                          setEditingSceneName('')
                         }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <XIcon className="h-4 w-4" />
                       </Button>
                     </div>
-                  </>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              {sceneSubscriptions.length > 0 ? (
-                <div className="space-y-2">
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext
-                      items={scene.subscriptionOrder}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <SortablePriorityList
-                        subscriptionOrder={scene.subscriptionOrder}
-                        subscriptions={subscriptions}
-                        onRemove={(id) => handleRemoveSubscription(id, scene.id)}
-                      />
-                    </SortableContext>
-                  </DndContext>
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground py-2">
-                  暂无订阅，点击下方添加
-                </div>
-              )}
-
-              {availableSubs.length > 0 && (
-                <div className="mt-3 pt-3 border-t">
-                  <div className="text-xs text-muted-foreground mb-2">添加订阅：</div>
-                  <div className="flex flex-wrap gap-2">
-                    {availableSubs.slice(0, 6).map(sub => (
-                      <Button
-                        key={sub.id}
-                        variant="outline"
-                        size="sm"
-                        className="h-7"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleAddSubscription(sub.id, scene.id)
-                        }}
+                  ) : (
+                    <>
+                      <CardTitle className="text-lg font-medium">{scene.name}</CardTitle>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingSceneId(scene.id)
+                            setEditingSceneName(scene.name)
+                          }}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteScene(scene.id)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </CardHeader>
+                <CardContent className="flex flex-col flex-1">
+                  {sceneSubscriptions.length > 0 ? (
+                    <div className="space-y-2 flex-1">
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
                       >
-                        <Plus className="h-3 w-3 mr-1" />
-                        {sub.name}
-                      </Button>
-                    ))}
-                    {availableSubs.length > 6 && (
-                      <span className="text-xs text-muted-foreground">
-                        +{availableSubs.length - 6} 更多
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )
-      })}
+                        <SortableContext
+                          items={scene.subscriptionOrder}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <SortablePriorityList
+                            subscriptionOrder={scene.subscriptionOrder}
+                            subscriptions={subscriptions}
+                            onRemove={(id) => handleRemoveSubscription(id, scene.id)}
+                          />
+                        </SortableContext>
+                      </DndContext>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground py-2 flex-1">
+                      暂无订阅，点击下方添加
+                    </div>
+                  )}
+
+                  {availableSubs.length > 0 && (
+                    <div className="mt-3 pt-3 border-t">
+                      <div className="text-xs text-muted-foreground mb-2">添加订阅：</div>
+                      <div className="flex flex-wrap gap-2">
+                        {availableSubs.slice(0, 6).map(sub => (
+                          <Button
+                            key={sub.id}
+                            variant="outline"
+                            size="sm"
+                            className="h-7"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleAddSubscription(sub.id, scene.id)
+                            }}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            {sub.name}
+                          </Button>
+                        ))}
+                        {availableSubs.length > 6 && (
+                          <span className="text-xs text-muted-foreground">
+                            +{availableSubs.length - 6} 更多
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
 
       {/* Add scene button */}
       {!isCreating && scenes.length > 0 && (

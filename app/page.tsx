@@ -296,23 +296,20 @@ export default function Home() {
               onStatusChange={setSelectedStatus}
             />
 
-            {/* Main Content Grid */}
-            <div className="grid gap-6 lg:grid-cols-2">
-              {/* Subscription List */}
-              <div>
-                <h2 className="text-xl font-semibold mb-4">订阅列表</h2>
-                <SubscriptionList
-                  subscriptions={filteredSubscriptions}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              </div>
+            {/* Subscription List */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4">订阅列表</h2>
+              <SubscriptionList
+                subscriptions={filteredSubscriptions}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            </div>
 
-              {/* Priority Manager */}
-              <div>
-                <h2 className="text-xl font-semibold mb-4">优先级管理</h2>
-                <PriorityManager subscriptions={subscriptions} />
-              </div>
+            {/* Priority Manager */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4">优先级管理</h2>
+              <PriorityManager subscriptions={subscriptions} />
             </div>
 
             {/* Category Pie Chart */}
