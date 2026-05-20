@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { Subscription, SubscriptionData, SubscriptionStatus, SubscriptionType, defaultCategories, defaultProviders } from './types'
+import { Subscription, SubscriptionData, SubscriptionStatus, SubscriptionType, BillingCycle, defaultCategories, defaultProviders } from './types'
 import { Provider } from './types'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -35,7 +35,8 @@ export function readData(): SubscriptionData {
     
     data.subscriptions = data.subscriptions.map(sub => ({
       ...sub,
-      subscriptionType: sub.subscriptionType || 'recurring'
+      subscriptionType: sub.subscriptionType || 'recurring',
+      billingCycle: sub.billingCycle || 'monthly'
     }))
     
     return data
@@ -76,6 +77,15 @@ export function createSubscription(subscriptionData: Omit<Subscription, 'id' | '
     throw new Error('Invalid subscriptionType')
   }
   
+  const validBillingCycles: BillingCycle[] = ['monthly', 'yearly']
+  if (subscriptionData.billingCycle && !validBillingCycles.includes(subscriptionData.billingCycle)) {
+    throw new Error('Invalid billingCycle')
+  }
+  
+  if (subscriptionData.subscriptionType === 'recurring' && !subscriptionData.billingCycle) {
+    throw new Error('billingCycle is required for recurring subscriptions')
+  }
+  
   const data = readData()
   const now = new Date().toISOString()
   
@@ -110,6 +120,11 @@ export function updateSubscription(id: string, updates: Partial<Omit<Subscriptio
   const validTypes: SubscriptionType[] = ['recurring', 'one-time']
   if (updates.subscriptionType !== undefined && !validTypes.includes(updates.subscriptionType)) {
     throw new Error('Invalid subscriptionType value')
+  }
+
+  const validBillingCycles: BillingCycle[] = ['monthly', 'yearly']
+  if (updates.billingCycle !== undefined && !validBillingCycles.includes(updates.billingCycle)) {
+    throw new Error('Invalid billingCycle value')
   }
 
   const data = readData()
