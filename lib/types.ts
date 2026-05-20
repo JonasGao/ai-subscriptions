@@ -69,3 +69,19 @@ export interface SubscriptionFormData {
   status: SubscriptionStatus
   notes?: string
 }
+
+export interface PriorityScene {
+  id: string
+  name: string
+  subscriptionOrder: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PriorityData {
+  scenes: PriorityScene[]
+}
+
+export interface PrioritySceneFormData {
+  name: string
+}
