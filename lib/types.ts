@@ -42,6 +42,7 @@ export const defaultProviders: Provider[] = [
   { id: 'anthropic', name: 'Anthropic', description: 'Claude 系列', website: 'https://anthropic.com' },
   { id: 'openai', name: 'OpenAI', description: 'GPT 系列', website: 'https://openai.com' },
   { id: 'google', name: 'Google', description: 'Gemini 系列', website: 'https://ai.google.dev' },
+  { id: 'github', name: 'GitHub', description: 'GitHub Copilot', website: 'https://github.com' },
   { id: 'alibaba', name: '阿里云百炼', description: 'Qwen 系列', website: 'https://bailian.console.aliyun.com' },
   { id: 'moonshot', name: '月之暗面', description: 'Kimi 系列', website: 'https://kimi.moonshot.cn' },
   { id: 'deepseek', name: 'DeepSeek', description: 'DeepSeek 系列', website: 'https://deepseek.com' },
