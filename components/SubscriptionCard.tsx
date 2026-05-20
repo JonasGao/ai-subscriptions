@@ -57,7 +57,11 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
   const daysUntilRenewal = isRecurring && subscription.renewalDate ? getDaysUntilRenewal(subscription.renewalDate) : null
   const providerName = getProviderName(subscription.provider, subscription.providerCustom)
   const typeLabel = getTypeLabel(subscription.subscriptionType)
-  const priceLabel = isRecurring ? `¥${subscription.price.toFixed(2)}/月` : `¥${subscription.price.toFixed(2)}`
+  const priceLabel = subscription.subscriptionType === 'one-time' 
+    ? `¥${subscription.price.toFixed(2)}` 
+    : subscription.billingCycle === 'yearly' 
+      ? `¥${subscription.price.toFixed(2)}/年` 
+      : `¥${subscription.price.toFixed(2)}/月`
   
   return (
     <Card className={`flex flex-col ${expiringSoon ? 'border-orange-500 border-2' : ''}`}>
