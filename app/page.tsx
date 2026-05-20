@@ -297,9 +297,9 @@ export default function Home() {
             />
 
             {/* Main Content Grid */}
-            <div className="grid gap-6 lg:grid-cols-4">
+            <div className="grid gap-6 lg:grid-cols-2">
               {/* Subscription List */}
-              <div className="lg:col-span-2">
+              <div>
                 <h2 className="text-xl font-semibold mb-4">订阅列表</h2>
                 <SubscriptionList
                   subscriptions={filteredSubscriptions}
@@ -309,24 +309,24 @@ export default function Home() {
               </div>
 
               {/* Priority Manager */}
-              <div className="lg:col-span-1">
+              <div>
                 <h2 className="text-xl font-semibold mb-4">优先级管理</h2>
                 <PriorityManager subscriptions={subscriptions} />
               </div>
+            </div>
 
-              {/* Pie Chart */}
-              <div className="lg:col-span-1">
-                <CategoryPieChart subscriptions={subscriptions} />
-              </div>
+            {/* Category Pie Chart */}
+            <div>
+              <CategoryPieChart subscriptions={subscriptions} />
             </div>
           </>
         )}
 
         {/* Tools Tab */}
         {activeTab === 'tools' && (
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-2">
             {/* Tool List */}
-            <div className="lg:col-span-2">
+            <div>
               <h2 className="text-xl font-semibold mb-4">工具列表</h2>
               <ToolList
                 tools={tools}
@@ -336,7 +336,7 @@ export default function Home() {
             </div>
 
             {/* Priority Manager */}
-            <div className="lg:col-span-1">
+            <div>
               <h2 className="text-xl font-semibold mb-4">优先级管理</h2>
               <PriorityManager subscriptions={subscriptions} />
             </div>

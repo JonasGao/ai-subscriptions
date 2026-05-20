@@ -18,13 +18,8 @@ import {
 } from '@dnd-kit/sortable'
 import { Plus, Trash2, Edit2, Check, X as XIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { PriorityScene, Subscription } from '@/lib/types'
 import { SortablePriorityList } from '@/components/SortablePriorityList'
 
@@ -36,9 +31,9 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
   const [scenes, setScenes] = useState<PriorityScene[]>([])
   const [selectedSceneId, setSelectedSceneId] = useState<string>('')
   const [isCreating, setIsCreating] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
-  const [newSceneName, setNewSceneName] = useState('')
+  const [editingSceneId, setEditingSceneId] = useState<string>('')
   const [editingSceneName, setEditingSceneName] = useState('')
+  const [newSceneName, setNewSceneName] = useState('')
   const [loading, setLoading] = useState(true)
 
   const sensors = useSensors(
@@ -98,22 +93,23 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
     }
   }
 
-  const handleDeleteScene = async () => {
-    if (!selectedSceneId) return
+  const handleDeleteScene = async (sceneId: string) => {
     if (!confirm('确定要删除该场景吗？')) return
 
     try {
-      const response = await fetch(`/api/priorities/${selectedSceneId}`, {
+      const response = await fetch(`/api/priorities/${sceneId}`, {
         method: 'DELETE',
       })
 
       if (response.ok) {
-        setScenes(prev => prev.filter(s => s.id !== selectedSceneId))
-        const remainingScenes = scenes.filter(s => s.id !== selectedSceneId)
-        if (remainingScenes.length > 0) {
-          setSelectedSceneId(remainingScenes[0].id)
-        } else {
-          setSelectedSceneId('')
+        setScenes(prev => prev.filter(s => s.id !== sceneId))
+        if (selectedSceneId === sceneId) {
+          const remainingScenes = scenes.filter(s => s.id !== sceneId)
+          if (remainingScenes.length > 0) {
+            setSelectedSceneId(remainingScenes[0].id)
+          } else {
+            setSelectedSceneId('')
+          }
         }
       }
     } catch (error) {
@@ -123,10 +119,10 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
   }
 
   const handleRenameScene = async () => {
-    if (!editingSceneName.trim() || !selectedSceneId) return
+    if (!editingSceneName.trim() || !editingSceneId) return
 
     try {
-      const response = await fetch(`/api/priorities/${selectedSceneId}`, {
+      const response = await fetch(`/api/priorities/${editingSceneId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: editingSceneName.trim() }),
@@ -138,7 +134,7 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
           prev.map(s => s.id === updatedScene.id ? updatedScene : s)
         )
         setEditingSceneName('')
-        setIsEditing(false)
+        setEditingSceneId('')
       } else {
         const error = await response.json()
         alert(error.error || '重命名场景失败')
@@ -162,11 +158,12 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
     updateSceneOrder(newOrder)
   }
 
-  const updateSceneOrder = async (newOrder: string[]) => {
-    if (!selectedSceneId) return
+  const updateSceneOrder = async (newOrder: string[], sceneId?: string) => {
+    const targetSceneId = sceneId || selectedSceneId
+    if (!targetSceneId) return
 
     try {
-      const response = await fetch(`/api/priorities/${selectedSceneId}`, {
+      const response = await fetch(`/api/priorities/${targetSceneId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -186,188 +183,241 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
     }
   }
 
-  const handleRemoveSubscription = async (subscriptionId: string) => {
-    if (!selectedScene) return
+  const handleRemoveSubscription = async (subscriptionId: string, sceneId?: string) => {
+    const scene = scenes.find(s => s.id === (sceneId || selectedSceneId))
+    if (!scene) return
 
-    const newOrder = selectedScene.subscriptionOrder.filter(id => id !== subscriptionId)
-    await updateSceneOrder(newOrder)
+    const newOrder = scene.subscriptionOrder.filter(id => id !== subscriptionId)
+    await updateSceneOrder(newOrder, sceneId)
   }
 
-  const handleAddSubscription = async (subscriptionId: string) => {
-    if (!selectedScene) return
+  const handleAddSubscription = async (subscriptionId: string, sceneId?: string) => {
+    const scene = scenes.find(s => s.id === (sceneId || selectedSceneId))
+    if (!scene) return
 
-    const newOrder = [...selectedScene.subscriptionOrder, subscriptionId]
-    await updateSceneOrder(newOrder)
+    const newOrder = [...scene.subscriptionOrder, subscriptionId]
+    await updateSceneOrder(newOrder, sceneId)
   }
 
-  const availableSubscriptions = subscriptions.filter(
-    s => !selectedScene?.subscriptionOrder.includes(s.id)
-  )
+  const getAvailableSubscriptions = (sceneId: string) => {
+    const scene = scenes.find(s => s.id === sceneId)
+    return subscriptions.filter(s => !scene?.subscriptionOrder.includes(s.id))
+  }
 
   if (loading) {
     return (
-      <div className="p-4 border rounded-lg bg-gray-50">
-        <div className="text-center text-gray-500 py-8">加载中...</div>
-      </div>
+      <Card>
+        <CardContent className="py-8">
+          <div className="text-center text-muted-foreground">加载中...</div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (scenes.length === 0 && !isCreating) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            优先级管理
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCreating(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              创建场景
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-muted-foreground py-4">
+            暂无场景，点击上方按钮创建新场景
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div className="p-4 border rounded-lg bg-gray-50">
-      <h3 className="text-lg font-semibold mb-4">优先级管理</h3>
-
-      {/* Scene selector */}
-      <div className="flex gap-2 mb-4">
-        {scenes.length > 0 ? (
-          <>
-            <Select value={selectedSceneId} onValueChange={setSelectedSceneId}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="选择场景" />
-              </SelectTrigger>
-              <SelectContent>
-                {scenes.map(scene => (
-                  <SelectItem key={scene.id} value={scene.id}>
-                    {scene.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            {!isEditing && (
-              <>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    setIsEditing(true)
-                    setEditingSceneName(selectedScene?.name || '')
-                  }}
-                >
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleDeleteScene}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </>
-        ) : (
-          <div className="flex-1 text-sm text-gray-500">暂无场景，请创建新场景</div>
-        )}
-
-        {!isCreating && !isEditing && (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setIsCreating(true)}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-
+    <div className="space-y-4">
       {/* Scene creation form */}
       {isCreating && (
-        <div className="flex gap-2 mb-4">
-          <input
-            type="text"
-            value={newSceneName}
-            onChange={(e) => setNewSceneName(e.target.value)}
-            placeholder="场景名称"
-            className="flex-1 px-3 py-2 border rounded-md text-sm"
-            autoFocus
-          />
-          <Button size="icon" onClick={handleCreateScene}>
-            <Check className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => {
-              setIsCreating(false)
-              setNewSceneName('')
-            }}
-          >
-            <XIcon className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
-      {/* Scene rename form */}
-      {isEditing && selectedScene && (
-        <div className="flex gap-2 mb-4">
-          <input
-            type="text"
-            value={editingSceneName}
-            onChange={(e) => setEditingSceneName(e.target.value)}
-            placeholder="场景名称"
-            className="flex-1 px-3 py-2 border rounded-md text-sm"
-            autoFocus
-          />
-          <Button size="icon" onClick={handleRenameScene}>
-            <Check className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => {
-              setIsEditing(false)
-              setEditingSceneName('')
-            }}
-          >
-            <XIcon className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
-      {/* Priority list */}
-      {selectedScene && (
-        <div className="mb-4">
-          <h4 className="text-sm font-medium mb-2 text-gray-700">
-            当前优先级（拖拽调整顺序）
-          </h4>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={selectedScene.subscriptionOrder}
-              strategy={verticalListSortingStrategy}
-            >
-              <SortablePriorityList
-                subscriptionOrder={selectedScene.subscriptionOrder}
-                subscriptions={subscriptions}
-                onRemove={handleRemoveSubscription}
+        <Card className="border-primary">
+          <CardContent className="pt-4">
+            <div className="flex gap-2">
+              <Input
+                value={newSceneName}
+                onChange={(e) => setNewSceneName(e.target.value)}
+                placeholder="场景名称"
+                className="flex-1"
+                autoFocus
               />
-            </SortableContext>
-          </DndContext>
-        </div>
+              <Button size="sm" onClick={handleCreateScene}>
+                <Check className="h-4 w-4 mr-1" />
+                创建
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsCreating(false)
+                  setNewSceneName('')
+                }}
+              >
+                <XIcon className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Available subscriptions */}
-      {selectedScene && availableSubscriptions.length > 0 && (
-        <div>
-          <h4 className="text-sm font-medium mb-2 text-gray-700">
-            可用订阅（点击添加到场景）
-          </h4>
-          <div className="space-y-2 max-h-[200px] overflow-y-auto">
-            {availableSubscriptions.map(subscription => (
-              <div
-                key={subscription.id}
-                className="flex items-center justify-between p-2 bg-white border rounded-md shadow-sm hover:shadow cursor-pointer"
-                onClick={() => handleAddSubscription(subscription.id)}
-              >
-                <span className="text-sm">{subscription.name}</span>
-                <Plus className="h-4 w-4 text-gray-400" />
+      {/* Scene cards */}
+      {scenes.map((scene) => {
+        const isSelected = scene.id === selectedSceneId
+        const isEditing = editingSceneId === scene.id
+        const sceneSubscriptions = subscriptions.filter(s => scene.subscriptionOrder.includes(s.id))
+        const availableSubs = getAvailableSubscriptions(scene.id)
+
+        return (
+          <Card 
+            key={scene.id}
+            className={`cursor-pointer transition-all ${isSelected ? 'border-primary ring-1 ring-primary' : ''}`}
+            onClick={() => setSelectedSceneId(scene.id)}
+          >
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                {isEditing ? (
+                  <div className="flex gap-2 flex-1">
+                    <Input
+                      value={editingSceneName}
+                      onChange={(e) => setEditingSceneName(e.target.value)}
+                      placeholder="场景名称"
+                      className="flex-1"
+                      autoFocus
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <Button 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRenameScene()
+                      }}
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setEditingSceneId('')
+                        setEditingSceneName('')
+                      }}
+                    >
+                      <XIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <CardTitle className="text-base">{scene.name}</CardTitle>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditingSceneId(scene.id)
+                          setEditingSceneName(scene.name)
+                        }}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteScene(scene.id)
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
+            </CardHeader>
+            <CardContent>
+              {sceneSubscriptions.length > 0 ? (
+                <div className="space-y-2">
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={scene.subscriptionOrder}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <SortablePriorityList
+                        subscriptionOrder={scene.subscriptionOrder}
+                        subscriptions={subscriptions}
+                        onRemove={(id) => handleRemoveSubscription(id, scene.id)}
+                      />
+                    </SortableContext>
+                  </DndContext>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground py-2">
+                  暂无订阅，点击下方添加
+                </div>
+              )}
+
+              {availableSubs.length > 0 && (
+                <div className="mt-3 pt-3 border-t">
+                  <div className="text-xs text-muted-foreground mb-2">添加订阅：</div>
+                  <div className="flex flex-wrap gap-2">
+                    {availableSubs.slice(0, 6).map(sub => (
+                      <Button
+                        key={sub.id}
+                        variant="outline"
+                        size="sm"
+                        className="h-7"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleAddSubscription(sub.id, scene.id)
+                        }}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        {sub.name}
+                      </Button>
+                    ))}
+                    {availableSubs.length > 6 && (
+                      <span className="text-xs text-muted-foreground">
+                        +{availableSubs.length - 6} 更多
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
+      })}
+
+      {/* Add scene button */}
+      {!isCreating && scenes.length > 0 && (
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => setIsCreating(true)}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          创建新场景
+        </Button>
       )}
     </div>
   )
