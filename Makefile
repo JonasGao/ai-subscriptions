@@ -4,7 +4,7 @@ SERVICE_FILE := ~/.config/systemd/user/${PROJECT_NAME}.service
 NODE_PATH := $(shell which node || echo ~/.nvm/versions/node/v24.13.0/bin/node)
 PORT := 3000
 
-.PHONY: install uninstall start stop restart status logs enable disable
+.PHONY: install uninstall start stop restart status logs enable disable build
 
 install: ## Install systemd user service
 	@echo "Installing ${PROJECT_NAME} service..."
@@ -57,6 +57,9 @@ enable: ## Enable service to start on boot
 disable: ## Disable service from starting on boot
 	@echo "Disabling ${PROJECT_NAME} from starting on boot..."
 	@systemctl --user disable ${PROJECT_NAME}.service
+
+build: ## Build for production
+	npm run build
 
 help: ## Show this help message
 	@echo "Usage: make [target]"
