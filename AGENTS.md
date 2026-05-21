@@ -28,4 +28,10 @@ This project uses Git. See .gitignore for excluded files.
 
 ## Important Notes
 
-<!-- Add project-specific notes here -->
+### Auto Commit Rule
+
+**每次修改代码后，自动执行 git commit 提交变更。**
+
+- 修改完成后，立即检查 `git status`
+- 如果有未提交的变更，执行 `git add` 和 `git commit`
+- 提交信息应简洁描述所做的修改
