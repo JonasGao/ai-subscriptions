@@ -109,6 +109,12 @@ function SortableToolCard({ tool, onEdit, onDelete }: SortableToolCardProps) {
             )}
           </div>
         )}
+        {tool.notes && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">备注:</span>
+            <span className="text-xs text-muted-foreground truncate max-w-[200px]">{tool.notes}</span>
+          </div>
+        )}
         <div className="flex gap-1.5 ml-auto">
           <Button 
             variant="outline" 

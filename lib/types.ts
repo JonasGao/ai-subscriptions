@@ -104,6 +104,7 @@ export interface Tool {
   order: number
   isOpenSource: boolean
   repoUrl?: string
+  notes?: string
   createdAt: string
   updatedAt: string
 }
@@ -120,4 +121,5 @@ export interface ToolFormData {
   forms: string[]
   isOpenSource: boolean
   repoUrl?: string
+  notes?: string
 }

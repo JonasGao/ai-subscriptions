@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
       forms: body.forms || [],
       isOpenSource: body.isOpenSource || false,
       repoUrl: body.repoUrl?.trim() || undefined,
+      notes: body.notes?.trim() || undefined,
     })
     
     return NextResponse.json(newTool, { status: 201 })

@@ -37,6 +37,7 @@ const initialFormData: ToolFormData = {
   forms: [],
   isOpenSource: false,
   repoUrl: '',
+  notes: '',
 }
 
 export function ToolForm({
@@ -66,6 +67,7 @@ export function ToolForm({
         forms: tool.forms || [],
         isOpenSource: tool.isOpenSource || false,
         repoUrl: tool.repoUrl || '',
+        notes: tool.notes || '',
       })
     } else {
       setFormData(initialFormData)
@@ -219,6 +221,17 @@ export function ToolForm({
                 />
               </div>
             )}
+            <div className="grid gap-2">
+              <Label htmlFor="notes">备注</Label>
+              <textarea
+                id="notes"
+                className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={formData.notes}
+                onChange={(e) => handleInputChange('notes', e.target.value)}
+                placeholder="输入备注信息"
+                rows={2}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
