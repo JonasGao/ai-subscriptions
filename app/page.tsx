@@ -212,6 +212,23 @@ export default function Home() {
     setToolFormOpen(true)
   }
 
+  const handleReorderTools = async (toolIds: string[]) => {
+    try {
+      const response = await fetch('/api/tools', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toolIds })
+      })
+      
+      if (response.ok) {
+        const updatedTools = await response.json()
+        setTools(updatedTools)
+      }
+    } catch (error) {
+      console.error('Failed to reorder tools:', error)
+    }
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto py-8 px-4">
@@ -321,22 +338,14 @@ export default function Home() {
 
         {/* Tools Tab */}
         {activeTab === 'tools' && (
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Tool List */}
-            <div>
-              <h2 className="text-xl font-semibold mb-4">工具列表</h2>
-              <ToolList
-                tools={tools}
-                onEdit={handleEditTool}
-                onDelete={handleDeleteTool}
-              />
-            </div>
-
-            {/* Priority Manager */}
-            <div>
-              <h2 className="text-xl font-semibold mb-4">优先级管理</h2>
-              <PriorityManager subscriptions={subscriptions} />
-            </div>
+          <div>
+            <h2 className="text-xl font-semibold mb-4">工具列表</h2>
+            <ToolList
+              tools={tools}
+              onEdit={handleEditTool}
+              onDelete={handleDeleteTool}
+              onReorder={handleReorderTools}
+            />
           </div>
         )}
 

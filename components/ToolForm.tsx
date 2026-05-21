@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Tool, ToolFormData, defaultCategories, Provider, defaultProviders } from "@/lib/types"
+import { cn } from "@/lib/utils"
+import { Tool, ToolFormData, defaultCategories, Provider, defaultProviders, allowedToolForms } from "@/lib/types"
 
 interface ToolFormProps {
   open: boolean
@@ -33,6 +34,9 @@ const initialFormData: ToolFormData = {
   category: defaultCategories[0],
   provider: 'other',
   providerCustom: '',
+  forms: [],
+  isOpenSource: false,
+  repoUrl: '',
 }
 
 export function ToolForm({
@@ -59,6 +63,9 @@ export function ToolForm({
         category: tool.category,
         provider: tool.provider || 'other',
         providerCustom: tool.providerCustom || '',
+        forms: tool.forms || [],
+        isOpenSource: tool.isOpenSource || false,
+        repoUrl: tool.repoUrl || '',
       })
     } else {
       setFormData(initialFormData)
@@ -147,6 +154,68 @@ export function ToolForm({
                   onChange={(e) => handleInputChange('providerCustom', e.target.value)}
                   placeholder="输入自定义提供商名称"
                   required={showCustomProvider}
+                />
+              </div>
+            )}
+            <div className="grid gap-2">
+              <Label>工具形式</Label>
+              <div className="flex flex-wrap gap-4">
+                {allowedToolForms.map((form) => {
+                  const isChecked = formData.forms.includes(form)
+                  return (
+                    <label
+                      key={form}
+                      className={cn(
+                        "flex items-center gap-2 cursor-pointer rounded-md border px-3 py-2 text-sm transition-colors",
+                        isChecked
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-input hover:bg-accent hover:text-accent-foreground"
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        checked={isChecked}
+                        onChange={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            forms: isChecked
+                              ? prev.forms.filter(f => f !== form)
+                              : [...prev.forms, form]
+                          }))
+                        }}
+                      />
+                      {form}
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  checked={formData.isOpenSource}
+                  onChange={(e) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      isOpenSource: e.target.checked,
+                      repoUrl: e.target.checked ? prev.repoUrl : '',
+                    }))
+                  }}
+                />
+                <span className="text-sm font-medium">开源工具</span>
+              </label>
+            </div>
+            {formData.isOpenSource && (
+              <div className="grid gap-2">
+                <Label htmlFor="repoUrl">仓库地址</Label>
+                <Input
+                  id="repoUrl"
+                  value={formData.repoUrl}
+                  onChange={(e) => handleInputChange('repoUrl', e.target.value)}
+                  placeholder="https://github.com/user/repo"
                 />
               </div>
             )}

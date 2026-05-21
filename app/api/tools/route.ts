@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getTools, createTool } from '@/lib/tools'
+import { getTools, createTool, reorderTools } from '@/lib/tools'
 import { ToolFormData } from '@/lib/types'
 
 export async function GET() {
@@ -44,7 +44,10 @@ export async function POST(request: NextRequest) {
       name: body.name.trim(),
       category: body.category.trim(),
       provider: body.provider.trim(),
-      providerCustom: body.providerCustom?.trim()
+      providerCustom: body.providerCustom?.trim(),
+      forms: body.forms || [],
+      isOpenSource: body.isOpenSource || false,
+      repoUrl: body.repoUrl?.trim() || undefined,
     })
     
     return NextResponse.json(newTool, { status: 201 })
@@ -60,6 +63,28 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json(
       { error: 'Failed to create tool' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json()
+    
+    if (!body.toolIds || !Array.isArray(body.toolIds)) {
+      return NextResponse.json(
+        { error: 'toolIds array is required' },
+        { status: 400 }
+      )
+    }
+    
+    const updatedTools = reorderTools(body.toolIds)
+    return NextResponse.json(updatedTools)
+  } catch (error) {
+    console.error('PATCH /api/tools error:', error)
+    return NextResponse.json(
+      { error: 'Failed to reorder tools' },
       { status: 500 }
     )
   }

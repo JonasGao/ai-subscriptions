@@ -46,7 +46,7 @@ export function writeToolData(data: ToolData): void {
 
 export function getTools(): Tool[] {
   const data = readToolData()
-  return data.tools
+  return data.tools.sort((a, b) => (a.order || 0) - (b.order || 0))
 }
 
 export function getToolById(id: string): Tool | null {
@@ -54,17 +54,19 @@ export function getToolById(id: string): Tool | null {
   return tools.find(t => t.id === id) || null
 }
 
-export function createTool(toolData: Omit<Tool, 'id' | 'createdAt' | 'updatedAt'>): Tool {
+export function createTool(toolData: Omit<Tool, 'id' | 'createdAt' | 'updatedAt' | 'order'>): Tool {
   if (!toolData.name || toolData.name.trim() === '') {
     throw new Error('Tool name is required')
   }
   
   const data = readToolData()
   const now = new Date().toISOString()
+  const maxOrder = data.tools.reduce((max, t) => Math.max(max, t.order || 0), 0)
   
   const newTool: Tool = {
     ...toolData,
     id: uuidv4(),
+    order: maxOrder + 1,
     createdAt: now,
     updatedAt: now
   }
@@ -108,4 +110,21 @@ export function deleteTool(id: string): boolean {
   data.tools.splice(index, 1)
   writeToolData(data)
   return true
+}
+
+export function reorderTools(toolIds: string[]): Tool[] {
+  const data = readToolData()
+  
+  toolIds.forEach((id, index) => {
+    const tool = data.tools.find(t => t.id === id)
+    if (tool) {
+      tool.order = index
+      tool.updatedAt = new Date().toISOString()
+    }
+  })
+  
+  data.tools.sort((a, b) => a.order - b.order)
+  writeToolData(data)
+  
+  return data.tools
 }
