@@ -90,6 +90,22 @@ export interface PrioritySceneFormData {
   name: string
 }
 
+export interface ToolPriorityScene {
+  id: string
+  name: string
+  toolOrder: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ToolPriorityData {
+  scenes: ToolPriorityScene[]
+}
+
+export interface ToolPrioritySceneFormData {
+  name: string
+}
+
 export type ToolFormType = 'CLI / TUI' | 'GUI' | 'Web'
 
 export const allowedToolForms: ToolFormType[] = ['CLI / TUI', 'GUI', 'Web']

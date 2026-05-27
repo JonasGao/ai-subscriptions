@@ -14,6 +14,7 @@ import { defaultCategories } from "@/lib/types"
 import { Plus, Settings, AlertTriangle, CreditCard, Wrench } from "lucide-react"
 import Link from "next/link"
 import { PriorityManager } from "@/components/PriorityManager"
+import { ToolPriorityManager } from "@/components/ToolPriorityManager"
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'subscriptions' | 'tools'>('subscriptions')
@@ -338,14 +339,22 @@ export default function Home() {
 
         {/* Tools Tab */}
         {activeTab === 'tools' && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">工具列表</h2>
-            <ToolList
-              tools={tools}
-              onEdit={handleEditTool}
-              onDelete={handleDeleteTool}
-              onReorder={handleReorderTools}
-            />
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-xl font-semibold mb-4">工具列表</h2>
+              <ToolList
+                tools={tools}
+                onEdit={handleEditTool}
+                onDelete={handleDeleteTool}
+                onReorder={handleReorderTools}
+              />
+            </div>
+
+            {/* Tool Priority Manager */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4">工具优先级管理</h2>
+              <ToolPriorityManager tools={tools} />
+            </div>
           </div>
         )}
 
