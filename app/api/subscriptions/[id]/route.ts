@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSubscriptionById, updateSubscription, deleteSubscription } from '@/lib/db'
-import { SubscriptionStatus } from '@/lib/types'
+import { SubscriptionStatus, Subscription } from '@/lib/types'
+
+function stripApiKey(sub: Subscription) {
+  const { apiKey, ...rest } = sub
+  return rest
+}
 
 export async function GET(
   request: NextRequest,
@@ -16,7 +21,7 @@ export async function GET(
       )
     }
     
-    return NextResponse.json(subscription)
+    return NextResponse.json(stripApiKey(subscription))
   } catch (error) {
     console.error('GET /api/subscriptions/[id] error:', error)
     return NextResponse.json(
@@ -50,6 +55,10 @@ export async function PUT(
       )
     }
     
+    if (!body.apiKey) {
+      delete body.apiKey
+    }
+
     const updatedSubscription = updateSubscription(params.id, body)
     
     if (!updatedSubscription) {
@@ -59,7 +68,7 @@ export async function PUT(
       )
     }
     
-    return NextResponse.json(updatedSubscription)
+    return NextResponse.json(stripApiKey(updatedSubscription))
   } catch (error) {
     console.error('PUT /api/subscriptions/[id] error:', error)
     if (error instanceof SyntaxError) {

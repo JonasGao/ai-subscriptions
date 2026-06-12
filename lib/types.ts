@@ -11,6 +11,7 @@ export interface Subscription {
   renewalDate?: string
   status: 'active' | 'paused' | 'cancelled'
   notes?: string
+  apiKey?: string
   createdAt: string
   updatedAt: string
 }
@@ -72,6 +73,7 @@ export interface SubscriptionFormData {
   renewalDate?: string
   status: SubscriptionStatus
   notes?: string
+  apiKey?: string
 }
 
 export interface PriorityScene {
@@ -138,4 +140,16 @@ export interface ToolFormData {
   isOpenSource: boolean
   repoUrl?: string
   notes?: string
+}
+
+export interface BalanceInfo {
+  currency: string
+  totalBalance: string
+  grantedBalance: string
+  toppedUpBalance: string
+}
+
+export interface BalanceResult {
+  isAvailable: boolean
+  balanceInfos: BalanceInfo[]
 }

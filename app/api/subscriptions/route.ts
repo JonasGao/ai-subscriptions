@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSubscriptions, createSubscription } from '@/lib/db'
-import { SubscriptionFormData, SubscriptionType, BillingCycle } from '@/lib/types'
+import { SubscriptionFormData, SubscriptionType, BillingCycle, Subscription } from '@/lib/types'
+
+function stripApiKey(sub: Subscription) {
+  const { apiKey, ...rest } = sub
+  return rest
+}
 
 export async function GET() {
   try {
-    const subscriptions = getSubscriptions()
+    const subscriptions = getSubscriptions().map(stripApiKey)
     return NextResponse.json(subscriptions)
   } catch (error) {
     console.error('GET /api/subscriptions error:', error)
@@ -85,10 +90,11 @@ export async function POST(request: NextRequest) {
       startDate: body.startDate,
       renewalDate: body.renewalDate,
       status: body.status || 'active',
-      notes: body.notes
+      notes: body.notes,
+      apiKey: body.apiKey
     })
     
-    return NextResponse.json(newSubscription, { status: 201 })
+    return NextResponse.json(stripApiKey(newSubscription), { status: 201 })
   } catch (error) {
     console.error('POST /api/subscriptions error:', error)
     if (error instanceof SyntaxError) {

@@ -1,11 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Subscription, defaultProviders } from "@/lib/types"
+import { Subscription, defaultProviders, BalanceResult } from "@/lib/types"
 import { formatDate, isExpiringSoon, getDaysUntilRenewal } from "@/lib/utils"
-import { Edit, Trash2 } from "lucide-react"
+import { Edit, Trash2, Wallet, Loader2 } from "lucide-react"
 
 interface SubscriptionCardProps {
   subscription: Subscription
@@ -52,6 +53,9 @@ function getTypeLabel(type: string): string {
 }
 
 export function SubscriptionCard({ subscription, onEdit, onDelete }: SubscriptionCardProps) {
+  const [balance, setBalance] = useState<BalanceResult | null>(null)
+  const [balanceLoading, setBalanceLoading] = useState(false)
+  const [balanceError, setBalanceError] = useState<string | null>(null)
   const isRecurring = subscription.subscriptionType === 'recurring'
   const expiringSoon = isRecurring && subscription.renewalDate ? isExpiringSoon(subscription.renewalDate) : false
   const daysUntilRenewal = isRecurring && subscription.renewalDate ? getDaysUntilRenewal(subscription.renewalDate) : null
@@ -62,6 +66,26 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
     : subscription.billingCycle === 'yearly' 
       ? `¥${subscription.price.toFixed(2)}/年` 
       : `¥${subscription.price.toFixed(2)}/月`
+  const isDeepSeek = subscription.provider === 'deepseek'
+
+  const handleQueryBalance = async () => {
+    setBalanceLoading(true)
+    setBalanceError(null)
+    try {
+      const res = await fetch(`/api/subscriptions/${subscription.id}/balance`)
+      if (!res.ok) {
+        const err = await res.json()
+        setBalanceError(err.error || '查询失败')
+        return
+      }
+      const data: BalanceResult = await res.json()
+      setBalance(data)
+    } catch {
+      setBalanceError('网络请求失败')
+    } finally {
+      setBalanceLoading(false)
+    }
+  }
   
   return (
     <Card className={`flex flex-col ${expiringSoon ? 'border-orange-500 border-2' : ''}`}>
@@ -100,6 +124,15 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
               </span>
             </div>
           )}
+          {isDeepSeek && balance && balance.balanceInfos.map((info) => (
+            <div key={info.currency} className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">余额 ({info.currency})</span>
+              <span className="text-sm font-medium text-green-600">${info.totalBalance}</span>
+            </div>
+          ))}
+          {balanceError && (
+            <div className="text-sm text-red-500">{balanceError}</div>
+          )}
           {subscription.notes && (
             <div className="pt-2">
               <span className="text-sm text-muted-foreground">备注</span>
@@ -108,6 +141,21 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
           )}
         </div>
         <div className="flex gap-2 pt-4 mt-auto">
+          {isDeepSeek && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleQueryBalance}
+              disabled={balanceLoading}
+            >
+              {balanceLoading ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Wallet className="h-4 w-4 mr-1" />
+              )}
+              额度
+            </Button>
+          )}
           <Button 
             variant="outline" 
             size="sm" 

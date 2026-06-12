@@ -39,7 +39,8 @@ const initialFormData: SubscriptionFormData = {
   startDate: '',
   renewalDate: '',
   status: 'active',
-  notes: ''
+  notes: '',
+  apiKey: ''
 }
 
 export function SubscriptionForm({
@@ -73,6 +74,7 @@ export function SubscriptionForm({
         renewalDate: subscription.renewalDate || '',
         status: subscription.status,
         notes: subscription.notes || '',
+        apiKey: '',
       })
     } else {
       setFormData(initialFormData)
@@ -167,6 +169,18 @@ export function SubscriptionForm({
                   onChange={(e) => handleInputChange('providerCustom', e.target.value)}
                   placeholder="输入自定义提供商名称"
                   required={showCustomProvider}
+                />
+              </div>
+            )}
+            {formData.provider === 'deepseek' && (
+              <div className="grid gap-2">
+                <Label htmlFor="apiKey">API Key</Label>
+                <Input
+                  id="apiKey"
+                  type="password"
+                  value={formData.apiKey || ''}
+                  onChange={(e) => handleInputChange('apiKey', e.target.value)}
+                  placeholder={subscription ? '已配置，留空保持不变' : '输入 DeepSeek API Key'}
                 />
               </div>
             )}
