@@ -15,7 +15,7 @@ export async function GET(
       )
     }
 
-    const supportedProviders = ['deepseek', 'moonshot']
+    const supportedProviders = ['deepseek', 'moonshot', 'siliconflow']
     if (!supportedProviders.includes(subscription.provider)) {
       return NextResponse.json(
         { error: `Balance query is only supported for ${supportedProviders.join(', ')} providers` },
@@ -87,6 +87,44 @@ export async function GET(
           grantedBalance: info.granted_balance,
           toppedUpBalance: info.topped_up_balance
         }))
+      })
+    }
+
+    if (subscription.provider === 'siliconflow') {
+      const response = await fetch('https://api.siliconflow.cn/v1/user/info', {
+        headers: {
+          'Authorization': `Bearer ${subscription.apiKey}`
+        }
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('SiliconFlow API error:', response.status, errorText)
+        return NextResponse.json(
+          { error: `SiliconFlow API returned ${response.status}` },
+          { status: 502 }
+        )
+      }
+
+      const data = await response.json()
+
+      if (data.code !== 20000 || !data.status) {
+        console.error('SiliconFlow API error:', data)
+        return NextResponse.json(
+          { error: data.message || 'SiliconFlow API error' },
+          { status: 502 }
+        )
+      }
+
+      return NextResponse.json({
+        provider: 'siliconflow',
+        isAvailable: data.data.status === 'normal' && parseFloat(data.data.totalBalance) > 0,
+        balanceInfos: [{
+          currency: 'CNY',
+          totalBalance: data.data.totalBalance,
+          grantedBalance: data.data.balance,
+          toppedUpBalance: data.data.chargeBalance
+        }]
       })
     }
 
