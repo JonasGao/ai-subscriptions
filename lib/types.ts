@@ -54,6 +54,7 @@ export const defaultProviders: Provider[] = [
   { id: 'minimax', name: 'MiniMax', description: 'MiniMax 系列', website: 'https://minimaxi.com' },
   { id: 'byteDance', name: '字节跳动', description: '豆包系列', website: 'https://doubao.com' },
   { id: 'baidu', name: '百度', description: '文心一言', website: 'https://yiyan.baidu.com' },
+  { id: 'xiaomi', name: '小米', description: 'MiMo 系列', website: 'https://mimo.mi.com' },
   { id: 'xunfei', name: '讯飞', description: '星火大模型', website: 'https://xinghuo.xfyun.cn' },
   { id: 'ollama', name: 'Ollama', description: '本地模型运行', website: 'https://ollama.ai' },
   { id: 'lmstudio', name: 'LM Studio', description: '本地模型运行', website: 'https://lmstudio.ai' },
