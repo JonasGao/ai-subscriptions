@@ -151,6 +151,7 @@ export interface BalanceInfo {
 }
 
 export interface BalanceResult {
+  provider?: string
   isAvailable: boolean
   balanceInfos: BalanceInfo[]
 }

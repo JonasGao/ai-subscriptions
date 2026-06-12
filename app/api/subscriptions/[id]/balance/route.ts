@@ -15,9 +15,10 @@ export async function GET(
       )
     }
 
-    if (subscription.provider !== 'deepseek') {
+    const supportedProviders = ['deepseek', 'moonshot']
+    if (!supportedProviders.includes(subscription.provider)) {
       return NextResponse.json(
-        { error: 'Balance query is only supported for DeepSeek provider' },
+        { error: `Balance query is only supported for ${supportedProviders.join(', ')} providers` },
         { status: 400 }
       )
     }
@@ -29,32 +30,70 @@ export async function GET(
       )
     }
 
-    const response = await fetch('https://api.deepseek.com/user/balance', {
-      headers: {
-        'Authorization': `Bearer ${subscription.apiKey}`
-      }
-    })
+    if (subscription.provider === 'moonshot') {
+      const response = await fetch('https://api.moonshot.cn/v1/users/me/balance', {
+        headers: {
+          'Authorization': `Bearer ${subscription.apiKey}`
+        }
+      })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('DeepSeek API error:', response.status, errorText)
-      return NextResponse.json(
-        { error: `DeepSeek API returned ${response.status}` },
-        { status: 502 }
-      )
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Moonshot API error:', response.status, errorText)
+        return NextResponse.json(
+          { error: `Moonshot API returned ${response.status}` },
+          { status: 502 }
+        )
+      }
+
+      const data = await response.json()
+
+      return NextResponse.json({
+        provider: 'moonshot',
+        isAvailable: data.status && data.data.available_balance > 0,
+        balanceInfos: [{
+          currency: 'CNY',
+          totalBalance: data.data.available_balance.toFixed(2),
+          grantedBalance: data.data.voucher_balance.toFixed(2),
+          toppedUpBalance: data.data.cash_balance.toFixed(2)
+        }]
+      })
     }
 
-    const data = await response.json()
+    if (subscription.provider === 'deepseek') {
+      const response = await fetch('https://api.deepseek.com/user/balance', {
+        headers: {
+          'Authorization': `Bearer ${subscription.apiKey}`
+        }
+      })
 
-    return NextResponse.json({
-      isAvailable: data.is_available,
-      balanceInfos: (data.balance_infos || []).map((info: { currency: string; total_balance: string; granted_balance: string; topped_up_balance: string }) => ({
-        currency: info.currency,
-        totalBalance: info.total_balance,
-        grantedBalance: info.granted_balance,
-        toppedUpBalance: info.topped_up_balance
-      }))
-    })
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('DeepSeek API error:', response.status, errorText)
+        return NextResponse.json(
+          { error: `DeepSeek API returned ${response.status}` },
+          { status: 502 }
+        )
+      }
+
+      const data = await response.json()
+
+      return NextResponse.json({
+        provider: 'deepseek',
+        isAvailable: data.is_available,
+        balanceInfos: (data.balance_infos || []).map((info: { currency: string; total_balance: string; granted_balance: string; topped_up_balance: string }) => ({
+          currency: info.currency,
+          totalBalance: info.total_balance,
+          grantedBalance: info.granted_balance,
+          toppedUpBalance: info.topped_up_balance
+        }))
+      })
+    }
+
+    return NextResponse.json(
+      { error: 'Unsupported provider' },
+      { status: 400 }
+    )
   } catch (error) {
     console.error('GET /api/subscriptions/[id]/balance error:', error)
     return NextResponse.json(

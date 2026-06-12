@@ -66,7 +66,7 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
     : subscription.billingCycle === 'yearly' 
       ? `¥${subscription.price.toFixed(2)}/年` 
       : `¥${subscription.price.toFixed(2)}/月`
-  const isDeepSeek = subscription.provider === 'deepseek'
+  const isBalanceSupported = ['deepseek', 'moonshot'].includes(subscription.provider)
 
   const handleQueryBalance = async () => {
     setBalanceLoading(true)
@@ -124,11 +124,30 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
               </span>
             </div>
           )}
-          {isDeepSeek && balance && balance.balanceInfos.map((info) => (
-            <div key={info.currency} className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">余额 ({info.currency})</span>
-              <span className="text-sm font-medium text-green-600">${info.totalBalance}</span>
-            </div>
+          {isBalanceSupported && balance && balance.balanceInfos.map((info) => (
+            <>
+              {balance.provider === 'moonshot' ? (
+                <>
+                  <div key={info.currency} className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">可用余额</span>
+                    <span className="text-sm font-medium text-green-600">¥{info.totalBalance}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">代金券</span>
+                    <span className="text-sm font-medium">¥{info.grantedBalance}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">现金余额</span>
+                    <span className="text-sm font-medium">¥{info.toppedUpBalance}</span>
+                  </div>
+                </>
+              ) : (
+                <div key={info.currency} className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">余额 ({info.currency})</span>
+                  <span className="text-sm font-medium text-green-600">${info.totalBalance}</span>
+                </div>
+              )}
+            </>
           ))}
           {balanceError && (
             <div className="text-sm text-red-500">{balanceError}</div>
@@ -141,7 +160,7 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
           )}
         </div>
         <div className="flex gap-2 pt-4 mt-auto">
-          {isDeepSeek && (
+          {isBalanceSupported && (
             <Button
               variant="outline"
               size="sm"
