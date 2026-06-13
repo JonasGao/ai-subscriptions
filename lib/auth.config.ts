@@ -1,6 +1,8 @@
 import type { Session } from "next-auth"
 import type { NextRequest } from "next/server"
 
+const secret = process.env.NEXTAUTH_SECRET || "ai-subscriptions-secret-key-change-in-production"
+
 export const authConfig = {
   providers: [],
   pages: {
@@ -23,6 +25,6 @@ export const authConfig = {
     strategy: "jwt" as const,
     maxAge: 7 * 24 * 60 * 60
   },
-  secret: process.env.NEXTAUTH_SECRET || "ai-subscriptions-secret-key-change-in-production",
+  secret,
   trustHost: true
 }

@@ -45,7 +45,7 @@ export default function LoginPage() {
       } else {
         const sessionRes = await fetch("/api/auth/session")
         const session = await sessionRes.json()
-        
+
         if (session?.user?.isInitial) {
           router.push("/change-password?force=1")
         } else {
@@ -111,7 +111,7 @@ export default function LoginPage() {
             </Button>
             {isInitial && (
               <div className="text-sm text-muted-foreground text-center">
-                默认账号: admin / admin123
+                首次登录，请使用默认凭据登录并修改密码
               </div>
             )}
           </form>

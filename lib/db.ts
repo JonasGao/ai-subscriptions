@@ -3,15 +3,12 @@ import path from 'path'
 import { Subscription, SubscriptionData, SubscriptionStatus, SubscriptionType, BillingCycle, defaultCategories, defaultProviders } from './types'
 import { Provider } from './types'
 import { v4 as uuidv4 } from 'uuid'
+import { ensureDataDir, atomicWriteFile } from './file-ops'
+import { encryptApiKey, decryptApiKey } from './encryption'
 
 const dataDir = path.join(process.cwd(), 'data')
 const dataFile = path.join(dataDir, 'subscriptions.json')
-
-function ensureDataDir(): void {
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true })
-  }
-}
+const prioritiesFile = path.join(dataDir, 'priorities.json')
 
 function getInitialData(): SubscriptionData {
   return {
@@ -22,35 +19,47 @@ function getInitialData(): SubscriptionData {
 
 export function readData(): SubscriptionData {
   ensureDataDir()
-  
+
   if (!fs.existsSync(dataFile)) {
     const initialData = getInitialData()
-    fs.writeFileSync(dataFile, JSON.stringify(initialData, null, 2))
+    atomicWriteFile(dataFile, JSON.stringify(initialData, null, 2))
     return initialData
   }
-  
+
   try {
     const fileContent = fs.readFileSync(dataFile, 'utf-8')
     const data = JSON.parse(fileContent) as SubscriptionData
-    
+
     data.subscriptions = data.subscriptions.map(sub => ({
       ...sub,
       subscriptionType: sub.subscriptionType || 'recurring',
       billingCycle: sub.billingCycle || 'monthly'
     }))
-    
+
+    let needsWrite = false
+    data.subscriptions.forEach(sub => {
+      if (sub.apiKey && !sub.apiKey.includes(':')) {
+        sub.apiKey = encryptApiKey(sub.apiKey)
+        needsWrite = true
+      }
+    })
+
+    if (needsWrite) {
+      atomicWriteFile(dataFile, JSON.stringify(data, null, 2))
+    }
+
     return data
   } catch (error) {
     console.error('Failed to parse data file:', error)
     const initialData = getInitialData()
-    fs.writeFileSync(dataFile, JSON.stringify(initialData, null, 2))
+    atomicWriteFile(dataFile, JSON.stringify(initialData, null, 2))
     return initialData
   }
 }
 
 export function writeData(data: SubscriptionData): void {
   ensureDataDir()
-  fs.writeFileSync(dataFile, JSON.stringify(data, null, 2))
+  atomicWriteFile(dataFile, JSON.stringify(data, null, 2))
 }
 
 export function getSubscriptions(): Subscription[] {
@@ -67,28 +76,28 @@ export function createSubscription(subscriptionData: Omit<Subscription, 'id' | '
   if (!subscriptionData.name || subscriptionData.name.trim() === '') {
     throw new Error('Subscription name is required')
   }
-  
+
   if (typeof subscriptionData.price !== 'number' || subscriptionData.price < 0) {
     throw new Error('Price must be a non-negative number')
   }
-  
+
   const validTypes: SubscriptionType[] = ['recurring', 'one-time']
   if (subscriptionData.subscriptionType && !validTypes.includes(subscriptionData.subscriptionType)) {
     throw new Error('Invalid subscriptionType')
   }
-  
+
   const validBillingCycles: BillingCycle[] = ['monthly', 'yearly']
   if (subscriptionData.billingCycle && !validBillingCycles.includes(subscriptionData.billingCycle)) {
     throw new Error('Invalid billingCycle')
   }
-  
+
   if (subscriptionData.subscriptionType === 'recurring' && !subscriptionData.billingCycle) {
     throw new Error('billingCycle is required for recurring subscriptions')
   }
-  
+
   const data = readData()
   const now = new Date().toISOString()
-  
+
   const newSubscription: Subscription = {
     ...subscriptionData,
     subscriptionType: subscriptionData.subscriptionType || 'recurring',
@@ -96,10 +105,14 @@ export function createSubscription(subscriptionData: Omit<Subscription, 'id' | '
     createdAt: now,
     updatedAt: now
   }
-  
+
+  if (newSubscription.apiKey) {
+    newSubscription.apiKey = encryptApiKey(newSubscription.apiKey)
+  }
+
   data.subscriptions.push(newSubscription)
   writeData(data)
-  
+
   return newSubscription
 }
 
@@ -127,6 +140,10 @@ export function updateSubscription(id: string, updates: Partial<Omit<Subscriptio
     throw new Error('Invalid billingCycle value')
   }
 
+  if (updates.apiKey) {
+    updates.apiKey = encryptApiKey(updates.apiKey)
+  }
+
   const data = readData()
   const index = data.subscriptions.findIndex(s => s.id === id)
 
@@ -147,13 +164,32 @@ export function updateSubscription(id: string, updates: Partial<Omit<Subscriptio
 export function deleteSubscription(id: string): boolean {
   const data = readData()
   const index = data.subscriptions.findIndex(s => s.id === id)
-  
+
   if (index === -1) {
     return false
   }
-  
+
   data.subscriptions.splice(index, 1)
   writeData(data)
+
+  if (fs.existsSync(prioritiesFile)) {
+    try {
+      const pRaw = fs.readFileSync(prioritiesFile, 'utf-8')
+      const pData = JSON.parse(pRaw)
+      let pChanged = false
+      pData.scenes?.forEach((scene: { subscriptionOrder: string[] }) => {
+        const idx = scene.subscriptionOrder.indexOf(id)
+        if (idx !== -1) {
+          scene.subscriptionOrder.splice(idx, 1)
+          pChanged = true
+        }
+      })
+      if (pChanged) {
+        atomicWriteFile(prioritiesFile, JSON.stringify(pData, null, 2))
+      }
+    } catch {}
+  }
+
   return true
 }
 
@@ -164,11 +200,11 @@ export function getCategories(): string[] {
 
 export function addCategory(category: string): string[] {
   const data = readData()
-  
+
   if (data.categories.includes(category)) {
     return data.categories
   }
-  
+
   data.categories.push(category)
   writeData(data)
   return data.categories

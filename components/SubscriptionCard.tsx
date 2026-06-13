@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Subscription, defaultProviders, BalanceResult } from "@/lib/types"
 import { formatDate, isExpiringSoon, getDaysUntilRenewal } from "@/lib/utils"
 import { Edit, Trash2, Wallet, Loader2 } from "lucide-react"
+import { Fragment } from "react"
 
 interface SubscriptionCardProps {
   subscription: Subscription
@@ -61,10 +62,10 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
   const daysUntilRenewal = isRecurring && subscription.renewalDate ? getDaysUntilRenewal(subscription.renewalDate) : null
   const providerName = getProviderName(subscription.provider, subscription.providerCustom)
   const typeLabel = getTypeLabel(subscription.subscriptionType)
-  const priceLabel = subscription.subscriptionType === 'one-time' 
-    ? `¥${subscription.price.toFixed(2)}` 
-    : subscription.billingCycle === 'yearly' 
-      ? `¥${subscription.price.toFixed(2)}/年` 
+  const priceLabel = subscription.subscriptionType === 'one-time'
+    ? `¥${subscription.price.toFixed(2)}`
+    : subscription.billingCycle === 'yearly'
+      ? `¥${subscription.price.toFixed(2)}/年`
       : `¥${subscription.price.toFixed(2)}/月`
   const isBalanceSupported = ['deepseek', 'moonshot'].includes(subscription.provider)
 
@@ -86,7 +87,7 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
       setBalanceLoading(false)
     }
   }
-  
+
   return (
     <Card className={`flex flex-col ${expiringSoon ? 'border-orange-500 border-2' : ''}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -125,10 +126,10 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
             </div>
           )}
           {isBalanceSupported && balance && balance.balanceInfos.map((info) => (
-            <>
+            <Fragment key={info.currency}>
               {balance.provider === 'moonshot' ? (
                 <>
-                  <div key={info.currency} className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">可用余额</span>
                     <span className="text-sm font-medium text-green-600">¥{info.totalBalance}</span>
                   </div>
@@ -142,12 +143,12 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
                   </div>
                 </>
               ) : (
-                <div key={info.currency} className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">余额 ({info.currency})</span>
                   <span className="text-sm font-medium text-green-600">${info.totalBalance}</span>
                 </div>
               )}
-            </>
+            </Fragment>
           ))}
           {balanceError && (
             <div className="text-sm text-red-500">{balanceError}</div>
@@ -175,17 +176,17 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
               额度
             </Button>
           )}
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => onEdit(subscription)}
           >
             <Edit className="h-4 w-4 mr-1" />
             编辑
           </Button>
-          <Button 
-            variant="destructive" 
-            size="sm" 
+          <Button
+            variant="destructive"
+            size="sm"
             onClick={() => onDelete(subscription.id)}
           >
             <Trash2 className="h-4 w-4 mr-1" />

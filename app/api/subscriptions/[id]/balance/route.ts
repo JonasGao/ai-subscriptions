@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSubscriptionById } from '@/lib/db'
+import { decryptApiKey } from '@/lib/encryption'
+
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
+  }
+}
 
 export async function GET(
   request: NextRequest,
@@ -30,12 +42,13 @@ export async function GET(
       )
     }
 
+    const apiKey = decryptApiKey(subscription.apiKey)
+    const TIMEOUT = 10000
+
     if (subscription.provider === 'moonshot') {
-      const response = await fetch('https://api.moonshot.cn/v1/users/me/balance', {
-        headers: {
-          'Authorization': `Bearer ${subscription.apiKey}`
-        }
-      })
+      const response = await fetchWithTimeout('https://api.moonshot.cn/v1/users/me/balance', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      }, TIMEOUT)
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -48,24 +61,33 @@ export async function GET(
 
       const data = await response.json()
 
+      const availableBalance = data?.data?.available_balance
+      const voucherBalance = data?.data?.voucher_balance
+      const cashBalance = data?.data?.cash_balance
+
+      if (typeof availableBalance !== 'number') {
+        return NextResponse.json(
+          { error: 'Unexpected Moonshot API response format' },
+          { status: 502 }
+        )
+      }
+
       return NextResponse.json({
         provider: 'moonshot',
-        isAvailable: data.status && data.data.available_balance > 0,
+        isAvailable: data.status && availableBalance > 0,
         balanceInfos: [{
           currency: 'CNY',
-          totalBalance: data.data.available_balance.toFixed(2),
-          grantedBalance: data.data.voucher_balance.toFixed(2),
-          toppedUpBalance: data.data.cash_balance.toFixed(2)
+          totalBalance: availableBalance.toFixed(2),
+          grantedBalance: (typeof voucherBalance === 'number' ? voucherBalance : 0).toFixed(2),
+          toppedUpBalance: (typeof cashBalance === 'number' ? cashBalance : 0).toFixed(2)
         }]
       })
     }
 
     if (subscription.provider === 'deepseek') {
-      const response = await fetch('https://api.deepseek.com/user/balance', {
-        headers: {
-          'Authorization': `Bearer ${subscription.apiKey}`
-        }
-      })
+      const response = await fetchWithTimeout('https://api.deepseek.com/user/balance', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      }, TIMEOUT)
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -80,22 +102,20 @@ export async function GET(
 
       return NextResponse.json({
         provider: 'deepseek',
-        isAvailable: data.is_available,
+        isAvailable: data.is_available ?? false,
         balanceInfos: (data.balance_infos || []).map((info: { currency: string; total_balance: string; granted_balance: string; topped_up_balance: string }) => ({
-          currency: info.currency,
-          totalBalance: info.total_balance,
-          grantedBalance: info.granted_balance,
-          toppedUpBalance: info.topped_up_balance
+          currency: info.currency || 'USD',
+          totalBalance: info.total_balance || '0',
+          grantedBalance: info.granted_balance || '0',
+          toppedUpBalance: info.topped_up_balance || '0'
         }))
       })
     }
 
     if (subscription.provider === 'siliconflow') {
-      const response = await fetch('https://api.siliconflow.cn/v1/user/info', {
-        headers: {
-          'Authorization': `Bearer ${subscription.apiKey}`
-        }
-      })
+      const response = await fetchWithTimeout('https://api.siliconflow.cn/v1/user/info', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      }, TIMEOUT)
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -116,14 +136,26 @@ export async function GET(
         )
       }
 
+      const totalBalance = data.data?.totalBalance
+      const balance = data.data?.balance
+      const chargeBalance = data.data?.chargeBalance
+      const status = data.data?.status
+
+      if (!totalBalance || !status) {
+        return NextResponse.json(
+          { error: 'Unexpected SiliconFlow API response format' },
+          { status: 502 }
+        )
+      }
+
       return NextResponse.json({
         provider: 'siliconflow',
-        isAvailable: data.data.status === 'normal' && parseFloat(data.data.totalBalance) > 0,
+        isAvailable: status === 'normal' && parseFloat(totalBalance) > 0,
         balanceInfos: [{
           currency: 'CNY',
-          totalBalance: data.data.totalBalance,
-          grantedBalance: data.data.balance,
-          toppedUpBalance: data.data.chargeBalance
+          totalBalance: totalBalance,
+          grantedBalance: balance || '0',
+          toppedUpBalance: chargeBalance || '0'
         }]
       })
     }
@@ -133,6 +165,12 @@ export async function GET(
       { status: 400 }
     )
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return NextResponse.json(
+        { error: 'Balance query timed out' },
+        { status: 504 }
+      )
+    }
     console.error('GET /api/subscriptions/[id]/balance error:', error)
     return NextResponse.json(
       { error: 'Failed to query balance' },

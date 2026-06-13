@@ -40,6 +40,15 @@ const initialFormData: ToolFormData = {
   notes: '',
 }
 
+function isValidUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 export function ToolForm({
   open,
   onOpenChange,
@@ -49,14 +58,15 @@ export function ToolForm({
 }: ToolFormProps) {
   const [formData, setFormData] = useState<ToolFormData>(initialFormData)
   const [providers, setProviders] = useState<Provider[]>(defaultProviders)
-  
+  const [urlError, setUrlError] = useState('')
+
   useEffect(() => {
     fetch('/api/providers')
       .then(res => res.json())
       .then(data => setProviders(data))
       .catch(() => setProviders(defaultProviders))
   }, [])
-  
+
   useEffect(() => {
     if (tool) {
       setFormData({
@@ -72,23 +82,28 @@ export function ToolForm({
     } else {
       setFormData(initialFormData)
     }
+    setUrlError('')
   }, [tool, open])
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (formData.repoUrl && !isValidUrl(formData.repoUrl)) {
+      setUrlError('仓库地址必须是有效的 HTTP 或 HTTPS URL')
+      return
+    }
     onSubmit(formData)
     onOpenChange(false)
   }
-  
-  const handleInputChange = (field: keyof ToolFormData, value: string) => {
+
+  const handleInputChange = (field: keyof ToolFormData, value: string | boolean | string[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
   }
-  
+
   const showCustomProvider = formData.provider === 'other'
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[400px]">
@@ -179,12 +194,10 @@ export function ToolForm({
                         className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                         checked={isChecked}
                         onChange={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            forms: isChecked
-                              ? prev.forms.filter(f => f !== form)
-                              : [...prev.forms, form]
-                          }))
+                          const newForms = isChecked
+                            ? formData.forms.filter(f => f !== form)
+                            : [...formData.forms, form]
+                          handleInputChange('forms', newForms)
                         }}
                       />
                       {form}
@@ -200,11 +213,10 @@ export function ToolForm({
                   className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                   checked={formData.isOpenSource}
                   onChange={(e) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      isOpenSource: e.target.checked,
-                      repoUrl: e.target.checked ? prev.repoUrl : '',
-                    }))
+                    handleInputChange('isOpenSource', e.target.checked)
+                    if (!e.target.checked) {
+                      handleInputChange('repoUrl', '')
+                    }
                   }}
                 />
                 <span className="text-sm font-medium">开源工具</span>
@@ -216,9 +228,15 @@ export function ToolForm({
                 <Input
                   id="repoUrl"
                   value={formData.repoUrl}
-                  onChange={(e) => handleInputChange('repoUrl', e.target.value)}
+                  onChange={(e) => {
+                    handleInputChange('repoUrl', e.target.value)
+                    setUrlError('')
+                  }}
                   placeholder="https://github.com/user/repo"
                 />
+                {urlError && (
+                  <p className="text-xs text-destructive">{urlError}</p>
+                )}
               </div>
             )}
             <div className="grid gap-2">
