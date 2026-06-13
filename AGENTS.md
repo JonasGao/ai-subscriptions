@@ -1,37 +1,80 @@
-# Project Instructions
+# AI Subscriptions Project
 
-This file provides context for AI assistants working on this project.
+Next.js 14 App Router app for managing AI subscriptions with local JSON storage and NextAuth authentication.
 
-## Project Type: Node.js
+## Commands
 
-### Commands
-- Install: `npm install`
-- Test: `npm test`
-- Build: `npm run build`
-- Start: `npm start`
+```bash
+npm run dev      # Development server
+npm run build    # Production build
+npm run lint     # ESLint check
+npm start        # Production server (port 3000)
+```
 
-### Framework: Next.js
+**Note:** No test suite exists. `npm test` will fail.
 
-### Documentation
-See README.md for project overview.
+## Architecture
 
-### Version Control
-This project uses Git. See .gitignore for excluded files.
+- **Data storage**: `data/*.json` files (subscriptions.json, priorities.json, auth.json, tools.json)
+  - Auto-created on first run
+  - Gitignored (contains credentials and user data)
+- **Auth**: NextAuth v5 (beta) with credentials provider
+  - Default: `admin/admin123` (prompted to change on first login)
+- **Path alias**: `@/*` maps to project root
 
+## Key Files
 
-## Guidelines
+| Path | Purpose |
+|------|---------|
+| `lib/db.ts` | Subscription CRUD + category management |
+| `lib/tools.ts` | Tool management |
+| `lib/priorities.ts` | Priority scene management |
+| `lib/auth.ts` | NextAuth config + password change |
+| `lib/types.ts` | All TypeScript types + default providers/categories |
 
-- Follow existing code style and patterns
-- Write tests for new functionality
-- Keep changes focused and atomic
-- Document public APIs
+## Deployment
 
-## Important Notes
+Systemd service via Makefile:
 
-### Auto Commit Rule
+```bash
+make install    # Create user service
+make start      # Start service
+make stop       # Stop service
+make status     # Check status
+make logs       # View logs (journalctl)
+make enable     # Enable on boot
+```
 
-**每次修改代码后，自动执行 git commit 提交变更。**
+Service runs on port 3000, uses Node v24.13.0 from NVM.
 
-- 修改完成后，立即检查 `git status`
-- 如果有未提交的变更，执行 `git add` 和 `git commit`
-- 提交信息应简洁描述所做的修改
+## Import Convention
+
+Use `@/` alias for all imports from lib/components:
+
+```typescript
+import { Subscription } from '@/lib/types'
+import { StatsCards } from '@/components/StatsCards'
+```
+
+## Data Model
+
+- **Subscription**: recurring/one-time, billingCycle (monthly/yearly), status (active/paused/cancelled)
+- **Tool**: forms (CLI/TUI, GUI, Web), isOpenSource, order field for sorting
+- **PriorityScene**: subscription/tool order arrays for drag-drop priority management
+
+## RTK Token Optimization
+
+Prefix shell commands with `rtk` to compress output (saves 60-90% tokens):
+
+```bash
+rtk git status
+rtk git log -10
+```
+
+## Auto Commit
+
+After code changes, auto-commit:
+
+```bash
+git status && git add . && git commit -m "<message>"
+```
