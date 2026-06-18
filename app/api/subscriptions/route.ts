@@ -91,7 +91,8 @@ export async function POST(request: NextRequest) {
       renewalDate: body.renewalDate,
       status: body.status || 'active',
       notes: body.notes,
-      apiKey: body.apiKey
+      apiKey: body.apiKey,
+      balance: body.balance,
     })
     
     return NextResponse.json(stripApiKey(newSubscription), { status: 201 })

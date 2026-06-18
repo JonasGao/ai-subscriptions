@@ -81,6 +81,10 @@ export function createSubscription(subscriptionData: Omit<Subscription, 'id' | '
     throw new Error('Price must be a non-negative number')
   }
 
+  if (subscriptionData.balance !== undefined && (typeof subscriptionData.balance !== 'number' || subscriptionData.balance < 0)) {
+    throw new Error('Balance must be a non-negative number')
+  }
+
   const validTypes: SubscriptionType[] = ['recurring', 'one-time']
   if (subscriptionData.subscriptionType && !validTypes.includes(subscriptionData.subscriptionType)) {
     throw new Error('Invalid subscriptionType')
@@ -123,6 +127,10 @@ export function updateSubscription(id: string, updates: Partial<Omit<Subscriptio
 
   if (updates.price !== undefined && (typeof updates.price !== 'number' || updates.price < 0)) {
     throw new Error('Price must be a non-negative number')
+  }
+
+  if (updates.balance !== undefined && (typeof updates.balance !== 'number' || updates.balance < 0)) {
+    throw new Error('Balance must be a non-negative number')
   }
 
   const validStatuses: SubscriptionStatus[] = ['active', 'paused', 'cancelled']

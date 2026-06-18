@@ -40,7 +40,8 @@ const initialFormData: SubscriptionFormData = {
   renewalDate: '',
   status: 'active',
   notes: '',
-  apiKey: ''
+  apiKey: '',
+  balance: undefined
 }
 
 export function SubscriptionForm({
@@ -75,6 +76,7 @@ export function SubscriptionForm({
         status: subscription.status,
         notes: subscription.notes || '',
         apiKey: '',
+        balance: subscription.balance,
       })
     } else {
       setFormData(initialFormData)
@@ -268,6 +270,20 @@ export function SubscriptionForm({
                 </div>
               )}
             </div>
+            {!isRecurring && formData.provider !== 'deepseek' && formData.provider !== 'moonshot' && (
+              <div className="grid gap-2">
+                <Label htmlFor="balance">余额 (¥)</Label>
+                <Input
+                  id="balance"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.balance ?? ''}
+                  onChange={(e) => handleInputChange('balance', e.target.value ? parseFloat(e.target.value) : 0)}
+                  placeholder="手动输入余额"
+                />
+              </div>
+            )}
             {isRecurring && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-2">

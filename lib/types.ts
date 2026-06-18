@@ -12,6 +12,7 @@ export interface Subscription {
   status: 'active' | 'paused' | 'cancelled'
   notes?: string
   apiKey?: string
+  balance?: number
   createdAt: string
   updatedAt: string
 }
@@ -75,6 +76,7 @@ export interface SubscriptionFormData {
   status: SubscriptionStatus
   notes?: string
   apiKey?: string
+  balance?: number
 }
 
 export interface PriorityScene {

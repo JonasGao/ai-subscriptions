@@ -68,6 +68,7 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
       ? `¥${subscription.price.toFixed(2)}/年`
       : `¥${subscription.price.toFixed(2)}/月`
   const isBalanceSupported = ['deepseek', 'moonshot'].includes(subscription.provider)
+  const isOneTime = subscription.subscriptionType === 'one-time'
 
   const handleQueryBalance = async () => {
     setBalanceLoading(true)
@@ -81,6 +82,12 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
       }
       const data: BalanceResult = await res.json()
       setBalance(data)
+      const total = data.balanceInfos.reduce((sum, i) => sum + parseFloat(i.totalBalance || '0'), 0)
+      await fetch(`/api/subscriptions/${subscription.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ balance: total }),
+      })
     } catch {
       setBalanceError('网络请求失败')
     } finally {
@@ -114,6 +121,16 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
             <span className="text-sm text-muted-foreground">{isRecurring ? '价格' : '充值金额'}</span>
             <span className="text-sm font-medium">{priceLabel}</span>
           </div>
+          {isOneTime && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">余额</span>
+              <span className="text-sm font-medium text-green-600">
+                {isBalanceSupported
+                  ? (balance ? `¥${balance.balanceInfos.reduce((s, i) => s + parseFloat(i.totalBalance || '0'), 0).toFixed(2)}` : subscription.balance != null ? `¥${subscription.balance.toFixed(2)}` : '-')
+                  : subscription.balance != null ? `¥${subscription.balance.toFixed(2)}` : '-'}
+              </span>
+            </div>
+          )}
           {isRecurring && subscription.renewalDate && (
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">续费日期</span>
