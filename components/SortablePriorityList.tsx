@@ -3,6 +3,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, X } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Subscription } from '@/lib/types'
 
 interface SortableItemProps {
@@ -41,7 +42,11 @@ function SortableItem({ id, subscription, onRemove }: SortableItemProps) {
         <GripVertical className="h-4 w-4 text-gray-400" />
       </button>
       
-      <span className="flex-1 text-sm">{subscription.name}</span>
+      <span className="flex-1 text-sm truncate">{subscription.name}</span>
+      
+      <Badge variant={subscription.status === 'active' ? 'success' : subscription.status === 'paused' ? 'warning' : 'outline'} className="text-xs shrink-0">
+        {subscription.status === 'active' ? '活跃' : subscription.status === 'paused' ? '暂停' : '已取消'}
+      </Badge>
       
       <button
         onClick={() => onRemove(subscription.id)}
