@@ -58,7 +58,7 @@ import { StatsCards } from '@/components/StatsCards'
 
 ## Data Model
 
-- **Subscription**: recurring/one-time, billingCycle (monthly/yearly), status (active/paused/cancelled)
+- **Subscription**: recurring/one-time, billingCycle (monthly/yearly), status (active/paused/cancelled), balance (optional, for one-time)
 - **Tool**: forms (CLI/TUI, GUI, Web), isOpenSource, order field for sorting
 - **PriorityScene**: subscription/tool order arrays for drag-drop priority management
 
@@ -71,10 +71,10 @@ rtk git status
 rtk git log -10
 ```
 
-## Auto Commit
+## Commit Per Phase
 
-After code changes, auto-commit:
+Commit after each completed development phase. Do not batch multiple phases into a single commit.
 
 ```bash
-git status && git add . && git commit -m "<message>"
+git status && git add <relevant-files> && git commit -m "<message>"
 ```
