@@ -28,6 +28,7 @@ interface ToolListProps {
   onEdit: (tool: Tool) => void
   onDelete: (id: string) => void
   onReorder: (toolIds: string[]) => void
+  onStatusChange: (id: string, status: Tool['status']) => void
 }
 
 function getProviderName(provider: string, providerCustom?: string): string {
@@ -38,13 +39,20 @@ function getProviderName(provider: string, providerCustom?: string): string {
   return found?.name || provider
 }
 
+const statusConfig: Record<Tool['status'], { variant: "success" | "warning" | "outline"; label: string; next: Tool['status'] }> = {
+  active: { variant: 'success', label: '活跃', next: 'paused' },
+  paused: { variant: 'warning', label: '暂停', next: 'cancelled' },
+  cancelled: { variant: 'outline', label: '已取消', next: 'active' },
+}
+
 interface SortableToolCardProps {
   tool: Tool
   onEdit: (tool: Tool) => void
   onDelete: (id: string) => void
+  onStatusChange: (id: string, status: Tool['status']) => void
 }
 
-function SortableToolCard({ tool, onEdit, onDelete }: SortableToolCardProps) {
+function SortableToolCard({ tool, onEdit, onDelete, onStatusChange }: SortableToolCardProps) {
   const {
     attributes,
     listeners,
@@ -73,6 +81,14 @@ function SortableToolCard({ tool, onEdit, onDelete }: SortableToolCardProps) {
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </button>
         <CardTitle className="text-base font-medium">{tool.name}</CardTitle>
+        <Badge
+          variant={statusConfig[tool.status].variant}
+          className="text-xs cursor-pointer select-none"
+          onClick={() => onStatusChange(tool.id, statusConfig[tool.status].next)}
+          title={`点击切换为 ${statusConfig[statusConfig[tool.status].next].label}`}
+        >
+          {statusConfig[tool.status].label}
+        </Badge>
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-muted-foreground">分类:</span>
           <Badge variant="outline" className="text-xs">{tool.category}</Badge>
@@ -138,7 +154,7 @@ function SortableToolCard({ tool, onEdit, onDelete }: SortableToolCardProps) {
   )
 }
 
-export function ToolList({ tools, onEdit, onDelete, onReorder }: ToolListProps) {
+export function ToolList({ tools, onEdit, onDelete, onReorder, onStatusChange }: ToolListProps) {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -185,6 +201,7 @@ export function ToolList({ tools, onEdit, onDelete, onReorder }: ToolListProps) 
               tool={tool}
               onEdit={onEdit}
               onDelete={onDelete}
+              onStatusChange={onStatusChange}
             />
           ))}
         </div>

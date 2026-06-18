@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { Tool, ToolData } from './types'
+import { Tool, ToolData, ToolStatus } from './types'
 import { v4 as uuidv4 } from 'uuid'
 import { ensureDataDir, atomicWriteFile } from './file-ops'
 

@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { Tool, ToolFormData, defaultCategories, Provider, defaultProviders, allowedToolForms } from "@/lib/types"
+import { Tool, ToolFormData, ToolStatus, defaultCategories, Provider, defaultProviders, allowedToolForms } from "@/lib/types"
 
 interface ToolFormProps {
   open: boolean
@@ -37,6 +37,7 @@ const initialFormData: ToolFormData = {
   forms: [],
   isOpenSource: false,
   repoUrl: '',
+  status: 'active',
   notes: '',
 }
 
@@ -77,6 +78,7 @@ export function ToolForm({
         forms: tool.forms || [],
         isOpenSource: tool.isOpenSource || false,
         repoUrl: tool.repoUrl || '',
+        status: tool.status || 'active',
         notes: tool.notes || '',
       })
     } else {
@@ -239,6 +241,22 @@ export function ToolForm({
                 )}
               </div>
             )}
+            <div className="grid gap-2">
+              <Label htmlFor="status">状态</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => handleInputChange('status', value as ToolStatus)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">活跃</SelectItem>
+                  <SelectItem value="paused">暂停</SelectItem>
+                  <SelectItem value="cancelled">已取消</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="notes">备注</Label>
               <textarea

@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
       forms: body.forms || [],
       isOpenSource: body.isOpenSource || false,
       repoUrl: body.repoUrl?.trim() || undefined,
+      status: body.status || 'active',
       notes: body.notes?.trim() || undefined,
     })
 

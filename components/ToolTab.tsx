@@ -102,6 +102,22 @@ export function ToolTab({ categories }: ToolTabProps) {
     setToolFormOpen(true)
   }
 
+  const handleToolStatusChange = async (id: string, status: Tool['status']) => {
+    try {
+      const response = await fetch(`/api/tools/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      })
+      if (response.ok) {
+        const updated = await response.json()
+        setTools(prev => prev.map(t => t.id === id ? updated : t))
+      }
+    } catch (error) {
+      console.error('Failed to update tool status:', error)
+    }
+  }
+
   const handleReorderTools = async (toolIds: string[]) => {
     try {
       const response = await fetch('/api/tools', {
@@ -152,6 +168,7 @@ export function ToolTab({ categories }: ToolTabProps) {
           onEdit={handleEditTool}
           onDelete={handleDeleteTool}
           onReorder={handleReorderTools}
+          onStatusChange={handleToolStatusChange}
         />
       )}
 

@@ -125,6 +125,7 @@ export interface Tool {
   order: number
   isOpenSource: boolean
   repoUrl?: string
+  status: 'active' | 'paused' | 'cancelled'
   notes?: string
   createdAt: string
   updatedAt: string
@@ -134,6 +135,8 @@ export interface ToolData {
   tools: Tool[]
 }
 
+export type ToolStatus = 'active' | 'paused' | 'cancelled'
+
 export interface ToolFormData {
   name: string
   category: string
@@ -142,6 +145,7 @@ export interface ToolFormData {
   forms: string[]
   isOpenSource: boolean
   repoUrl?: string
+  status: ToolStatus
   notes?: string
 }
 
