@@ -174,7 +174,7 @@ export function SubscriptionForm({
                 />
               </div>
             )}
-            {formData.provider === 'deepseek' && (
+            {formData.provider === 'deepseek' || formData.provider === 'openrouter' ? (
               <div className="grid gap-2">
                 <Label htmlFor="apiKey">API Key</Label>
                 <Input
@@ -182,10 +182,10 @@ export function SubscriptionForm({
                   type="password"
                   value={formData.apiKey || ''}
                   onChange={(e) => handleInputChange('apiKey', e.target.value)}
-                  placeholder={subscription ? '已配置，留空保持不变' : '输入 DeepSeek API Key'}
+                  placeholder={subscription ? '已配置，留空保持不变' : `输入 ${providers.find(p => p.id === formData.provider)?.name || formData.provider} API Key`}
                 />
               </div>
-            )}
+            ) : null}
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-2">
                 <Label htmlFor="subscriptionType">订阅类型 *</Label>
@@ -270,7 +270,7 @@ export function SubscriptionForm({
                 </div>
               )}
             </div>
-            {!isRecurring && formData.provider !== 'deepseek' && formData.provider !== 'moonshot' && (
+            {!isRecurring && formData.provider !== 'deepseek' && formData.provider !== 'moonshot' && formData.provider !== 'openrouter' && (
               <div className="grid gap-2">
                 <Label htmlFor="balance">余额 (¥)</Label>
                 <Input

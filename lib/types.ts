@@ -52,6 +52,7 @@ export const defaultProviders: Provider[] = [
   { id: 'deepseek', name: 'DeepSeek', description: 'DeepSeek 系列', website: 'https://deepseek.com' },
   { id: 'zhipu', name: '智谱 AI', description: 'GLM 系列', website: 'https://bigmodel.cn' },
   { id: 'siliconflow', name: 'SiliconFlow', description: '模型托管平台', website: 'https://siliconflow.cn' },
+  { id: 'openrouter', name: 'OpenRouter', description: '多模型统一 API', website: 'https://openrouter.ai' },
   { id: 'minimax', name: 'MiniMax', description: 'MiniMax 系列', website: 'https://minimaxi.com' },
   { id: 'byteDance', name: '字节跳动', description: '豆包系列', website: 'https://doubao.com' },
   { id: 'baidu', name: '百度', description: '文心一言', website: 'https://yiyan.baidu.com' },

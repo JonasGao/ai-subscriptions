@@ -67,7 +67,7 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
     : subscription.billingCycle === 'yearly'
       ? `¥${subscription.price.toFixed(2)}/年`
       : `¥${subscription.price.toFixed(2)}/月`
-  const isBalanceSupported = ['deepseek', 'moonshot'].includes(subscription.provider)
+  const isBalanceSupported = ['deepseek', 'moonshot', 'openrouter'].includes(subscription.provider)
   const isOneTime = subscription.subscriptionType === 'one-time'
 
   const handleQueryBalance = async () => {

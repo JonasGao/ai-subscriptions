@@ -29,7 +29,7 @@ export async function GET(
       )
     }
 
-    const supportedProviders = ['deepseek', 'moonshot', 'siliconflow']
+    const supportedProviders = ['deepseek', 'moonshot', 'siliconflow', 'openrouter']
     if (!supportedProviders.includes(subscription.provider)) {
       return NextResponse.json(
         { error: `Balance query is only supported for ${supportedProviders.join(', ')} providers` },
@@ -162,6 +162,48 @@ export async function GET(
           totalBalance: totalBalance,
           grantedBalance: balance || '0',
           toppedUpBalance: chargeBalance || '0'
+        }]
+      }, {
+        headers: { 'Cache-Control': 'no-store' }
+      })
+    }
+
+    if (subscription.provider === 'openrouter') {
+      const response = await fetchWithTimeout('https://openrouter.ai/api/v1/credits', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      }, TIMEOUT)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('OpenRouter API error:', response.status, errorText)
+        return NextResponse.json(
+          { error: `OpenRouter API returned ${response.status}` },
+          { status: 502 }
+        )
+      }
+
+      const data = await response.json()
+
+      const totalCredits = data?.data?.total_credits
+      const totalUsage = data?.data?.total_usage
+
+      if (typeof totalCredits !== 'number' || typeof totalUsage !== 'number') {
+        return NextResponse.json(
+          { error: 'Unexpected OpenRouter API response format' },
+          { status: 502 }
+        )
+      }
+
+      const remainingCredits = (totalCredits - totalUsage).toFixed(2)
+
+      return NextResponse.json({
+        provider: 'openrouter',
+        isAvailable: parseFloat(remainingCredits) > 0,
+        balanceInfos: [{
+          currency: 'USD',
+          totalBalance: remainingCredits,
+          grantedBalance: totalCredits.toFixed(2),
+          toppedUpBalance: totalUsage.toFixed(2)
         }]
       }, {
         headers: { 'Cache-Control': 'no-store' }
