@@ -26,6 +26,12 @@ export function readToolData(): ToolData {
   try {
     const fileContent = fs.readFileSync(toolsFile, 'utf-8')
     const data = JSON.parse(fileContent) as ToolData
+
+    data.tools = data.tools.map(tool => ({
+      ...tool,
+      status: tool.status || 'active' as ToolStatus
+    }))
+
     return data
   } catch (error) {
     console.error('Failed to parse tools file:', error)
