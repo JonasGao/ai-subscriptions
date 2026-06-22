@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSubscriptionById } from '@/lib/db'
 import { decryptApiKey } from '@/lib/encryption'
 
+export const dynamic = 'force-dynamic'
+
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
@@ -81,6 +83,8 @@ export async function GET(
           grantedBalance: (typeof voucherBalance === 'number' ? voucherBalance : 0).toFixed(2),
           toppedUpBalance: (typeof cashBalance === 'number' ? cashBalance : 0).toFixed(2)
         }]
+      }, {
+        headers: { 'Cache-Control': 'no-store' }
       })
     }
 
@@ -109,6 +113,8 @@ export async function GET(
           grantedBalance: info.granted_balance || '0',
           toppedUpBalance: info.topped_up_balance || '0'
         }))
+      }, {
+        headers: { 'Cache-Control': 'no-store' }
       })
     }
 
@@ -157,6 +163,8 @@ export async function GET(
           grantedBalance: balance || '0',
           toppedUpBalance: chargeBalance || '0'
         }]
+      }, {
+        headers: { 'Cache-Control': 'no-store' }
       })
     }
 

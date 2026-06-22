@@ -74,7 +74,7 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
     setBalanceLoading(true)
     setBalanceError(null)
     try {
-      const res = await fetch(`/api/subscriptions/${subscription.id}/balance`)
+      const res = await fetch(`/api/subscriptions/${subscription.id}/balance`, { cache: 'no-store' })
       if (!res.ok) {
         const err = await res.json()
         setBalanceError(err.error || '查询失败')
