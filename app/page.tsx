@@ -19,8 +19,18 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'subscriptions' | 'tools'>('subscriptions')
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [categories, setCategories] = useState<string[]>(defaultCategories)
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [selectedStatus, setSelectedStatus] = useState<string>('all')
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('selectedCategory') || 'all'
+    }
+    return 'all'
+  })
+  const [selectedStatus, setSelectedStatus] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('selectedStatus') || 'all'
+    }
+    return 'all'
+  })
   const [formOpen, setFormOpen] = useState(false)
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null)
   const [loading, setLoading] = useState(true)
@@ -53,6 +63,16 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category)
+    localStorage.setItem('selectedCategory', category)
+  }
+
+  const handleStatusChange = (status: string) => {
+    setSelectedStatus(status)
+    localStorage.setItem('selectedStatus', status)
   }
 
   const filteredSubscriptions = subscriptions.filter(sub => {
@@ -206,8 +226,9 @@ export default function Home() {
               categories={categories}
               selectedCategory={selectedCategory}
               selectedStatus={selectedStatus}
-              onCategoryChange={setSelectedCategory}
-              onStatusChange={setSelectedStatus}
+              onCategoryChange={handleCategoryChange}
+              onStatusChange={handleStatusChange}
+              className="mb-4"
             />
 
             <div>
