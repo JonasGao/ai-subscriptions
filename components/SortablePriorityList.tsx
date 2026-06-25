@@ -32,14 +32,14 @@ function SortableItem({ id, subscription, onRemove }: SortableItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 p-2 bg-white border rounded-md shadow-sm hover:shadow"
+      className="flex items-center gap-2 p-2 bg-card border rounded-md shadow-sm hover:shadow"
     >
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab touch-none p-1 hover:bg-gray-100 rounded"
+        className="cursor-grab touch-none p-1 hover:bg-accent rounded"
       >
-        <GripVertical className="h-4 w-4 text-gray-400" />
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
       </button>
       
       <span className="flex-1 text-sm truncate">{subscription.name}</span>
@@ -50,7 +50,7 @@ function SortableItem({ id, subscription, onRemove }: SortableItemProps) {
       
       <button
         onClick={() => onRemove(subscription.id)}
-        className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-red-500"
+        className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-destructive"
       >
         <X className="h-4 w-4" />
       </button>
@@ -75,7 +75,7 @@ export function SortablePriorityList({
 
   if (orderedSubscriptions.length === 0) {
     return (
-      <div className="text-sm text-gray-500 text-center py-4">
+      <div className="text-sm text-muted-foreground text-center py-4">
         该场景暂无订阅，请从下方列表添加
       </div>
     )
