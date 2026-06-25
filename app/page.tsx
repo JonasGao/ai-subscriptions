@@ -13,6 +13,7 @@ import { Plus, Settings, AlertTriangle, CreditCard, Wrench } from "lucide-react"
 import Link from "next/link"
 import { PriorityManager } from "@/components/PriorityManager"
 import { ToolTab } from "@/components/ToolTab"
+import { ThemeToggle } from "@/components/ThemeToggle"
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'subscriptions' | 'tools'>('subscriptions')
@@ -162,6 +163,7 @@ export default function Home() {
                 工具
               </Button>
             </div>
+            <ThemeToggle />
             <Link href="/change-password">
               <Button variant="outline" size="icon">
                 <Settings className="h-4 w-4" />
