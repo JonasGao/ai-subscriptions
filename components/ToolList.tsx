@@ -72,7 +72,7 @@ function SortableToolCard({ tool, onEdit, onDelete, onStatusChange }: SortableTo
 
   return (
     <Card ref={setNodeRef} style={style}>
-      <CardContent className="flex items-center gap-3 py-2.5 px-4">
+      <CardContent className="flex items-center gap-3 py-1.5 px-3">
         <button
           className="cursor-grab active:cursor-grabbing touch-none"
           {...attributes}

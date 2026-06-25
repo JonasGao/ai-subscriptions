@@ -199,7 +199,7 @@ export default function Home() {
         )}
 
         {activeTab === 'subscriptions' && (
-          <>
+          <div key="subscriptions" className="animate-fade-in">
             <StatsCards subscriptions={subscriptions} />
 
             <CategoryFilter
@@ -227,11 +227,13 @@ export default function Home() {
             <div>
               <CategoryPieChart subscriptions={subscriptions} />
             </div>
-          </>
+          </div>
         )}
 
         {activeTab === 'tools' && (
-          <ToolTab ref={toolTabRef} categories={categories} />
+          <div key="tools" className="animate-fade-in">
+            <ToolTab ref={toolTabRef} categories={categories} />
+          </div>
         )}
 
         <SubscriptionForm
