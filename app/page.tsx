@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { StatsCards } from "@/components/StatsCards"
 import { CategoryPieChart } from "@/components/CategoryPieChart"
@@ -12,7 +12,7 @@ import { defaultCategories } from "@/lib/types"
 import { Plus, Settings, AlertTriangle, CreditCard, Wrench } from "lucide-react"
 import Link from "next/link"
 import { PriorityManager } from "@/components/PriorityManager"
-import { ToolTab } from "@/components/ToolTab"
+import { ToolTab, ToolTabRef } from "@/components/ToolTab"
 import { ThemeToggle } from "@/components/ThemeToggle"
 
 export default function Home() {
@@ -25,6 +25,7 @@ export default function Home() {
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const toolTabRef = useRef<ToolTabRef>(null)
 
   useEffect(() => {
     loadData()
@@ -173,6 +174,12 @@ export default function Home() {
                 添加订阅
               </Button>
             )}
+            {activeTab === 'tools' && (
+              <Button onClick={() => toolTabRef.current?.openAddForm()}>
+                <Plus className="h-4 w-4 mr-2" />
+                添加工具
+              </Button>
+            )}
           </div>
         </div>
 
@@ -222,7 +229,7 @@ export default function Home() {
         )}
 
         {activeTab === 'tools' && (
-          <ToolTab categories={categories} />
+          <ToolTab ref={toolTabRef} categories={categories} />
         )}
 
         <SubscriptionForm

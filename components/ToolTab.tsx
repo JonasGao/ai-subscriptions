@@ -1,18 +1,21 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { Tool, ToolFormData, defaultProviders } from '@/lib/types'
 import { ToolList } from '@/components/ToolList'
 import { ToolForm } from '@/components/ToolForm'
 import { ToolPriorityManager } from '@/components/ToolPriorityManager'
-import { Button } from '@/components/ui/button'
-import { Plus, AlertTriangle } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 
 interface ToolTabProps {
   categories: string[]
 }
 
-export function ToolTab({ categories }: ToolTabProps) {
+export interface ToolTabRef {
+  openAddForm: () => void
+}
+
+export const ToolTab = forwardRef<ToolTabRef, ToolTabProps>(({ categories }, ref) => {
   const [tools, setTools] = useState<Tool[]>([])
   const [toolFormOpen, setToolFormOpen] = useState(false)
   const [editingTool, setEditingTool] = useState<Tool | null>(null)
@@ -102,6 +105,10 @@ export function ToolTab({ categories }: ToolTabProps) {
     setToolFormOpen(true)
   }
 
+  useImperativeHandle(ref, () => ({
+    openAddForm: handleAddNewTool
+  }))
+
   const handleToolStatusChange = async (id: string, status: Tool['status']) => {
     try {
       const response = await fetch(`/api/tools/${id}`, {
@@ -150,13 +157,7 @@ export function ToolTab({ categories }: ToolTabProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">工具列表</h2>
-        <Button onClick={handleAddNewTool}>
-          <Plus className="h-4 w-4 mr-2" />
-          添加工具
-        </Button>
-      </div>
+      <h2 className="text-xl font-semibold">工具列表</h2>
 
       {loading ? (
         <div className="flex items-center justify-center h-[200px] text-muted-foreground">
@@ -186,4 +187,6 @@ export function ToolTab({ categories }: ToolTabProps) {
       />
     </div>
   )
-}
+})
+
+ToolTab.displayName = 'ToolTab'
