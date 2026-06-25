@@ -148,7 +148,6 @@ export default function Home() {
             <div className="flex gap-1 border rounded-md p-1">
               <Button
                 variant={activeTab === 'subscriptions' ? 'default' : 'ghost'}
-                size="sm"
                 onClick={() => setActiveTab('subscriptions')}
               >
                 <CreditCard className="h-4 w-4 mr-1" />
@@ -156,7 +155,6 @@ export default function Home() {
               </Button>
               <Button
                 variant={activeTab === 'tools' ? 'default' : 'ghost'}
-                size="sm"
                 onClick={() => setActiveTab('tools')}
               >
                 <Wrench className="h-4 w-4 mr-1" />
