@@ -32,7 +32,7 @@ function SortableToolItem({ id, tool, onRemove }: SortableToolItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 p-2 bg-card border rounded-md shadow-sm hover:shadow"
+      className="flex items-center gap-2 p-2 bg-card border border-border rounded-md shadow-sm hover:shadow"
     >
       <button
         {...attributes}

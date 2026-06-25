@@ -128,7 +128,7 @@ export function SceneCard({
         )}
 
         {availableItems.length > 0 && (
-          <div className="mt-3 pt-3 border-t">
+          <div className="mt-3 pt-3 border-t border-border">
             <div className="text-xs text-muted-foreground mb-2">{addLabel}</div>
             <div className="flex flex-wrap gap-2">
               {availableItems.slice(0, 6).map(item => (
