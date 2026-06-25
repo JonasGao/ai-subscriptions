@@ -146,10 +146,11 @@ export default function Home() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">AI订阅管理</h1>
           <div className="flex gap-2">
-            <div className="flex gap-1 border rounded-md p-1">
+            <div className="flex border rounded-md overflow-hidden">
               <Button
                 variant={activeTab === 'subscriptions' ? 'default' : 'ghost'}
                 onClick={() => setActiveTab('subscriptions')}
+                className="rounded-none border-0"
               >
                 <CreditCard className="h-4 w-4 mr-1" />
                 订阅
@@ -157,6 +158,7 @@ export default function Home() {
               <Button
                 variant={activeTab === 'tools' ? 'default' : 'ghost'}
                 onClick={() => setActiveTab('tools')}
+                className="rounded-none border-0"
               >
                 <Wrench className="h-4 w-4 mr-1" />
                 工具
