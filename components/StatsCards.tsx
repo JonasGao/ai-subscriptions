@@ -6,10 +6,9 @@ import { calculateMonthlyTotal, calculateYearlyTotal, calculateOneTimeTotal } fr
 
 interface StatsCardsProps {
   subscriptions: Subscription[]
-  className?: string
 }
 
-export function StatsCards({ subscriptions, className }: StatsCardsProps) {
+export function StatsCards({ subscriptions }: StatsCardsProps) {
   const monthlyTotal = calculateMonthlyTotal(subscriptions)
   const yearlyTotal = calculateYearlyTotal(subscriptions)
   const oneTimeTotal = calculateOneTimeTotal(subscriptions)
@@ -18,7 +17,7 @@ export function StatsCards({ subscriptions, className }: StatsCardsProps) {
   const oneTimeCount = subscriptions.filter(s => s.status === 'active' && s.subscriptionType === 'one-time').length
 
   return (
-    <div className={`grid gap-4 md:grid-cols-4 ${className || ''}`}>
+    <div className="grid gap-4 md:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">月度总支出</CardTitle>

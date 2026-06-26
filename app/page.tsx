@@ -219,8 +219,8 @@ export default function Home() {
         )}
 
         {activeTab === 'subscriptions' && (
-          <div key="subscriptions" className="animate-fade-in">
-            <StatsCards subscriptions={subscriptions} className="mb-4" />
+          <div key="subscriptions" className="flex flex-col gap-6 animate-fade-in">
+            <StatsCards subscriptions={subscriptions} />
 
             <CategoryFilter
               categories={categories}
@@ -228,7 +228,6 @@ export default function Home() {
               selectedStatus={selectedStatus}
               onCategoryChange={handleCategoryChange}
               onStatusChange={handleStatusChange}
-              className="mb-4"
             />
 
             <div>

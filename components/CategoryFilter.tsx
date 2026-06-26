@@ -15,7 +15,6 @@ interface CategoryFilterProps {
   selectedStatus: string
   onCategoryChange: (category: string) => void
   onStatusChange: (status: string) => void
-  className?: string
 }
 
 const statusOptions = [
@@ -31,10 +30,9 @@ export function CategoryFilter({
   selectedStatus,
   onCategoryChange,
   onStatusChange,
-  className,
 }: CategoryFilterProps) {
   return (
-    <div className={`flex gap-4 flex-wrap ${className || ''}`}>
+    <div className="flex gap-4 flex-wrap">
       <div className="flex items-center gap-2">
         <Label htmlFor="category-filter">分类筛选</Label>
         <Select
