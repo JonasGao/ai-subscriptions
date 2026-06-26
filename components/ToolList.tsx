@@ -72,82 +72,88 @@ function SortableToolCard({ tool, onEdit, onDelete, onStatusChange }: SortableTo
 
   return (
     <Card ref={setNodeRef} style={style}>
-      <CardContent className="flex items-center gap-3 py-1.5 px-3">
-        <button
-          className="cursor-grab active:cursor-grabbing touch-none"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
-        </button>
-        <CardTitle className="text-base font-medium">{tool.name}</CardTitle>
-        <Badge
-          variant={statusConfig[tool.status].variant}
-          className="text-xs cursor-pointer select-none"
-          onClick={() => onStatusChange(tool.id, statusConfig[tool.status].next)}
-          title={`点击切换为 ${statusConfig[statusConfig[tool.status].next].label}`}
-        >
-          {statusConfig[tool.status].label}
-        </Badge>
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">分类:</span>
-          <Badge variant="outline" className="text-xs">{tool.category}</Badge>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">提供商:</span>
-          <span className="text-xs font-medium">{providerName}</span>
-        </div>
-        {tool.forms && tool.forms.length > 0 && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">形式:</span>
-            <div className="flex gap-1">
-              {tool.forms.map(form => (
-                <Badge key={form} variant="secondary" className="text-xs">{form}</Badge>
-              ))}
-            </div>
-          </div>
-        )}
-        {tool.isOpenSource && (
-          <div className="flex items-center gap-1.5">
-            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-              开源
+      <CardContent className="py-1.5 px-3">
+        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-2 md:gap-3 flex-1">
+            <button
+              className="cursor-grab active:cursor-grabbing touch-none"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
+            </button>
+            <CardTitle className="text-base font-medium">{tool.name}</CardTitle>
+            <Badge
+              variant={statusConfig[tool.status].variant}
+              className="text-xs cursor-pointer select-none"
+              onClick={() => onStatusChange(tool.id, statusConfig[tool.status].next)}
+              title={`点击切换为 ${statusConfig[statusConfig[tool.status].next].label}`}
+            >
+              {statusConfig[tool.status].label}
             </Badge>
-            {tool.repoUrl && (
-              <a
-                href={tool.repoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline flex items-center gap-0.5"
-              >
-                <ExternalLink className="h-3 w-3" />
-                仓库
-              </a>
-            )}
           </div>
-        )}
-        {tool.notes && (
+          <div className="flex gap-1.5 md:ml-auto">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => onEdit(tool)}
+            >
+              <Edit className="h-3.5 w-3.5 mr-1" />
+              编辑
+            </Button>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={() => onDelete(tool.id)}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              删除
+            </Button>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-2 md:mt-0">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">备注:</span>
-            <span className="text-xs text-muted-foreground truncate max-w-[200px]">{tool.notes}</span>
+            <span className="text-xs text-muted-foreground">分类:</span>
+            <Badge variant="outline" className="text-xs">{tool.category}</Badge>
           </div>
-        )}
-        <div className="flex gap-1.5 ml-auto">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => onEdit(tool)}
-          >
-            <Edit className="h-3.5 w-3.5 mr-1" />
-            编辑
-          </Button>
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={() => onDelete(tool.id)}
-          >
-            <Trash2 className="h-3.5 w-3.5 mr-1" />
-            删除
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">提供商:</span>
+            <span className="text-xs font-medium">{providerName}</span>
+          </div>
+          {tool.forms && tool.forms.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">形式:</span>
+              <div className="flex gap-1">
+                {tool.forms.map(form => (
+                  <Badge key={form} variant="secondary" className="text-xs">{form}</Badge>
+                ))}
+              </div>
+            </div>
+          )}
+          {tool.isOpenSource && (
+            <div className="flex items-center gap-1.5">
+              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                开源
+              </Badge>
+              {tool.repoUrl && (
+                <a
+                  href={tool.repoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  仓库
+                </a>
+              )}
+            </div>
+          )}
+          {tool.notes && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">备注:</span>
+              <span className="text-xs text-muted-foreground truncate max-w-[200px]">{tool.notes}</span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
