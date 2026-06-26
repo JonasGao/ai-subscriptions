@@ -220,7 +220,7 @@ export default function Home() {
 
         {activeTab === 'subscriptions' && (
           <div key="subscriptions" className="animate-fade-in">
-            <StatsCards subscriptions={subscriptions} />
+            <StatsCards subscriptions={subscriptions} className="mb-4" />
 
             <CategoryFilter
               categories={categories}
