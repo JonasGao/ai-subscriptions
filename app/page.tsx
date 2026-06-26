@@ -163,9 +163,9 @@ export default function Home() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">AI订阅管理</h1>
-          <div className="flex gap-2">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <h1 className="text-xl md:text-3xl font-bold">AI订阅管理</h1>
+          <div className="flex flex-wrap items-center gap-2">
             <div className="flex border rounded-md overflow-hidden">
               <Button
                 variant={activeTab === 'subscriptions' ? 'default' : 'ghost'}
