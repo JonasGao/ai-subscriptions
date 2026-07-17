@@ -3,10 +3,9 @@ import path from 'path'
 import { Subscription, SubscriptionData, SubscriptionStatus, SubscriptionType, BillingCycle, defaultCategories, defaultProviders } from './types'
 import { Provider } from './types'
 import { v4 as uuidv4 } from 'uuid'
-import { ensureDataDir, atomicWriteFile } from './file-ops'
+import { ensureDataDir, atomicWriteFile, dataDir } from './file-ops'
 import { encryptApiKey, decryptApiKey } from './encryption'
 
-const dataDir = path.join(process.cwd(), 'data')
 const dataFile = path.join(dataDir, 'subscriptions.json')
 const prioritiesFile = path.join(dataDir, 'priorities.json')
 

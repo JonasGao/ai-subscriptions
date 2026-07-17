@@ -2,9 +2,8 @@ import fs from 'fs'
 import path from 'path'
 import { Tool, ToolData, ToolStatus } from './types'
 import { v4 as uuidv4 } from 'uuid'
-import { ensureDataDir, atomicWriteFile } from './file-ops'
+import { ensureDataDir, atomicWriteFile, dataDir } from './file-ops'
 
-const dataDir = path.join(process.cwd(), 'data')
 const toolsFile = path.join(dataDir, 'tools.json')
 const toolPrioritiesFile = path.join(dataDir, 'tool-priorities.json')
 

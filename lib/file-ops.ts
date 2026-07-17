@@ -1,7 +1,11 @@
 import fs from 'fs'
 import path from 'path'
+import os from 'os'
 
-const dataDir = path.join(process.cwd(), 'data')
+// Data directory priority: env var > XDG Base Directory > fallback
+// Set DATA_DIR to override the default XDG location
+const XDG_DATA_HOME = process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share')
+export const dataDir = process.env.DATA_DIR || path.join(XDG_DATA_HOME, 'ai-subscriptions')
 
 export function ensureDataDir(): void {
   if (!fs.existsSync(dataDir)) {

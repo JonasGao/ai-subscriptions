@@ -5,14 +5,13 @@ import fs from "fs"
 import path from "path"
 import crypto from "crypto"
 import { authConfig } from "./auth.config"
-import { ensureDataDir, atomicWriteFile } from "./file-ops"
+import { ensureDataDir, atomicWriteFile, dataDir } from "./file-ops"
 
 if (!process.env.NEXTAUTH_SECRET) {
   console.warn("WARNING: NEXTAUTH_SECRET is not set. Using a random secret. Sessions will be invalidated on restart.")
   process.env.NEXTAUTH_SECRET = crypto.randomBytes(32).toString("hex")
 }
 
-const dataDir = path.join(process.cwd(), "data")
 const authFile = path.join(dataDir, "auth.json")
 
 interface AuthData {
