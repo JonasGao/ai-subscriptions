@@ -1,8 +1,9 @@
-import path from 'path'
 import { PriorityData, PriorityScene } from './types'
 import { createSceneManager } from './priority-scene'
+import { dataDir } from './file-ops'
+import path from 'path'
 
-const prioritiesFile = path.join(process.cwd(), 'data', 'priorities.json')
+const prioritiesFile = path.join(dataDir, 'priorities.json')
 
 const manager = createSceneManager<PriorityScene>({
   filePath: prioritiesFile,
