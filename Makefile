@@ -12,10 +12,13 @@ install: ## Install systemd user service
 	@echo "[Unit]" > ${SERVICE_FILE}
 	@echo "Description=AI Subscriptions Management Tool" >> ${SERVICE_FILE}
 	@echo "After=network.target" >> ${SERVICE_FILE}
+	@echo "StartLimitBurst=3" >> ${SERVICE_FILE}
+	@echo "StartLimitIntervalSec=60" >> ${SERVICE_FILE}
 	@echo "" >> ${SERVICE_FILE}
 	@echo "[Service]" >> ${SERVICE_FILE}
 	@echo "Type=simple" >> ${SERVICE_FILE}
 	@echo "WorkingDirectory=${PROJECT_DIR}" >> ${SERVICE_FILE}
+	@echo "EnvironmentFile=${PROJECT_DIR}/.env" >> ${SERVICE_FILE}
 	@echo "Environment=\"PATH=${PROJECT_DIR}/node_modules/.bin:${HOME}/.nvm/versions/node/v24.13.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"" >> ${SERVICE_FILE}
 	@echo "ExecStart=${NODE_PATH} ${PROJECT_DIR}/node_modules/next/dist/bin/next start -H 0.0.0.0 -p ${PORT}" >> ${SERVICE_FILE}
 	@echo "Restart=on-failure" >> ${SERVICE_FILE}
@@ -24,7 +27,8 @@ install: ## Install systemd user service
 	@echo "[Install]" >> ${SERVICE_FILE}
 	@echo "WantedBy=default.target" >> ${SERVICE_FILE}
 	@systemctl --user daemon-reload
-	@echo "Service installed successfully"
+	@systemctl --user enable ${PROJECT_NAME}.service
+	@echo "Service installed and enabled for auto-start on login"
 
 uninstall: stop disable ## Uninstall systemd user service
 	@echo "Uninstalling ${PROJECT_NAME} service..."
