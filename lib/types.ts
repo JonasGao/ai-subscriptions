@@ -55,6 +55,8 @@ export const defaultProviders: Provider[] = [
   { id: 'openrouter', name: 'OpenRouter', description: '多模型统一 API', website: 'https://openrouter.ai' },
   { id: 'minimax', name: 'MiniMax', description: 'MiniMax 系列', website: 'https://minimaxi.com' },
   { id: 'byteDance', name: '字节跳动', description: '豆包系列', website: 'https://doubao.com' },
+  { id: 'fangzhou-codingplan', name: '火山方舟 CodingPlan', description: '火山方舟 CodingPlan 模型服务', website: 'https://www.volcengine.com/product/ark' },
+  { id: 'fangzhou-agentplan', name: '火山方舟 AgentPlan', description: '火山方舟 AgentPlan 模型服务', website: 'https://www.volcengine.com/product/ark' },
   { id: 'baidu', name: '百度', description: '文心一言', website: 'https://yiyan.baidu.com' },
   { id: 'xiaomi', name: '小米', description: 'MiMo 系列', website: 'https://mimo.mi.com' },
   { id: 'xunfei', name: '讯飞', description: '星火大模型', website: 'https://xinghuo.xfyun.cn' },
