@@ -145,6 +145,34 @@ export default function Home() {
     }
   }
 
+  const handleSubscriptionStatusChange = async (id: string, newStatus: 'active' | 'paused') => {
+    const originalSubscription = subscriptions.find(s => s.id === id)
+    if (!originalSubscription) return
+
+    setSubscriptions(prev =>
+      prev.map(s => s.id === id ? { ...s, status: newStatus, updatedAt: new Date().toISOString() } : s)
+    )
+
+    try {
+      const res = await fetch(`/api/subscriptions/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (!res.ok) {
+        setSubscriptions(prev =>
+          prev.map(s => s.id === id ? originalSubscription : s)
+        )
+        setErrorMessage('状态切换失败，请重试')
+      }
+    } catch {
+      setSubscriptions(prev =>
+        prev.map(s => s.id === id ? originalSubscription : s)
+      )
+      setErrorMessage('网络错误，状态切换失败')
+    }
+  }
+
   const handleAddNew = () => {
     setEditingSubscription(null)
     setFormOpen(true)
@@ -236,6 +264,7 @@ export default function Home() {
                 subscriptions={filteredSubscriptions}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onStatusChange={handleSubscriptionStatusChange}
               />
             </div>
 

@@ -13,6 +13,7 @@ interface SubscriptionCardProps {
   subscription: Subscription
   onEdit: (subscription: Subscription) => void
   onDelete: (id: string) => void
+  onStatusChange: (id: string, newStatus: 'active' | 'paused') => void
 }
 
 function getStatusBadgeVariant(status: Subscription['status']): "success" | "warning" | "outline" {
@@ -53,7 +54,7 @@ function getTypeLabel(type: string): string {
   return type === 'recurring' ? '周期性' : '一次性'
 }
 
-export function SubscriptionCard({ subscription, onEdit, onDelete }: SubscriptionCardProps) {
+export function SubscriptionCard({ subscription, onEdit, onDelete, onStatusChange }: SubscriptionCardProps) {
   const [balance, setBalance] = useState<BalanceResult | null>(null)
   const [balanceLoading, setBalanceLoading] = useState(false)
   const [balanceError, setBalanceError] = useState<string | null>(null)
@@ -69,6 +70,7 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
       : `¥${subscription.price.toFixed(2)}/月`
   const isBalanceSupported = ['deepseek', 'moonshot', 'openrouter'].includes(subscription.provider)
   const isOneTime = subscription.subscriptionType === 'one-time'
+  const canToggleStatus = subscription.status === 'active' || subscription.status === 'paused'
 
   const handleQueryBalance = async () => {
     setBalanceLoading(true)
@@ -95,11 +97,21 @@ export function SubscriptionCard({ subscription, onEdit, onDelete }: Subscriptio
     }
   }
 
+  const handleStatusToggle = () => {
+    if (!canToggleStatus) return
+    const newStatus = subscription.status === 'active' ? 'paused' : 'active'
+    onStatusChange(subscription.id, newStatus)
+  }
+
   return (
     <Card className={`flex flex-col ${expiringSoon ? 'border-orange-500 border-2' : ''}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-lg font-medium">{subscription.name}</CardTitle>
-        <Badge variant={getStatusBadgeVariant(subscription.status)}>
+        <Badge
+          variant={getStatusBadgeVariant(subscription.status)}
+          className={canToggleStatus ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}
+          onClick={handleStatusToggle}
+        >
           {getStatusLabel(subscription.status)}
         </Badge>
       </CardHeader>

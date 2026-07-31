@@ -7,9 +7,10 @@ interface SubscriptionListProps {
   subscriptions: Subscription[]
   onEdit: (subscription: Subscription) => void
   onDelete: (id: string) => void
+  onStatusChange: (id: string, newStatus: 'active' | 'paused') => void
 }
 
-export function SubscriptionList({ subscriptions, onEdit, onDelete }: SubscriptionListProps) {
+export function SubscriptionList({ subscriptions, onEdit, onDelete, onStatusChange }: SubscriptionListProps) {
   if (subscriptions.length === 0) {
     return (
       <div className="flex items-center justify-center h-[200px] text-muted-foreground">
@@ -26,6 +27,7 @@ export function SubscriptionList({ subscriptions, onEdit, onDelete }: Subscripti
           subscription={subscription}
           onEdit={onEdit}
           onDelete={onDelete}
+          onStatusChange={onStatusChange}
         />
       ))}
     </div>
