@@ -14,7 +14,7 @@ import {
 import { ResetSchedule, ResetScheduleType, ResetScheduleFormData } from "@/lib/types"
 import { createResetSchedule } from "@/lib/reset-schedule"
 import { formatNextResetTime, getScheduleTypeLabel } from "@/lib/utils"
-import { Plus, Trash2, Clock } from "lucide-react"
+import { Plus, Trash2, Clock, Globe } from "lucide-react"
 
 interface ResetScheduleConfigProps {
   schedules: ResetSchedule[]
@@ -33,12 +33,35 @@ export function ResetScheduleConfig({ schedules, onChange }: ResetScheduleConfig
     timeOfDay: '00:00'
   })
   const [showAddForm, setShowAddForm] = useState(false)
+  const [currentTimezone] = useState(() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone
+    } catch {
+      return 'UTC'
+    }
+  })
+
+  const getTimezoneAbbr = (timezone?: string): string => {
+    if (!timezone) return ''
+    const tzMap: Record<string, string> = {
+      'Asia/Shanghai': '上海时间',
+      'Asia/Hong_Kong': '香港时间',
+      'Asia/Tokyo': '东京时间',
+      'America/New_York': '纽约时间',
+      'America/Los_Angeles': '洛杉矶时间',
+      'Europe/London': '伦敦时间',
+      'UTC': 'UTC'
+    }
+    return tzMap[timezone] || timezone.split('/').pop() || timezone
+  }
 
   const handleAddSchedule = () => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const timezoneOffset = -new Date().getTimezoneOffset()
     
     const finalSchedule = createResetSchedule({
       ...newSchedule,
+      timezone,
       timezoneOffset
     })
 
@@ -112,11 +135,17 @@ export function ResetScheduleConfig({ schedules, onChange }: ResetScheduleConfig
                       {schedule.type === 'weekly' && `${getDayOfWeekLabel(schedule.dayOfWeek ?? 0)} ${schedule.timeOfDay}`}
                       {schedule.type === 'monthly' && `${schedule.dayOfMonth}日 ${schedule.timeOfDay}`}
                     </span>
+                    {schedule.timezone && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Globe className="h-3 w-3" />
+                        {getTimezoneAbbr(schedule.timezone)}
+                      </span>
+                    )}
                   </div>
                   {schedule.nextResetTime && (
                     <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      下次重置: {formatNextResetTime(schedule.nextResetTime)}
+                      下次重置: {formatNextResetTime(schedule.nextResetTime, schedule.timezone)}
                     </div>
                   )}
                 </div>
@@ -233,6 +262,13 @@ export function ResetScheduleConfig({ schedules, onChange }: ResetScheduleConfig
                 }))}
                 className="h-8"
               />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">时区</Label>
+              <div className="flex items-center gap-2 h-8 px-3 py-1 border rounded-md bg-muted/50">
+                <Globe className="h-3 w-3" />
+                <span className="text-xs">{getTimezoneAbbr(currentTimezone)}</span>
+              </div>
             </div>
           </div>
 

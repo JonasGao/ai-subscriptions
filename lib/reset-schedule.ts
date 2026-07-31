@@ -154,6 +154,7 @@ export function createResetSchedule(
     intervalHours?: number
     referenceTime?: string
     timeOfDay?: string
+    timezone?: string
     timezoneOffset?: number
     dayOfWeek?: number
     dayOfMonth?: number
@@ -167,6 +168,7 @@ export function createResetSchedule(
     intervalHours: data.intervalHours,
     referenceTime: data.referenceTime,
     timeOfDay: data.timeOfDay,
+    timezone: data.timezone,
     timezoneOffset: data.timezoneOffset,
     dayOfWeek: data.dayOfWeek,
     dayOfMonth: data.dayOfMonth

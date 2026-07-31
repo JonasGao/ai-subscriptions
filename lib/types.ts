@@ -7,6 +7,7 @@ export interface ResetSchedule {
   intervalHours?: number
   referenceTime?: string
   timeOfDay?: string
+  timezone?: string
   timezoneOffset?: number
   dayOfWeek?: number
   dayOfMonth?: number

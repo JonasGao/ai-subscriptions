@@ -197,7 +197,7 @@ export function SubscriptionCard({ subscription, onEdit, onDelete, onStatusChang
                     <Clock className="h-3 w-3 text-muted-foreground" />
                     <span className="font-medium">{getScheduleTypeLabel(schedule.type)}</span>
                     <span className="text-muted-foreground">
-                      {formatNextResetTime(schedule.nextResetTime)}
+                      {formatNextResetTime(schedule.nextResetTime, schedule.timezone)}
                     </span>
                   </div>
                 ))}
