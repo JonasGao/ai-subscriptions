@@ -84,17 +84,29 @@ export function formatNextResetTime(isoString: string): string {
   const now = new Date()
   const diffMs = date.getTime() - now.getTime()
   const diffMins = Math.floor(diffMs / (1000 * 60))
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  const diffHours = Math.floor(diffMins / 60)
+  const remainingMins = diffMins % 60
+  const diffDays = Math.floor(diffHours / 24)
 
   if (diffMins < 0) {
     return '已过期'
   } else if (diffMins < 60) {
-    return `${diffMins}分钟后`
+    return `${diffMins}分钟后重置`
   } else if (diffHours < 24) {
-    return `${diffHours}小时后`
+    if (remainingMins === 0) {
+      return `${diffHours}小时后重置`
+    }
+    return `${diffHours}小时${remainingMins}分钟后重置`
   } else {
-    return `${diffDays}天后 (${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`
+    const remainingHours = diffHours % 24
+    if (remainingHours === 0 && remainingMins === 0) {
+      return `${diffDays}天后重置 (${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`
+    } else if (remainingMins === 0) {
+      return `${diffDays}天${remainingHours}小时后重置 (${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`
+    } else if (remainingHours === 0) {
+      return `${diffDays}天${remainingMins}分钟后重置 (${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`
+    }
+    return `${diffDays}天${remainingHours}小时${remainingMins}分钟后重置 (${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`
   }
 }
 
