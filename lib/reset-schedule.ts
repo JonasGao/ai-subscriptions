@@ -1,6 +1,42 @@
 import { ResetSchedule, ResetScheduleType } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
+export function parseDurationString(
+  duration: string
+): { days: number; hours: number; minutes: number } | null {
+  const trimmed = duration.replace(/\s+/g, "").toLowerCase();
+
+  const daysMatch = trimmed.match(/(\d+)d/);
+  const hoursMatch = trimmed.match(/(\d+)h/);
+  const minutesMatch = trimmed.match(/(\d+)m/);
+
+  const days = daysMatch ? parseInt(daysMatch[1]) : 0;
+  const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
+  const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
+
+  if (days === 0 && hours === 0 && minutes === 0) {
+    return null;
+  }
+
+  if (days < 0 || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return null;
+  }
+
+  return { days, hours, minutes };
+}
+
+export function formatDuration(
+  days: number,
+  hours: number,
+  minutes: number
+): string {
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  return parts.join(" ") || "0m";
+}
+
 export function calculateNextResetTime(
   schedule: Omit<
     ResetSchedule,
@@ -27,22 +63,17 @@ function calculateNextHourlyReset(
   schedule: { intervalHours?: number; referenceTime?: string },
   now: Date
 ): Date {
+  if (schedule.referenceTime) {
+    const refTime = new Date(schedule.referenceTime);
+    if (refTime > now) {
+      return refTime;
+    }
+  }
+
   if (!schedule.intervalHours || schedule.intervalHours < 1) {
     throw new Error(
       "intervalHours must be a positive number for hourly schedule"
     );
-  }
-
-  if (schedule.referenceTime) {
-    const refTime = new Date(schedule.referenceTime);
-    const diffMs = now.getTime() - refTime.getTime();
-    const diffHours = diffMs / (1000 * 60 * 60);
-    const intervalsPassed = Math.floor(diffHours / schedule.intervalHours);
-    const nextReset = new Date(
-      refTime.getTime() +
-        (intervalsPassed + 1) * schedule.intervalHours * 60 * 60 * 1000
-    );
-    return nextReset;
   }
 
   const currentHour = now.getHours();
@@ -261,8 +292,9 @@ export function createResetSchedule(data: {
   enabled?: boolean;
   intervalHours?: number;
   referenceTime?: string;
-  relativeHours?: number;
-  relativeMinutes?: number;
+  durationDays?: number;
+  durationHours?: number;
+  durationMinutes?: number;
   timeOfDay?: string;
   timezone?: string;
   timezoneOffset?: number;
@@ -272,12 +304,15 @@ export function createResetSchedule(data: {
   const now = new Date();
 
   let referenceTime = data.referenceTime;
-  if (!referenceTime && (data.relativeHours || data.relativeMinutes)) {
-    const relativeMs =
-      ((data.relativeHours || 0) * 60 + (data.relativeMinutes || 0)) *
-      60 *
-      1000;
-    const refDate = new Date(now.getTime() + relativeMs);
+  if (
+    !referenceTime &&
+    (data.durationDays || data.durationHours || data.durationMinutes)
+  ) {
+    const offsetMs =
+      (data.durationDays || 0) * 24 * 60 * 60 * 1000 +
+      (data.durationHours || 0) * 60 * 60 * 1000 +
+      (data.durationMinutes || 0) * 60 * 1000;
+    const refDate = new Date(now.getTime() + offsetMs);
     referenceTime = refDate.toISOString();
   }
 
