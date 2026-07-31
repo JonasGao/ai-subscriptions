@@ -220,3 +220,23 @@ export function addCategory(category: string): string[] {
 export function getProviders(): Provider[] {
   return defaultProviders
 }
+
+export function resetPausedSubscriptions(): number {
+  const data = readData()
+  const now = new Date().toISOString()
+  let count = 0
+
+  data.subscriptions.forEach(sub => {
+    if (sub.subscriptionType === 'recurring' && sub.status === 'paused') {
+      sub.status = 'active'
+      sub.updatedAt = now
+      count++
+    }
+  })
+
+  if (count > 0) {
+    writeData(data)
+  }
+
+  return count
+}
