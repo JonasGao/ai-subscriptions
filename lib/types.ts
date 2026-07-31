@@ -107,6 +107,8 @@ export interface ResetScheduleFormData {
   enabled: boolean
   intervalHours?: number
   referenceTime?: string
+  relativeHours?: number
+  relativeMinutes?: number
   timeOfDay?: string
   dayOfWeek?: number
   dayOfMonth?: number

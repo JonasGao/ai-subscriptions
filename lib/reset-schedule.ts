@@ -153,6 +153,8 @@ export function createResetSchedule(
     enabled?: boolean
     intervalHours?: number
     referenceTime?: string
+    relativeHours?: number
+    relativeMinutes?: number
     timeOfDay?: string
     timezone?: string
     timezoneOffset?: number
@@ -160,13 +162,20 @@ export function createResetSchedule(
     dayOfMonth?: number
   }
 ): ResetSchedule {
-  const now = new Date().toISOString()
+  const now = new Date()
+  
+  let referenceTime = data.referenceTime
+  if (!referenceTime && (data.relativeHours || data.relativeMinutes)) {
+    const relativeMs = ((data.relativeHours || 0) * 60 + (data.relativeMinutes || 0)) * 60 * 1000
+    const refDate = new Date(now.getTime() + relativeMs)
+    referenceTime = refDate.toISOString()
+  }
   
   const schedule: Omit<ResetSchedule, 'id' | 'nextResetTime' | 'createdAt' | 'updatedAt'> = {
     type: data.type,
     enabled: data.enabled ?? true,
     intervalHours: data.intervalHours,
-    referenceTime: data.referenceTime,
+    referenceTime: referenceTime,
     timeOfDay: data.timeOfDay,
     timezone: data.timezone,
     timezoneOffset: data.timezoneOffset,
@@ -180,8 +189,8 @@ export function createResetSchedule(
     ...schedule,
     id: uuidv4(),
     nextResetTime: nextResetTime.toISOString(),
-    createdAt: now,
-    updatedAt: now
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString()
   }
 }
 

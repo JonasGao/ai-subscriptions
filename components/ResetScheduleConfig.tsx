@@ -33,6 +33,7 @@ export function ResetScheduleConfig({ schedules, onChange }: ResetScheduleConfig
     timeOfDay: '00:00'
   })
   const [showAddForm, setShowAddForm] = useState(false)
+  const [referenceMode, setReferenceMode] = useState<'absolute' | 'relative'>('relative')
   const [currentTimezone] = useState(() => {
     try {
       return Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -89,10 +90,15 @@ export function ResetScheduleConfig({ schedules, onChange }: ResetScheduleConfig
       ...prev,
       type,
       intervalHours: type === 'hourly' ? 5 : undefined,
-      referenceTime: type === 'hourly' ? new Date().toISOString() : undefined,
+      referenceTime: undefined,
+      relativeHours: undefined,
+      relativeMinutes: undefined,
       dayOfWeek: type === 'weekly' ? 1 : undefined,
       dayOfMonth: type === 'monthly' ? 1 : undefined
     }))
+    if (type !== 'hourly') {
+      setReferenceMode('absolute')
+    }
   }
 
   return (
@@ -200,55 +206,131 @@ export function ResetScheduleConfig({ schedules, onChange }: ResetScheduleConfig
                 />
               </div>
             )}
-
-            {newSchedule.type === 'weekly' && (
-              <div className="space-y-2">
-                <Label className="text-xs">星期</Label>
-                <Select
-                  value={String(newSchedule.dayOfWeek ?? 1)}
-                  onValueChange={(value) => setNewSchedule(prev => ({
-                    ...prev,
-                    dayOfWeek: parseInt(value)
-                  }))}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[0, 1, 2, 3, 4, 5, 6].map(day => (
-                      <SelectItem key={day} value={String(day)}>
-                        {getDayOfWeekLabel(day)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {newSchedule.type === 'monthly' && (
-              <div className="space-y-2">
-                <Label className="text-xs">日期</Label>
-                <Select
-                  value={String(newSchedule.dayOfMonth ?? 1)}
-                  onValueChange={(value) => setNewSchedule(prev => ({
-                    ...prev,
-                    dayOfMonth: parseInt(value)
-                  }))}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                      <SelectItem key={day} value={String(day)}>
-                        {day}日
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
           </div>
+
+          {newSchedule.type === 'hourly' && (
+            <div className="space-y-2">
+              <Label className="text-xs">首次重置时间</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={referenceMode === 'relative' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setReferenceMode('relative')}
+                >
+                  从现在起
+                </Button>
+                <Button
+                  type="button"
+                  variant={referenceMode === 'absolute' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setReferenceMode('absolute')}
+                >
+                  指定时间点
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {newSchedule.type === 'hourly' && referenceMode === 'relative' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-xs">小时</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="168"
+                  value={newSchedule.relativeHours || 0}
+                  onChange={(e) => setNewSchedule(prev => ({
+                    ...prev,
+                    relativeHours: parseInt(e.target.value) || 0,
+                    referenceTime: undefined
+                  }))}
+                  className="h-8"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">分钟</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={newSchedule.relativeMinutes || 0}
+                  onChange={(e) => setNewSchedule(prev => ({
+                    ...prev,
+                    relativeMinutes: parseInt(e.target.value) || 0,
+                    referenceTime: undefined
+                  }))}
+                  className="h-8"
+                />
+              </div>
+            </div>
+          )}
+
+          {newSchedule.type === 'hourly' && referenceMode === 'absolute' && (
+            <div className="space-y-2">
+              <Label className="text-xs">参考时间点</Label>
+              <Input
+                type="datetime-local"
+                value={newSchedule.referenceTime ? new Date(newSchedule.referenceTime).toISOString().slice(0, 16) : ''}
+                onChange={(e) => setNewSchedule(prev => ({
+                  ...prev,
+                  referenceTime: e.target.value ? new Date(e.target.value).toISOString() : undefined,
+                  relativeHours: undefined,
+                  relativeMinutes: undefined
+                }))}
+                className="h-8"
+              />
+            </div>
+          )}
+
+          {newSchedule.type === 'weekly' && (
+            <div className="space-y-2">
+              <Label className="text-xs">星期</Label>
+              <Select
+                value={String(newSchedule.dayOfWeek ?? 1)}
+                onValueChange={(value) => setNewSchedule(prev => ({
+                  ...prev,
+                  dayOfWeek: parseInt(value)
+                }))}
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[0, 1, 2, 3, 4, 5, 6].map(day => (
+                    <SelectItem key={day} value={String(day)}>
+                      {getDayOfWeekLabel(day)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {newSchedule.type === 'monthly' && (
+            <div className="space-y-2">
+              <Label className="text-xs">日期</Label>
+              <Select
+                value={String(newSchedule.dayOfMonth ?? 1)}
+                onValueChange={(value) => setNewSchedule(prev => ({
+                  ...prev,
+                  dayOfMonth: parseInt(value)
+                }))}
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                    <SelectItem key={day} value={String(day)}>
+                      {day}日
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
