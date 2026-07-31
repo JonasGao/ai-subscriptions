@@ -78,3 +78,37 @@ export function formatDate(dateString?: string): string {
     day: 'numeric'
   })
 }
+
+export function formatNextResetTime(isoString: string): string {
+  const date = new Date(isoString)
+  const now = new Date()
+  const diffMs = date.getTime() - now.getTime()
+  const diffMins = Math.floor(diffMs / (1000 * 60))
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffMins < 0) {
+    return '已过期'
+  } else if (diffMins < 60) {
+    return `${diffMins}分钟后`
+  } else if (diffHours < 24) {
+    return `${diffHours}小时后`
+  } else {
+    return `${diffDays}天后 (${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`
+  }
+}
+
+export function getScheduleTypeLabel(type: string): string {
+  switch (type) {
+    case 'hourly':
+      return '每N小时'
+    case 'daily':
+      return '每日'
+    case 'weekly':
+      return '每周'
+    case 'monthly':
+      return '每月'
+    default:
+      return type
+  }
+}

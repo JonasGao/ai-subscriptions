@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Subscription, defaultProviders, BalanceResult } from "@/lib/types"
-import { formatDate, isExpiringSoon, getDaysUntilRenewal } from "@/lib/utils"
-import { Edit, Trash2, Wallet, Loader2 } from "lucide-react"
+import { formatDate, isExpiringSoon, getDaysUntilRenewal, formatNextResetTime, getScheduleTypeLabel } from "@/lib/utils"
+import { Edit, Trash2, Wallet, Loader2, Clock } from "lucide-react"
 import { Fragment } from "react"
 
 interface SubscriptionCardProps {
@@ -186,6 +186,22 @@ export function SubscriptionCard({ subscription, onEdit, onDelete, onStatusChang
             <div className="pt-2">
               <span className="text-sm text-muted-foreground">备注</span>
               <p className="text-sm mt-1">{subscription.notes}</p>
+            </div>
+          )}
+          {subscription.resetSchedules && subscription.resetSchedules.length > 0 && (
+            <div className="pt-2">
+              <span className="text-sm text-muted-foreground">额度重置计划</span>
+              <div className="mt-1 space-y-1">
+                {subscription.resetSchedules.filter(s => s.enabled).map((schedule) => (
+                  <div key={schedule.id} className="flex items-center gap-2 text-xs">
+                    <Clock className="h-3 w-3 text-muted-foreground" />
+                    <span className="font-medium">{getScheduleTypeLabel(schedule.type)}</span>
+                    <span className="text-muted-foreground">
+                      {formatNextResetTime(schedule.nextResetTime)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

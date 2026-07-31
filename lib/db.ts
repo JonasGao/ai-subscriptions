@@ -1,10 +1,11 @@
 import fs from 'fs'
 import path from 'path'
-import { Subscription, SubscriptionData, SubscriptionStatus, SubscriptionType, BillingCycle, defaultCategories, defaultProviders } from './types'
+import { Subscription, SubscriptionData, SubscriptionStatus, SubscriptionType, BillingCycle, defaultCategories, defaultProviders, ResetSchedule } from './types'
 import { Provider } from './types'
 import { v4 as uuidv4 } from 'uuid'
 import { ensureDataDir, atomicWriteFile, dataDir } from './file-ops'
 import { encryptApiKey, decryptApiKey } from './encryption'
+import { createResetSchedule, updateResetScheduleNextTime } from './reset-schedule'
 
 const dataFile = path.join(dataDir, 'subscriptions.json')
 const prioritiesFile = path.join(dataDir, 'priorities.json')
@@ -221,17 +222,159 @@ export function getProviders(): Provider[] {
   return defaultProviders
 }
 
-export function resetPausedSubscriptions(): number {
+export function addResetSchedule(subscriptionId: string, scheduleData: {
+  type: 'hourly' | 'daily' | 'weekly' | 'monthly'
+  enabled?: boolean
+  intervalHours?: number
+  referenceTime?: string
+  timeOfDay?: string
+  dayOfWeek?: number
+  dayOfMonth?: number
+}): ResetSchedule | null {
+  const data = readData()
+  const index = data.subscriptions.findIndex(s => s.id === subscriptionId)
+
+  if (index === -1) {
+    return null
+  }
+
+  const schedule = createResetSchedule(scheduleData)
+  
+  if (!data.subscriptions[index].resetSchedules) {
+    data.subscriptions[index].resetSchedules = []
+  }
+  
+  data.subscriptions[index].resetSchedules!.push(schedule)
+  data.subscriptions[index].updatedAt = new Date().toISOString()
+  
+  writeData(data)
+  return schedule
+}
+
+export function updateResetSchedule(
+  subscriptionId: string,
+  scheduleId: string,
+  updates: Partial<Omit<ResetSchedule, 'id' | 'createdAt'>>
+): ResetSchedule | null {
+  const data = readData()
+  const subIndex = data.subscriptions.findIndex(s => s.id === subscriptionId)
+
+  if (subIndex === -1 || !data.subscriptions[subIndex].resetSchedules) {
+    return null
+  }
+
+  const scheduleIndex = data.subscriptions[subIndex].resetSchedules!.findIndex(
+    s => s.id === scheduleId
+  )
+
+  if (scheduleIndex === -1) {
+    return null
+  }
+
+  const schedule = data.subscriptions[subIndex].resetSchedules![scheduleIndex]
+  const updatedSchedule: ResetSchedule = {
+    ...schedule,
+    ...updates,
+    updatedAt: new Date().toISOString()
+  }
+
+  if (updates.type || updates.intervalHours || updates.referenceTime || 
+      updates.timeOfDay || updates.dayOfWeek || updates.dayOfMonth) {
+    const nextReset = updateResetScheduleNextTime(updatedSchedule)
+    updatedSchedule.nextResetTime = nextReset.nextResetTime
+  }
+
+  data.subscriptions[subIndex].resetSchedules![scheduleIndex] = updatedSchedule
+  data.subscriptions[subIndex].updatedAt = new Date().toISOString()
+  
+  writeData(data)
+  return updatedSchedule
+}
+
+export function deleteResetSchedule(subscriptionId: string, scheduleId: string): boolean {
+  const data = readData()
+  const subIndex = data.subscriptions.findIndex(s => s.id === subscriptionId)
+
+  if (subIndex === -1 || !data.subscriptions[subIndex].resetSchedules) {
+    return false
+  }
+
+  const scheduleIndex = data.subscriptions[subIndex].resetSchedules!.findIndex(
+    s => s.id === scheduleId
+  )
+
+  if (scheduleIndex === -1) {
+    return false
+  }
+
+  data.subscriptions[subIndex].resetSchedules!.splice(scheduleIndex, 1)
+  data.subscriptions[subIndex].updatedAt = new Date().toISOString()
+  
+  writeData(data)
+  return true
+}
+
+export function getSubscriptionsNeedingReset(): Array<{ subscriptionId: string; scheduleId: string }> {
+  const data = readData()
+  const now = new Date()
+  const needsReset: Array<{ subscriptionId: string; scheduleId: string }> = []
+
+  data.subscriptions.forEach(sub => {
+    if (!sub.resetSchedules || sub.status !== 'paused') {
+      return
+    }
+
+    sub.resetSchedules.forEach(schedule => {
+      if (!schedule.enabled) {
+        return
+      }
+
+      const nextReset = new Date(schedule.nextResetTime)
+      const diffMs = Math.abs(now.getTime() - nextReset.getTime())
+      const diffMinutes = diffMs / (1000 * 60)
+
+      if (diffMinutes < 5) {
+        needsReset.push({
+          subscriptionId: sub.id,
+          scheduleId: schedule.id
+        })
+      }
+    })
+  })
+
+  return needsReset
+}
+
+export function executeResetsForSubscriptions(
+  resets: Array<{ subscriptionId: string; scheduleId: string }>
+): number {
   const data = readData()
   const now = new Date().toISOString()
   let count = 0
 
-  data.subscriptions.forEach(sub => {
-    if (sub.subscriptionType === 'recurring' && sub.status === 'paused') {
-      sub.status = 'active'
-      sub.updatedAt = now
-      count++
+  resets.forEach(({ subscriptionId, scheduleId }) => {
+    const subIndex = data.subscriptions.findIndex(s => s.id === subscriptionId)
+    
+    if (subIndex === -1 || data.subscriptions[subIndex].status !== 'paused') {
+      return
     }
+
+    const scheduleIndex = data.subscriptions[subIndex].resetSchedules?.findIndex(
+      s => s.id === scheduleId
+    ) ?? -1
+
+    if (scheduleIndex === -1) {
+      return
+    }
+
+    data.subscriptions[subIndex].status = 'active'
+    data.subscriptions[subIndex].updatedAt = now
+
+    const schedule = data.subscriptions[subIndex].resetSchedules![scheduleIndex]
+    const nextReset = updateResetScheduleNextTime(schedule)
+    data.subscriptions[subIndex].resetSchedules![scheduleIndex] = nextReset
+
+    count++
   })
 
   if (count > 0) {

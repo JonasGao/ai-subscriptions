@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Subscription, SubscriptionFormData, SubscriptionStatus, SubscriptionType, BillingCycle, defaultCategories, Provider, defaultProviders } from "@/lib/types"
+import { Subscription, SubscriptionFormData, SubscriptionStatus, SubscriptionType, BillingCycle, defaultCategories, Provider, defaultProviders, ResetSchedule } from "@/lib/types"
+import { ResetScheduleConfig } from "@/components/ResetScheduleConfig"
 
 interface SubscriptionFormProps {
   open: boolean
@@ -41,7 +42,8 @@ const initialFormData: SubscriptionFormData = {
   status: 'active',
   notes: '',
   apiKey: '',
-  balance: undefined
+  balance: undefined,
+  resetSchedules: []
 }
 
 export function SubscriptionForm({
@@ -77,6 +79,7 @@ export function SubscriptionForm({
         notes: subscription.notes || '',
         apiKey: '',
         balance: subscription.balance,
+        resetSchedules: subscription.resetSchedules || []
       })
     } else {
       setFormData(initialFormData)
@@ -308,6 +311,12 @@ export function SubscriptionForm({
                 </div>
               </div>
             )}
+            <div className="grid gap-2">
+              <ResetScheduleConfig
+                schedules={formData.resetSchedules || []}
+                onChange={(schedules) => setFormData(prev => ({ ...prev, resetSchedules: schedules }))}
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="notes">备注</Label>
               <Input

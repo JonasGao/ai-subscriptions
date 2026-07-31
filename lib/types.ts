@@ -1,3 +1,19 @@
+export type ResetScheduleType = 'hourly' | 'daily' | 'weekly' | 'monthly'
+
+export interface ResetSchedule {
+  id: string
+  enabled: boolean
+  type: ResetScheduleType
+  intervalHours?: number
+  referenceTime?: string
+  timeOfDay?: string
+  dayOfWeek?: number
+  dayOfMonth?: number
+  nextResetTime: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Subscription {
   id: string
   name: string
@@ -13,6 +29,7 @@ export interface Subscription {
   notes?: string
   apiKey?: string
   balance?: number
+  resetSchedules?: ResetSchedule[]
   createdAt: string
   updatedAt: string
 }
@@ -80,6 +97,17 @@ export interface SubscriptionFormData {
   notes?: string
   apiKey?: string
   balance?: number
+  resetSchedules?: ResetSchedule[]
+}
+
+export interface ResetScheduleFormData {
+  type: ResetScheduleType
+  enabled: boolean
+  intervalHours?: number
+  referenceTime?: string
+  timeOfDay?: string
+  dayOfWeek?: number
+  dayOfMonth?: number
 }
 
 export interface PriorityScene {

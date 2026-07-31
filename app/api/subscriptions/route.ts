@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
       notes: body.notes,
       apiKey: body.apiKey,
       balance: body.balance,
+      resetSchedules: body.resetSchedules,
     })
     
     return NextResponse.json(stripApiKey(newSubscription), { status: 201 })
