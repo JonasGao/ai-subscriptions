@@ -35,7 +35,12 @@ export function ResetScheduleConfig({ schedules, onChange }: ResetScheduleConfig
   const [showAddForm, setShowAddForm] = useState(false)
 
   const handleAddSchedule = () => {
-    const finalSchedule = createResetSchedule(newSchedule)
+    const timezoneOffset = -new Date().getTimezoneOffset()
+    
+    const finalSchedule = createResetSchedule({
+      ...newSchedule,
+      timezoneOffset
+    })
 
     onChange([...schedules, finalSchedule])
     setShowAddForm(false)

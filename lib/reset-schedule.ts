@@ -45,7 +45,7 @@ function calculateNextHourlyReset(
 }
 
 function calculateNextDailyReset(
-  schedule: { timeOfDay?: string },
+  schedule: { timeOfDay?: string; timezoneOffset?: number },
   now: Date
 ): Date {
   if (!schedule.timeOfDay) {
@@ -54,7 +54,15 @@ function calculateNextDailyReset(
 
   const [hours, minutes] = schedule.timeOfDay.split(':').map(Number)
   const nextReset = new Date(now)
-  nextReset.setHours(hours, minutes, 0, 0)
+  
+  if (schedule.timezoneOffset !== undefined) {
+    const localTime = new Date(now)
+    localTime.setHours(hours, minutes, 0, 0)
+    const utcTime = new Date(localTime.getTime() - schedule.timezoneOffset * 60 * 1000)
+    nextReset.setTime(utcTime.getTime())
+  } else {
+    nextReset.setHours(hours, minutes, 0, 0)
+  }
 
   if (nextReset <= now) {
     nextReset.setDate(nextReset.getDate() + 1)
@@ -64,7 +72,7 @@ function calculateNextDailyReset(
 }
 
 function calculateNextWeeklyReset(
-  schedule: { dayOfWeek?: number; timeOfDay?: string },
+  schedule: { dayOfWeek?: number; timeOfDay?: string; timezoneOffset?: number },
   now: Date
 ): Date {
   if (schedule.dayOfWeek === undefined || schedule.dayOfWeek < 0 || schedule.dayOfWeek > 6) {
@@ -77,7 +85,15 @@ function calculateNextWeeklyReset(
 
   const [hours, minutes] = schedule.timeOfDay.split(':').map(Number)
   const nextReset = new Date(now)
-  nextReset.setHours(hours, minutes, 0, 0)
+  
+  if (schedule.timezoneOffset !== undefined) {
+    const localTime = new Date(now)
+    localTime.setHours(hours, minutes, 0, 0)
+    const utcTime = new Date(localTime.getTime() - schedule.timezoneOffset * 60 * 1000)
+    nextReset.setTime(utcTime.getTime())
+  } else {
+    nextReset.setHours(hours, minutes, 0, 0)
+  }
 
   const currentDayOfWeek = now.getDay()
   const daysUntilTarget = (schedule.dayOfWeek - currentDayOfWeek + 7) % 7
@@ -92,7 +108,7 @@ function calculateNextWeeklyReset(
 }
 
 function calculateNextMonthlyReset(
-  schedule: { dayOfMonth?: number; timeOfDay?: string },
+  schedule: { dayOfMonth?: number; timeOfDay?: string; timezoneOffset?: number },
   now: Date
 ): Date {
   if (schedule.dayOfMonth === undefined || schedule.dayOfMonth < 1 || schedule.dayOfMonth > 31) {
@@ -105,7 +121,15 @@ function calculateNextMonthlyReset(
 
   const [hours, minutes] = schedule.timeOfDay.split(':').map(Number)
   const nextReset = new Date(now)
-  nextReset.setHours(hours, minutes, 0, 0)
+  
+  if (schedule.timezoneOffset !== undefined) {
+    const localTime = new Date(now)
+    localTime.setHours(hours, minutes, 0, 0)
+    const utcTime = new Date(localTime.getTime() - schedule.timezoneOffset * 60 * 1000)
+    nextReset.setTime(utcTime.getTime())
+  } else {
+    nextReset.setHours(hours, minutes, 0, 0)
+  }
 
   const targetDay = Math.min(schedule.dayOfMonth, getDaysInMonth(nextReset.getFullYear(), nextReset.getMonth()))
   nextReset.setDate(targetDay)
@@ -130,6 +154,7 @@ export function createResetSchedule(
     intervalHours?: number
     referenceTime?: string
     timeOfDay?: string
+    timezoneOffset?: number
     dayOfWeek?: number
     dayOfMonth?: number
   }
@@ -142,6 +167,7 @@ export function createResetSchedule(
     intervalHours: data.intervalHours,
     referenceTime: data.referenceTime,
     timeOfDay: data.timeOfDay,
+    timezoneOffset: data.timezoneOffset,
     dayOfWeek: data.dayOfWeek,
     dayOfMonth: data.dayOfMonth
   }
