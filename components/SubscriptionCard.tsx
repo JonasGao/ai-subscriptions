@@ -170,7 +170,7 @@ export function SubscriptionCard({
 
   return (
     <Card
-      className={`flex flex-col ${expiringSoon ? "border-orange-500 border-2" : ""}`}
+      className={`flex flex-col min-w-[280px] ${expiringSoon ? "border-orange-500 border-2" : ""}`}
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-lg font-medium">
