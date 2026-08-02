@@ -28,6 +28,17 @@ _Avoid_: Refresh time, renewal time
 The frequency at which a subscription is charged (monthly or yearly). Independent from quota reset schedules.
 _Avoid_: Payment cycle
 
+**Offset-Based Schedule Creation**:
+A method of creating reset schedules where the user specifies a duration from the current time (e.g., "3d 5h"), and the system infers the schedule properties (dayOfWeek/dayOfMonth, timeOfDay) from that offset. The inferred values are stored permanently, and future resets follow the calculated schedule pattern.
+_Avoid_: Relative schedule creation, duration-based schedule
+
+**Direct Input Schedule Creation**:
+A method of creating reset schedules where the user manually selects schedule properties (dayOfWeek/dayOfMonth, timeOfDay) and the system calculates the next reset time. This is the traditional approach where users have explicit control over each schedule parameter.
+_Avoid_: Absolute schedule creation, manual schedule input
+
+**Schedule Creation Input Method**:
+The choice between offset-based and direct input methods for creating reset schedules. The system supports both methods to accommodate different user mental models: "when will it reset?" (offset) vs "what day/time should it reset?" (direct).
+
 ## Relationships
 
 - **Subscription → Quota Window**: A subscription may have quota windows (if not unlimited usage)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,10 @@ import {
 import { ResetSchedule, ResetScheduleType } from "@/lib/types";
 import { createResetSchedule } from "@/lib/reset-schedule";
 import { formatNextResetTime, getScheduleTypeLabel } from "@/lib/utils";
+import {
+  extractScheduleFromOffset,
+  parseDurationString,
+} from "@/lib/reset-schedule";
 import { Plus, Trash2, Clock, Globe } from "lucide-react";
 
 interface ResetScheduleConfigProps {
@@ -23,9 +27,10 @@ interface ResetScheduleConfigProps {
 
 type InputMethod = "direct" | "offset";
 
+const DAY_NAMES = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+
 function getDayOfWeekLabel(dayOfWeek: number): string {
-  const days = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-  return days[dayOfWeek] || "";
+  return DAY_NAMES[dayOfWeek] || "";
 }
 
 export function ResetScheduleConfig({
@@ -45,6 +50,9 @@ export function ResetScheduleConfig({
 
   const [offsetError, setOffsetError] = useState<string>("");
   const [intervalError, setIntervalError] = useState<string>("");
+
+  const [preview, setPreview] = useState<string>("");
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [currentTimezone] = useState(() => {
     try {
@@ -68,29 +76,124 @@ export function ResetScheduleConfig({
     return tzMap[timezone] || timezone.split("/").pop() || timezone;
   };
 
-  const parseDurationString = (
-    duration: string
-  ): { days: number; hours: number; minutes: number } | null => {
-    const trimmed = duration.replace(/\s+/g, "").toLowerCase();
+  const calculatePreview = useCallback(
+    (
+      type: ResetScheduleType,
+      inputMethod: InputMethod,
+      offsetDuration: string,
+      dayOfWeek: string,
+      dayOfMonth: string,
+      timeOfDay: string
+    ): string => {
+      if (inputMethod !== "offset" || !offsetDuration.trim()) {
+        return "";
+      }
 
-    const daysMatch = trimmed.match(/(\d+)d/);
-    const hoursMatch = trimmed.match(/(\d+)h/);
-    const minutesMatch = trimmed.match(/(\d+)m/);
+      const parsed = parseDurationString(offsetDuration);
+      if (!parsed) {
+        return "";
+      }
 
-    const days = daysMatch ? parseInt(daysMatch[1]) : 0;
-    const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
-    const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
+      const totalMinutes =
+        parsed.days * 24 * 60 + parsed.hours * 60 + parsed.minutes;
+      if (totalMinutes < 1) {
+        return "";
+      }
 
-    if (days === 0 && hours === 0 && minutes === 0) {
-      return null;
+      const now = new Date();
+      const nextReset = new Date(now.getTime() + totalMinutes * 60 * 1000);
+      const timezone = currentTimezone;
+
+      const formatPreviewTime = (date: Date): string => {
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        const hour = String(date.getHours()).padStart(2, "0");
+        const minute = String(date.getMinutes()).padStart(2, "0");
+        const dayOfWeekName = DAY_NAMES[date.getDay()];
+        return `${month}月${day}日 ${dayOfWeekName} ${hour}:${minute}`;
+      };
+
+      try {
+        const nextResetInTz = timezone
+          ? new Date(nextReset.toLocaleString("en-US", { timeZone: timezone }))
+          : nextReset;
+
+        const tzAbbr = getTimezoneAbbr(timezone);
+
+        if (type === "hourly") {
+          const days = parsed.days;
+          const hours = parsed.hours;
+          const minutes = parsed.minutes;
+
+          let offsetText = "";
+          if (days > 0) offsetText += `${days}天`;
+          if (hours > 0) offsetText += `${hours}小时`;
+          if (minutes > 0) offsetText += `${minutes}分钟`;
+
+          return `下次重置将在 ${offsetText}后 (${formatPreviewTime(nextResetInTz)}) (${tzAbbr})`;
+        } else if (type === "weekly") {
+          const inferredDayOfWeek = nextResetInTz.getDay();
+          const inferredTime = extractScheduleFromOffset(
+            type,
+            totalMinutes,
+            timezone
+          ).timeOfDay;
+
+          return `将持续在 每周${DAY_NAMES[inferredDayOfWeek]} ${inferredTime} 重置 (${tzAbbr})`;
+        } else if (type === "monthly") {
+          const inferredDayOfMonth = nextResetInTz.getDate();
+          const inferredTime = extractScheduleFromOffset(
+            type,
+            totalMinutes,
+            timezone
+          ).timeOfDay;
+
+          return `将持续在 每月${inferredDayOfMonth}日 ${inferredTime} 重置 (${tzAbbr})`;
+        }
+      } catch {
+        return "";
+      }
+
+      return "";
+    },
+    [currentTimezone]
+  );
+
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
 
-    if (days < 0 || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-      return null;
+    if (inputMethod === "offset" && offsetDuration.trim()) {
+      debounceTimerRef.current = setTimeout(() => {
+        const previewText = calculatePreview(
+          scheduleType,
+          inputMethod,
+          offsetDuration,
+          dayOfWeek,
+          dayOfMonth,
+          timeOfDay
+        );
+        setPreview(previewText);
+      }, 500);
+    } else {
+      setPreview("");
     }
 
-    return { days, hours, minutes };
-  };
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [
+    scheduleType,
+    inputMethod,
+    offsetDuration,
+    dayOfWeek,
+    dayOfMonth,
+    timeOfDay,
+    calculatePreview,
+  ]);
 
   const handleAddSchedule = () => {
     setOffsetError("");
@@ -160,8 +263,6 @@ export function ResetScheduleConfig({
           schedule.nextResetTime = nextReset.toISOString();
         }
       } else if (scheduleType === "weekly") {
-        const day = parseInt(dayOfWeek);
-
         if (inputMethod === "offset") {
           if (!offsetDuration.trim()) {
             setOffsetError("请输入持续时间");
@@ -181,19 +282,21 @@ export function ResetScheduleConfig({
             return;
           }
 
-          const now = new Date();
-          const nextReset = new Date(now.getTime() + totalMinutes * 60 * 1000);
+          const extracted = extractScheduleFromOffset(
+            "weekly",
+            totalMinutes,
+            timezone
+          );
 
           schedule = createResetSchedule({
             type: "weekly",
             enabled: true,
-            dayOfWeek: day,
-            timeOfDay,
+            dayOfWeek: extracted.dayOfWeek!,
+            timeOfDay: extracted.timeOfDay,
             timezone,
           });
-
-          schedule.nextResetTime = nextReset.toISOString();
         } else {
+          const day = parseInt(dayOfWeek);
           schedule = createResetSchedule({
             type: "weekly",
             enabled: true,
@@ -203,8 +306,6 @@ export function ResetScheduleConfig({
           });
         }
       } else if (scheduleType === "monthly") {
-        const day = parseInt(dayOfMonth);
-
         if (inputMethod === "offset") {
           if (!offsetDuration.trim()) {
             setOffsetError("请输入持续时间");
@@ -224,19 +325,21 @@ export function ResetScheduleConfig({
             return;
           }
 
-          const now = new Date();
-          const nextReset = new Date(now.getTime() + totalMinutes * 60 * 1000);
+          const extracted = extractScheduleFromOffset(
+            "monthly",
+            totalMinutes,
+            timezone
+          );
 
           schedule = createResetSchedule({
             type: "monthly",
             enabled: true,
-            dayOfMonth: day,
-            timeOfDay,
+            dayOfMonth: extracted.dayOfMonth!,
+            timeOfDay: extracted.timeOfDay,
             timezone,
           });
-
-          schedule.nextResetTime = nextReset.toISOString();
         } else {
+          const day = parseInt(dayOfMonth);
           schedule = createResetSchedule({
             type: "monthly",
             enabled: true,
@@ -253,8 +356,8 @@ export function ResetScheduleConfig({
       setShowAddForm(false);
       resetForm();
     } catch (error) {
-      console.error("Failed to create schedule:", error);
-      setOffsetError("创建计划失败，请检查输入");
+      const errorMessage = error instanceof Error ? error.message : "未知错误";
+      setOffsetError(`创建计划失败: ${errorMessage}`);
     }
   };
 
@@ -269,6 +372,7 @@ export function ResetScheduleConfig({
     setTimeOfDay("00:00");
     setOffsetError("");
     setIntervalError("");
+    setPreview("");
   };
 
   const handleRemoveSchedule = (scheduleId: string) => {
@@ -281,6 +385,45 @@ export function ResetScheduleConfig({
         s.id === scheduleId ? { ...s, enabled: !s.enabled } : s
       )
     );
+  };
+
+  const handleInputMethodChange = (newMethod: InputMethod) => {
+    if (newMethod === "direct" && inputMethod === "offset") {
+      const parsed = parseDurationString(offsetDuration);
+      if (parsed) {
+        const totalMinutes =
+          parsed.days * 24 * 60 + parsed.hours * 60 + parsed.minutes;
+        if (totalMinutes >= 1) {
+          const timezone = currentTimezone;
+          const extracted = extractScheduleFromOffset(
+            scheduleType,
+            totalMinutes,
+            timezone
+          );
+
+          if (scheduleType === "weekly" && extracted.dayOfWeek !== undefined) {
+            setDayOfWeek(String(extracted.dayOfWeek));
+            setTimeOfDay(extracted.timeOfDay);
+          } else if (
+            scheduleType === "monthly" &&
+            extracted.dayOfMonth !== undefined
+          ) {
+            setDayOfMonth(String(extracted.dayOfMonth));
+            setTimeOfDay(extracted.timeOfDay);
+          }
+        }
+      }
+    } else if (newMethod === "offset" && inputMethod === "direct") {
+      setOffsetDuration("");
+      setDayOfWeek("1");
+      setDayOfMonth("1");
+      setTimeOfDay("00:00");
+      setNextResetTimeInput("");
+    }
+
+    setInputMethod(newMethod);
+    setOffsetError("");
+    setIntervalError("");
   };
 
   return (
@@ -388,9 +531,7 @@ export function ResetScheduleConfig({
               <Select
                 value={inputMethod}
                 onValueChange={(value) => {
-                  setInputMethod(value as InputMethod);
-                  setOffsetError("");
-                  setIntervalError("");
+                  handleInputMethodChange(value as InputMethod);
                 }}
               >
                 <SelectTrigger className="h-8">
@@ -424,7 +565,7 @@ export function ResetScheduleConfig({
             </div>
           )}
 
-          {scheduleType === "weekly" && (
+          {scheduleType === "weekly" && inputMethod === "direct" && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label className="text-xs">星期</Label>
@@ -453,7 +594,7 @@ export function ResetScheduleConfig({
             </div>
           )}
 
-          {scheduleType === "monthly" && (
+          {scheduleType === "monthly" && inputMethod === "direct" && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label className="text-xs">日期</Label>
@@ -498,6 +639,11 @@ export function ResetScheduleConfig({
               <div className="text-xs text-muted-foreground">
                 支持格式：d(天) h(小时) m(分钟)，如：3d 5h 44m（至少 1m）
               </div>
+              {preview && (
+                <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+                  {preview}
+                </div>
+              )}
             </div>
           )}
 

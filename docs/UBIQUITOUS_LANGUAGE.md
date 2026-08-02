@@ -70,6 +70,35 @@ For one-time subscriptions, tracks remaining prepaid credits:
 - No automatic reset or renewal
 - User must manually recharge when exhausted
 
+### Offset-Based Schedule Creation (基于偏移的计划创建)
+
+A method of creating reset schedules where the user specifies a duration from the current time (e.g., "3d 5h"), and the system infers the schedule properties from that offset:
+
+- User enters: offset duration (e.g., "3d 5h 44m")
+- System calculates: next reset time = now + offset
+- System infers: dayOfWeek/dayOfMonth and timeOfDay from calculated time
+- Stored values: inferred day/time values (not the offset)
+- Future behavior: repeats on the inferred schedule
+
+**Example:**
+
+- Current: Monday 10:00, offset "3d 5h"
+- Weekly schedule: inferred as Thursday 15:00 → resets every Thursday at 15:00
+
+### Direct Input Schedule Creation (直接输入计划创建)
+
+A method of creating reset schedules where the user manually selects schedule properties:
+
+- User selects: dayOfWeek/dayOfMonth and timeOfDay
+- System calculates: next reset time based on selected values
+- Stored values: user-selected day/time values
+- Future behavior: repeats on the selected schedule
+
+**Example:**
+
+- User selects: Thursday 15:00
+- Weekly schedule: resets every Thursday at 15:00
+
 ## Business Rules
 
 ### Quota Reset Schedule Visibility

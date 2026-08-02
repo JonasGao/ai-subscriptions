@@ -314,3 +314,62 @@ export function shouldResetNow(schedule: ResetSchedule): boolean {
 
   return diffMinutes < 5;
 }
+
+function getDateInTimezone(date: Date, timezone?: string): Date {
+  if (!timezone) return date;
+  try {
+    return new Date(date.toLocaleString("en-US", { timeZone: timezone }));
+  } catch {
+    return date;
+  }
+}
+
+export function extractDayOfWeekFromDate(
+  date: Date,
+  timezone?: string
+): number {
+  return getDateInTimezone(date, timezone).getDay();
+}
+
+export function extractDayOfMonthFromDate(
+  date: Date,
+  timezone?: string
+): number {
+  return getDateInTimezone(date, timezone).getDate();
+}
+
+export function extractTimeOfDayFromDate(
+  date: Date,
+  timezone?: string
+): string {
+  const dateInTz = getDateInTimezone(date, timezone);
+  const hours = dateInTz.getHours();
+  const minutes = dateInTz.getMinutes();
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+export function extractScheduleFromOffset(
+  type: ResetScheduleType,
+  offsetMinutes: number,
+  timezone?: string
+): {
+  dayOfWeek?: number;
+  dayOfMonth?: number;
+  timeOfDay: string;
+} {
+  const now = new Date();
+  const nextReset = new Date(now.getTime() + offsetMinutes * 60 * 1000);
+
+  const result: { dayOfWeek?: number; dayOfMonth?: number; timeOfDay: string } =
+    {
+      timeOfDay: extractTimeOfDayFromDate(nextReset, timezone),
+    };
+
+  if (type === "weekly") {
+    result.dayOfWeek = extractDayOfWeekFromDate(nextReset, timezone);
+  } else if (type === "monthly") {
+    result.dayOfMonth = extractDayOfMonthFromDate(nextReset, timezone);
+  }
+
+  return result;
+}
