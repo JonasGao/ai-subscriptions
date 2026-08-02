@@ -60,14 +60,26 @@ export function readData(): SubscriptionData {
 
     data.subscriptions.forEach((sub) => {
       if (sub.resetSchedules) {
-        sub.resetSchedules.forEach((schedule) => {
-          validateResetSchedule(schedule);
+        const validSchedules: ResetSchedule[] = [];
 
-          if (schedule.exhausted === undefined) {
-            schedule.exhausted = false;
-            needsWrite = true;
+        sub.resetSchedules.forEach((schedule) => {
+          try {
+            validateResetSchedule(schedule);
+            validSchedules.push(schedule);
+
+            if (schedule.exhausted === undefined) {
+              schedule.exhausted = false;
+              needsWrite = true;
+            }
+          } catch (error) {
+            console.error(`Skipping invalid schedule:`, error);
           }
         });
+
+        if (sub.resetSchedules.length !== validSchedules.length) {
+          sub.resetSchedules = validSchedules;
+          needsWrite = true;
+        }
       }
     });
 
