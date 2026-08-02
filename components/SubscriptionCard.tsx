@@ -319,10 +319,7 @@ export function SubscriptionCard({
                           {getScheduleTypeLabel(schedule.type)}
                         </span>
                         <span className="text-muted-foreground">
-                          {formatNextResetTime(
-                            schedule.nextResetTime,
-                            schedule.timezone
-                          )}
+                          {formatNextResetTime(schedule.nextResetTime)}
                         </span>
                         <Button
                           variant={

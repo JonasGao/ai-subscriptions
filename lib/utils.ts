@@ -76,10 +76,7 @@ export function formatDate(dateString?: string): string {
   });
 }
 
-export function formatNextResetTime(
-  isoString: string,
-  timezone?: string
-): string {
+export function formatNextResetTime(isoString: string): string {
   const date = new Date(isoString);
   const now = new Date();
   const diffMs = date.getTime() - now.getTime();
@@ -88,63 +85,27 @@ export function formatNextResetTime(
   const remainingMins = diffMins % 60;
   const diffDays = Math.floor(diffHours / 24);
 
-  const formatTimeWithTimezone = () => {
-    if (timezone) {
-      try {
-        const timeStr = date.toLocaleString("zh-CN", {
-          timeZone: timezone,
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        const tzAbbr = getTimezoneAbbr(timezone);
-        return `${timeStr} (${tzAbbr})`;
-      } catch {
-        return date.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-      }
-    }
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
   if (diffMins < 0) {
     return "已过期";
   } else if (diffMins < 60) {
     return `${diffMins}分钟后重置`;
   } else if (diffHours < 24) {
     if (remainingMins === 0) {
-      return `${diffHours}小时后重置 (${formatTimeWithTimezone()})`;
+      return `${diffHours}小时后重置`;
     }
-    return `${diffHours}小时${remainingMins}分钟后重置 (${formatTimeWithTimezone()})`;
+    return `${diffHours}小时${remainingMins}分钟后重置`;
   } else {
     const remainingHours = diffHours % 24;
-    const dateStr = timezone
-      ? date.toLocaleDateString("zh-CN", { timeZone: timezone })
-      : date.toLocaleDateString();
 
     if (remainingHours === 0 && remainingMins === 0) {
-      return `${diffDays}天后重置 (${dateStr} ${formatTimeWithTimezone()})`;
+      return `${diffDays}天后重置`;
     } else if (remainingMins === 0) {
-      return `${diffDays}天${remainingHours}小时后重置 (${dateStr} ${formatTimeWithTimezone()})`;
+      return `${diffDays}天${remainingHours}小时后重置`;
     } else if (remainingHours === 0) {
-      return `${diffDays}天${remainingMins}分钟后重置 (${dateStr} ${formatTimeWithTimezone()})`;
+      return `${diffDays}天${remainingMins}分钟后重置`;
     }
-    return `${diffDays}天${remainingHours}小时${remainingMins}分钟后重置 (${dateStr} ${formatTimeWithTimezone()})`;
+    return `${diffDays}天${remainingHours}小时${remainingMins}分钟后重置`;
   }
-}
-
-function getTimezoneAbbr(timezone: string): string {
-  const tzMap: Record<string, string> = {
-    "Asia/Shanghai": "上海时间",
-    "Asia/Hong_Kong": "香港时间",
-    "Asia/Tokyo": "东京时间",
-    "America/New_York": "纽约时间",
-    "America/Los_Angeles": "洛杉矶时间",
-    "Europe/London": "伦敦时间",
-    UTC: "UTC",
-  };
-  return tzMap[timezone] || timezone;
 }
 
 export function getScheduleTypeLabel(type: string): string {

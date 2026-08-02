@@ -480,11 +480,7 @@ export function ResetScheduleConfig({
                   {schedule.nextResetTime && (
                     <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      下次重置:{" "}
-                      {formatNextResetTime(
-                        schedule.nextResetTime,
-                        schedule.timezone
-                      )}
+                      下次重置: {formatNextResetTime(schedule.nextResetTime)}
                     </div>
                   )}
                 </div>
