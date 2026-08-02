@@ -1,31 +1,26 @@
-import cron from 'node-cron'
-import { getSubscriptionsNeedingReset, executeResetsForSubscriptions } from './db'
+import cron from "node-cron";
+import { processResetTick } from "./db";
 
-let isInitialized = false
+let isInitialized = false;
 
 export function initScheduler() {
   if (isInitialized) {
-    return
+    return;
   }
 
-  isInitialized = true
+  isInitialized = true;
 
-  cron.schedule('*/5 * * * *', async () => {
-    console.log('[Scheduler] Checking for subscriptions needing reset...')
+  cron.schedule("*/5 * * * *", async () => {
+    console.log("[Scheduler] Checking for schedules needing reset...");
     try {
-      const resets = getSubscriptionsNeedingReset()
-      
-      if (resets.length === 0) {
-        return
+      const result = processResetTick();
+      if (result > 0) {
+        console.log("[Scheduler] Processed reset tick");
       }
-
-      console.log(`[Scheduler] Found ${resets.length} subscriptions to reset`)
-      const count = executeResetsForSubscriptions(resets)
-      console.log(`[Scheduler] Reset ${count} subscriptions to active`)
     } catch (error) {
-      console.error('[Scheduler] Reset check failed:', error)
+      console.error("[Scheduler] Reset check failed:", error);
     }
-  })
+  });
 
-  console.log('[Scheduler] Initialized - running every 5 minutes')
+  console.log("[Scheduler] Initialized - running every 5 minutes");
 }

@@ -63,24 +63,24 @@ function calculateNextHourlyReset(
   schedule: { intervalHours?: number; referenceTime?: string },
   now: Date
 ): Date {
-  if (schedule.referenceTime) {
-    const refTime = new Date(schedule.referenceTime);
-    if (refTime > now) {
-      return refTime;
-    }
-  }
-
   if (!schedule.intervalHours || schedule.intervalHours < 1) {
     throw new Error(
       "intervalHours must be a positive number for hourly schedule"
     );
   }
 
-  const currentHour = now.getHours();
-  const hoursUntilNextInterval =
-    schedule.intervalHours - (currentHour % schedule.intervalHours);
-  const nextReset = new Date(now);
-  nextReset.setHours(now.getHours() + hoursUntilNextInterval, 0, 0, 0);
+  if (schedule.referenceTime) {
+    const base = new Date(schedule.referenceTime);
+    const intervalMs = schedule.intervalHours * 60 * 60 * 1000;
+    let next = base;
+    while (next.getTime() <= now.getTime()) {
+      next = new Date(next.getTime() + intervalMs);
+    }
+    return next;
+  }
+
+  const intervalMs = schedule.intervalHours * 60 * 60 * 1000;
+  const nextReset = new Date(now.getTime() + intervalMs);
   return nextReset;
 }
 
@@ -329,6 +329,7 @@ export function createResetSchedule(data: {
     timezoneOffset: data.timezoneOffset,
     dayOfWeek: data.dayOfWeek,
     dayOfMonth: data.dayOfMonth,
+    exhausted: false,
   };
 
   const nextResetTime = calculateNextResetTime(schedule);

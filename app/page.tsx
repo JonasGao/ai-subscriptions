@@ -1,182 +1,236 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { StatsCards } from "@/components/StatsCards"
-import { CategoryPieChart } from "@/components/CategoryPieChart"
-import { SubscriptionList } from "@/components/SubscriptionList"
-import { CategoryFilter } from "@/components/CategoryFilter"
-import { SubscriptionForm } from "@/components/SubscriptionForm"
-import { Subscription, SubscriptionFormData } from "@/lib/types"
-import { defaultCategories } from "@/lib/types"
-import { Plus, Settings, AlertTriangle, CreditCard, Wrench } from "lucide-react"
-import Link from "next/link"
-import { PriorityManager } from "@/components/PriorityManager"
-import { ToolTab, ToolTabRef } from "@/components/ToolTab"
-import { ThemeToggle } from "@/components/ThemeToggle"
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { StatsCards } from "@/components/StatsCards";
+import { CategoryPieChart } from "@/components/CategoryPieChart";
+import { SubscriptionList } from "@/components/SubscriptionList";
+import { CategoryFilter } from "@/components/CategoryFilter";
+import { SubscriptionForm } from "@/components/SubscriptionForm";
+import { Subscription, SubscriptionFormData } from "@/lib/types";
+import { defaultCategories } from "@/lib/types";
+import {
+  Plus,
+  Settings,
+  AlertTriangle,
+  CreditCard,
+  Wrench,
+} from "lucide-react";
+import Link from "next/link";
+import { PriorityManager } from "@/components/PriorityManager";
+import { ToolTab, ToolTabRef } from "@/components/ToolTab";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'subscriptions' | 'tools'>('subscriptions')
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
-  const [categories, setCategories] = useState<string[]>(defaultCategories)
+  const [activeTab, setActiveTab] = useState<"subscriptions" | "tools">(
+    "subscriptions"
+  );
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [categories, setCategories] = useState<string[]>(defaultCategories);
   const [selectedCategory, setSelectedCategory] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('selectedCategory') || 'all'
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("selectedCategory") || "all";
     }
-    return 'all'
-  })
+    return "all";
+  });
   const [selectedStatus, setSelectedStatus] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('selectedStatus') || 'all'
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("selectedStatus") || "all";
     }
-    return 'all'
-  })
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const toolTabRef = useRef<ToolTabRef>(null)
+    return "all";
+  });
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingSubscription, setEditingSubscription] =
+    useState<Subscription | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const toolTabRef = useRef<ToolTabRef>(null);
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   const loadData = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
       const [subsRes, catsRes] = await Promise.all([
-        fetch('/api/subscriptions'),
-        fetch('/api/categories'),
-      ])
+        fetch("/api/subscriptions"),
+        fetch("/api/categories"),
+      ]);
 
       if (subsRes.ok) {
-        const subsData = await subsRes.json()
-        setSubscriptions(subsData)
+        const subsData = await subsRes.json();
+        setSubscriptions(subsData);
       }
 
       if (catsRes.ok) {
-        const catsData = await catsRes.json()
-        setCategories(catsData)
+        const catsData = await catsRes.json();
+        setCategories(catsData);
       }
     } catch (error) {
-      console.error('Failed to load data:', error)
+      console.error("Failed to load data:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category)
-    localStorage.setItem('selectedCategory', category)
-  }
+    setSelectedCategory(category);
+    localStorage.setItem("selectedCategory", category);
+  };
 
   const handleStatusChange = (status: string) => {
-    setSelectedStatus(status)
-    localStorage.setItem('selectedStatus', status)
-  }
+    setSelectedStatus(status);
+    localStorage.setItem("selectedStatus", status);
+  };
 
-  const filteredSubscriptions = subscriptions.filter(sub => {
-    const categoryMatch = selectedCategory === 'all' || sub.category === selectedCategory
-    const statusMatch = selectedStatus === 'all' || sub.status === selectedStatus
-    return categoryMatch && statusMatch
-  })
+  const filteredSubscriptions = subscriptions.filter((sub) => {
+    const categoryMatch =
+      selectedCategory === "all" || sub.category === selectedCategory;
+    const statusMatch =
+      selectedStatus === "all" || sub.status === selectedStatus;
+    return categoryMatch && statusMatch;
+  });
 
   const handleFormSubmit = async (data: SubscriptionFormData) => {
-    setErrorMessage(null)
+    setErrorMessage(null);
     try {
       if (editingSubscription) {
-        const response = await fetch(`/api/subscriptions/${editingSubscription.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        })
+        const response = await fetch(
+          `/api/subscriptions/${editingSubscription.id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          }
+        );
 
         if (response.ok) {
-          const updated = await response.json()
-          setSubscriptions(prev =>
-            prev.map(s => s.id === updated.id ? updated : s)
-          )
+          const updated = await response.json();
+          setSubscriptions((prev) =>
+            prev.map((s) => (s.id === updated.id ? updated : s))
+          );
         } else {
-          const errorData = await response.json()
-          setErrorMessage(errorData.error || '保存失败')
+          const errorData = await response.json();
+          setErrorMessage(errorData.error || "保存失败");
         }
       } else {
-        const response = await fetch('/api/subscriptions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        })
+        const response = await fetch("/api/subscriptions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
 
         if (response.ok) {
-          const newSub = await response.json()
-          setSubscriptions(prev => [...prev, newSub])
+          const newSub = await response.json();
+          setSubscriptions((prev) => [...prev, newSub]);
 
           if (!categories.includes(data.category)) {
-            setCategories(prev => [...prev, data.category])
+            setCategories((prev) => [...prev, data.category]);
           }
         } else {
-          const errorData = await response.json()
-          setErrorMessage(errorData.error || '保存失败')
+          const errorData = await response.json();
+          setErrorMessage(errorData.error || "保存失败");
         }
       }
     } catch {
-      setErrorMessage('保存订阅时发生错误')
+      setErrorMessage("保存订阅时发生错误");
     } finally {
-      setEditingSubscription(null)
+      setEditingSubscription(null);
     }
-  }
+  };
 
   const handleEdit = (subscription: Subscription) => {
-    setEditingSubscription(subscription)
-    setFormOpen(true)
-  }
+    setEditingSubscription(subscription);
+    setFormOpen(true);
+  };
 
   const handleDelete = async (id: string) => {
     try {
       const response = await fetch(`/api/subscriptions/${id}`, {
-        method: 'DELETE'
-      })
+        method: "DELETE",
+      });
 
       if (response.ok) {
-        setSubscriptions(prev => prev.filter(s => s.id !== id))
+        setSubscriptions((prev) => prev.filter((s) => s.id !== id));
       }
     } catch (error) {
-      console.error('Failed to delete subscription:', error)
+      console.error("Failed to delete subscription:", error);
     }
-  }
+  };
 
-  const handleSubscriptionStatusChange = async (id: string, newStatus: 'active' | 'paused') => {
-    const originalSubscription = subscriptions.find(s => s.id === id)
-    if (!originalSubscription) return
+  const handleSubscriptionStatusChange = async (
+    id: string,
+    newStatus: "active" | "paused"
+  ) => {
+    const originalSubscription = subscriptions.find((s) => s.id === id);
+    if (!originalSubscription) return;
 
-    setSubscriptions(prev =>
-      prev.map(s => s.id === id ? { ...s, status: newStatus, updatedAt: new Date().toISOString() } : s)
-    )
+    setSubscriptions((prev) =>
+      prev.map((s) =>
+        s.id === id
+          ? { ...s, status: newStatus, updatedAt: new Date().toISOString() }
+          : s
+      )
+    );
 
     try {
       const res = await fetch(`/api/subscriptions/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
-      })
+      });
       if (!res.ok) {
-        setSubscriptions(prev =>
-          prev.map(s => s.id === id ? originalSubscription : s)
-        )
-        setErrorMessage('状态切换失败，请重试')
+        setSubscriptions((prev) =>
+          prev.map((s) => (s.id === id ? originalSubscription : s))
+        );
+        setErrorMessage("状态切换失败，请重试");
       }
     } catch {
-      setSubscriptions(prev =>
-        prev.map(s => s.id === id ? originalSubscription : s)
-      )
-      setErrorMessage('网络错误，状态切换失败')
+      setSubscriptions((prev) =>
+        prev.map((s) => (s.id === id ? originalSubscription : s))
+      );
+      setErrorMessage("网络错误，状态切换失败");
     }
-  }
+  };
+
+  const handleScheduleToggle = async (
+    subscriptionId: string,
+    scheduleId: string,
+    exhausted: boolean
+  ) => {
+    const originalSubscription = subscriptions.find(
+      (s) => s.id === subscriptionId
+    );
+    if (!originalSubscription) return;
+
+    try {
+      const res = await fetch(
+        `/api/subscriptions/${subscriptionId}/schedules/${scheduleId}/toggle`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ exhausted }),
+        }
+      );
+
+      if (res.ok) {
+        const updated = await res.json();
+        setSubscriptions((prev) =>
+          prev.map((s) => (s.id === updated.id ? updated : s))
+        );
+      } else {
+        setErrorMessage("切换额度状态失败，请重试");
+      }
+    } catch {
+      setErrorMessage("网络错误，切换额度状态失败");
+    }
+  };
 
   const handleAddNew = () => {
-    setEditingSubscription(null)
-    setFormOpen(true)
-  }
+    setEditingSubscription(null);
+    setFormOpen(true);
+  };
 
   if (loading) {
     return (
@@ -185,7 +239,7 @@ export default function Home() {
           加载中...
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -196,16 +250,16 @@ export default function Home() {
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex border rounded-md overflow-hidden">
               <Button
-                variant={activeTab === 'subscriptions' ? 'default' : 'ghost'}
-                onClick={() => setActiveTab('subscriptions')}
+                variant={activeTab === "subscriptions" ? "default" : "ghost"}
+                onClick={() => setActiveTab("subscriptions")}
                 className="rounded-none border-0"
               >
                 <CreditCard className="h-4 w-4 mr-1" />
                 订阅
               </Button>
               <Button
-                variant={activeTab === 'tools' ? 'default' : 'ghost'}
-                onClick={() => setActiveTab('tools')}
+                variant={activeTab === "tools" ? "default" : "ghost"}
+                onClick={() => setActiveTab("tools")}
                 className="rounded-none border-0"
               >
                 <Wrench className="h-4 w-4 mr-1" />
@@ -218,13 +272,13 @@ export default function Home() {
                 <Settings className="h-4 w-4" />
               </Button>
             </Link>
-            {activeTab === 'subscriptions' && (
+            {activeTab === "subscriptions" && (
               <Button onClick={handleAddNew}>
                 <Plus className="h-4 w-4 mr-2" />
                 添加订阅
               </Button>
             )}
-            {activeTab === 'tools' && (
+            {activeTab === "tools" && (
               <Button onClick={() => toolTabRef.current?.openAddForm()}>
                 <Plus className="h-4 w-4 mr-2" />
                 添加工具
@@ -233,7 +287,7 @@ export default function Home() {
           </div>
         </div>
 
-        {errorMessage && activeTab === 'subscriptions' && (
+        {errorMessage && activeTab === "subscriptions" && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
             <span>{errorMessage}</span>
@@ -246,8 +300,11 @@ export default function Home() {
           </div>
         )}
 
-        {activeTab === 'subscriptions' && (
-          <div key="subscriptions" className="flex flex-col gap-6 animate-fade-in">
+        {activeTab === "subscriptions" && (
+          <div
+            key="subscriptions"
+            className="flex flex-col gap-6 animate-fade-in"
+          >
             <StatsCards subscriptions={subscriptions} />
 
             <CategoryFilter
@@ -265,6 +322,7 @@ export default function Home() {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onStatusChange={handleSubscriptionStatusChange}
+                onScheduleToggle={handleScheduleToggle}
               />
             </div>
 
@@ -279,7 +337,7 @@ export default function Home() {
           </div>
         )}
 
-        {activeTab === 'tools' && (
+        {activeTab === "tools" && (
           <div key="tools" className="animate-fade-in">
             <ToolTab ref={toolTabRef} categories={categories} />
           </div>
@@ -294,5 +352,5 @@ export default function Home() {
         />
       </div>
     </div>
-  )
+  );
 }

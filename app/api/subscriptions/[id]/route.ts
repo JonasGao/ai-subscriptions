@@ -1,10 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getSubscriptionById, updateSubscription, deleteSubscription } from '@/lib/db'
-import { SubscriptionStatus, Subscription } from '@/lib/types'
+import { NextRequest, NextResponse } from "next/server";
+import {
+  getSubscriptionById,
+  updateSubscription,
+  deleteSubscription,
+  recomputeStatus,
+  setStatusManually,
+} from "@/lib/db";
+import { SubscriptionStatus, Subscription } from "@/lib/types";
 
 function stripApiKey(sub: Subscription) {
-  const { apiKey, ...rest } = sub
-  return rest
+  const { apiKey, ...rest } = sub;
+  return rest;
 }
 
 export async function GET(
@@ -12,22 +18,22 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const subscription = getSubscriptionById(params.id)
-    
+    const subscription = getSubscriptionById(params.id);
+
     if (!subscription) {
       return NextResponse.json(
-        { error: 'Subscription not found' },
+        { error: "Subscription not found" },
         { status: 404 }
-      )
+      );
     }
-    
-    return NextResponse.json(stripApiKey(subscription))
+
+    return NextResponse.json(stripApiKey(subscription));
   } catch (error) {
-    console.error('GET /api/subscriptions/[id] error:', error)
+    console.error("GET /api/subscriptions/[id] error:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch subscription' },
+      { error: "Failed to fetch subscription" },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -36,51 +42,70 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const body = await request.json()
-    
+    const body = await request.json();
+
     // Validate price if provided
-    if (body.price !== undefined && (typeof body.price !== 'number' || body.price < 0)) {
+    if (
+      body.price !== undefined &&
+      (typeof body.price !== "number" || body.price < 0)
+    ) {
       return NextResponse.json(
-        { error: 'Price must be a non-negative number' },
+        { error: "Price must be a non-negative number" },
         { status: 400 }
-      )
-    }
-    
-    // Validate status if provided
-    const validStatuses: SubscriptionStatus[] = ['active', 'paused', 'cancelled']
-    if (body.status !== undefined && !validStatuses.includes(body.status)) {
-      return NextResponse.json(
-        { error: 'Invalid status. Must be one of: active, paused, cancelled' },
-        { status: 400 }
-      )
-    }
-    
-    if (!body.apiKey) {
-      delete body.apiKey
+      );
     }
 
-    const updatedSubscription = updateSubscription(params.id, body)
-    
+    // Validate status if provided
+    const validStatuses: SubscriptionStatus[] = [
+      "active",
+      "paused",
+      "cancelled",
+    ];
+    if (body.status !== undefined && !validStatuses.includes(body.status)) {
+      return NextResponse.json(
+        { error: "Invalid status. Must be one of: active, paused, cancelled" },
+        { status: 400 }
+      );
+    }
+
+    if (!body.apiKey) {
+      delete body.apiKey;
+    }
+
+    const updatedSubscription = updateSubscription(params.id, body);
+
     if (!updatedSubscription) {
       return NextResponse.json(
-        { error: 'Subscription not found' },
+        { error: "Subscription not found" },
         { status: 404 }
-      )
+      );
     }
-    
-    return NextResponse.json(stripApiKey(updatedSubscription))
+
+    // Recompute status if resetSchedules was updated
+    let finalSubscription = updatedSubscription;
+    if (body.resetSchedules !== undefined) {
+      const computedStatus = recomputeStatus(updatedSubscription);
+      if (computedStatus !== updatedSubscription.status) {
+        const statusUpdated = setStatusManually(params.id, computedStatus);
+        if (statusUpdated) {
+          finalSubscription = statusUpdated;
+        }
+      }
+    }
+
+    return NextResponse.json(stripApiKey(finalSubscription));
   } catch (error) {
-    console.error('PUT /api/subscriptions/[id] error:', error)
+    console.error("PUT /api/subscriptions/[id] error:", error);
     if (error instanceof SyntaxError) {
       return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
+        { error: "Invalid JSON in request body" },
         { status: 400 }
-      )
+      );
     }
     return NextResponse.json(
-      { error: 'Failed to update subscription' },
+      { error: "Failed to update subscription" },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -89,21 +114,21 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const deleted = deleteSubscription(params.id)
-    
+    const deleted = deleteSubscription(params.id);
+
     if (!deleted) {
       return NextResponse.json(
-        { error: 'Subscription not found' },
+        { error: "Subscription not found" },
         { status: 404 }
-      )
+      );
     }
-    
-    return NextResponse.json({ success: true })
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('DELETE /api/subscriptions/[id] error:', error)
+    console.error("DELETE /api/subscriptions/[id] error:", error);
     return NextResponse.json(
-      { error: 'Failed to delete subscription' },
+      { error: "Failed to delete subscription" },
       { status: 500 }
-    )
+    );
   }
 }
