@@ -291,7 +291,7 @@ export function ResetScheduleConfig({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => setShowAddForm(true)}
         >
           <Plus className="h-4 w-4 mr-1" />
           添加
