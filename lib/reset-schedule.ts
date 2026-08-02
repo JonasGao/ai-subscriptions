@@ -1,6 +1,30 @@
 import { ResetSchedule, ResetScheduleType } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
+export function validateResetSchedule(schedule: Partial<ResetSchedule>): void {
+  if (!schedule.type) {
+    throw new Error("Schedule type is required");
+  }
+
+  if (!["hourly", "weekly", "monthly"].includes(schedule.type)) {
+    throw new Error(
+      `Invalid schedule type '${schedule.type}'. Supported types: hourly, weekly, monthly`
+    );
+  }
+
+  if ("referenceTime" in schedule) {
+    throw new Error(
+      "Field 'referenceTime' is no longer supported. Use nextResetTime instead."
+    );
+  }
+
+  if ("timezoneOffset" in schedule) {
+    throw new Error(
+      "Field 'timezoneOffset' is no longer supported. Use timezone instead."
+    );
+  }
+}
+
 export function parseDurationString(
   duration: string
 ): { days: number; hours: number; minutes: number } | null {
@@ -48,8 +72,6 @@ export function calculateNextResetTime(
   switch (schedule.type) {
     case "hourly":
       return calculateNextHourlyReset(schedule, now);
-    case "daily":
-      return calculateNextDailyReset(schedule, now);
     case "weekly":
       return calculateNextWeeklyReset(schedule, now);
     case "monthly":
@@ -60,7 +82,7 @@ export function calculateNextResetTime(
 }
 
 function calculateNextHourlyReset(
-  schedule: { intervalHours?: number; referenceTime?: string },
+  schedule: { intervalHours?: number },
   now: Date
 ): Date {
   if (!schedule.intervalHours || schedule.intervalHours < 1) {
@@ -69,61 +91,8 @@ function calculateNextHourlyReset(
     );
   }
 
-  if (schedule.referenceTime) {
-    const base = new Date(schedule.referenceTime);
-    const intervalMs = schedule.intervalHours * 60 * 60 * 1000;
-    let next = base;
-    while (next.getTime() <= now.getTime()) {
-      next = new Date(next.getTime() + intervalMs);
-    }
-    return next;
-  }
-
   const intervalMs = schedule.intervalHours * 60 * 60 * 1000;
   const nextReset = new Date(now.getTime() + intervalMs);
-  return nextReset;
-}
-
-function calculateNextDailyReset(
-  schedule: { timeOfDay?: string; timezone?: string; timezoneOffset?: number },
-  now: Date
-): Date {
-  if (!schedule.timeOfDay) {
-    throw new Error("timeOfDay is required for daily schedule");
-  }
-
-  const [hours, minutes] = schedule.timeOfDay.split(":").map(Number);
-  const nextReset = new Date(now);
-
-  if (schedule.timezone) {
-    try {
-      const nowInTz = new Date(
-        now.toLocaleString("en-US", { timeZone: schedule.timezone })
-      );
-      const targetTime = new Date(
-        now.toLocaleString("en-US", { timeZone: schedule.timezone })
-      );
-      targetTime.setHours(hours, minutes, 0, 0);
-
-      if (targetTime <= nowInTz) {
-        targetTime.setDate(targetTime.getDate() + 1);
-      }
-
-      const offset = now.getTime() - nowInTz.getTime();
-      nextReset.setTime(targetTime.getTime() + offset);
-    } catch {
-      nextReset.setHours(hours, minutes, 0, 0);
-      if (nextReset <= now) {
-        nextReset.setDate(nextReset.getDate() + 1);
-      }
-    }
-  } else {
-    nextReset.setHours(hours, minutes, 0, 0);
-    if (nextReset <= now) {
-      nextReset.setDate(nextReset.getDate() + 1);
-    }
-  }
-
   return nextReset;
 }
 
@@ -291,30 +260,12 @@ export function createResetSchedule(data: {
   type: ResetScheduleType;
   enabled?: boolean;
   intervalHours?: number;
-  referenceTime?: string;
-  durationDays?: number;
-  durationHours?: number;
-  durationMinutes?: number;
   timeOfDay?: string;
   timezone?: string;
-  timezoneOffset?: number;
   dayOfWeek?: number;
   dayOfMonth?: number;
 }): ResetSchedule {
   const now = new Date();
-
-  let referenceTime = data.referenceTime;
-  if (
-    !referenceTime &&
-    (data.durationDays || data.durationHours || data.durationMinutes)
-  ) {
-    const offsetMs =
-      (data.durationDays || 0) * 24 * 60 * 60 * 1000 +
-      (data.durationHours || 0) * 60 * 60 * 1000 +
-      (data.durationMinutes || 0) * 60 * 1000;
-    const refDate = new Date(now.getTime() + offsetMs);
-    referenceTime = refDate.toISOString();
-  }
 
   const schedule: Omit<
     ResetSchedule,
@@ -323,10 +274,8 @@ export function createResetSchedule(data: {
     type: data.type,
     enabled: data.enabled ?? true,
     intervalHours: data.intervalHours,
-    referenceTime: referenceTime,
     timeOfDay: data.timeOfDay,
     timezone: data.timezone,
-    timezoneOffset: data.timezoneOffset,
     dayOfWeek: data.dayOfWeek,
     dayOfMonth: data.dayOfMonth,
     exhausted: false,

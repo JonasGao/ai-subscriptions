@@ -11,12 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ResetSchedule,
-  ResetScheduleType,
-  ResetScheduleFormData,
-} from "@/lib/types";
-import { createResetSchedule, parseDurationString } from "@/lib/reset-schedule";
+import { ResetSchedule, ResetScheduleType } from "@/lib/types";
+import { createResetSchedule } from "@/lib/reset-schedule";
 import { formatNextResetTime, getScheduleTypeLabel } from "@/lib/utils";
 import { Plus, Trash2, Clock, Globe } from "lucide-react";
 
@@ -24,6 +20,8 @@ interface ResetScheduleConfigProps {
   schedules: ResetSchedule[];
   onChange: (schedules: ResetSchedule[]) => void;
 }
+
+type InputMethod = "direct" | "offset";
 
 function getDayOfWeekLabel(dayOfWeek: number): string {
   const days = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
@@ -34,14 +32,20 @@ export function ResetScheduleConfig({
   schedules,
   onChange,
 }: ResetScheduleConfigProps) {
-  const [newSchedule, setNewSchedule] = useState<ResetScheduleFormData>({
-    type: "daily",
-    enabled: true,
-    timeOfDay: "00:00",
-  });
   const [showAddForm, setShowAddForm] = useState(false);
-  const [durationInput, setDurationInput] = useState("");
-  const [durationError, setDurationError] = useState("");
+  const [scheduleType, setScheduleType] = useState<ResetScheduleType>("hourly");
+  const [inputMethod, setInputMethod] = useState<InputMethod>("offset");
+
+  const [intervalHours, setIntervalHours] = useState<string>("1");
+  const [offsetDuration, setOffsetDuration] = useState<string>("");
+  const [nextResetTimeInput, setNextResetTimeInput] = useState<string>("");
+  const [dayOfWeek, setDayOfWeek] = useState<string>("1");
+  const [dayOfMonth, setDayOfMonth] = useState<string>("1");
+  const [timeOfDay, setTimeOfDay] = useState<string>("00:00");
+
+  const [offsetError, setOffsetError] = useState<string>("");
+  const [intervalError, setIntervalError] = useState<string>("");
+
   const [currentTimezone] = useState(() => {
     try {
       return Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -64,54 +68,207 @@ export function ResetScheduleConfig({
     return tzMap[timezone] || timezone.split("/").pop() || timezone;
   };
 
-  const handleAddSchedule = () => {
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const timezoneOffset = -new Date().getTimezoneOffset();
+  const parseDurationString = (
+    duration: string
+  ): { days: number; hours: number; minutes: number } | null => {
+    const trimmed = duration.replace(/\s+/g, "").toLowerCase();
 
-    if (newSchedule.type === "hourly" && durationInput) {
-      const parsed = parseDurationString(durationInput);
-      if (!parsed) {
-        setDurationError("格式错误，请使用如：3d 5h 44m");
+    const daysMatch = trimmed.match(/(\d+)d/);
+    const hoursMatch = trimmed.match(/(\d+)h/);
+    const minutesMatch = trimmed.match(/(\d+)m/);
+
+    const days = daysMatch ? parseInt(daysMatch[1]) : 0;
+    const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
+    const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
+
+    if (days === 0 && hours === 0 && minutes === 0) {
+      return null;
+    }
+
+    if (days < 0 || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      return null;
+    }
+
+    return { days, hours, minutes };
+  };
+
+  const handleAddSchedule = () => {
+    setOffsetError("");
+    setIntervalError("");
+
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    try {
+      let schedule: ResetSchedule;
+
+      if (scheduleType === "hourly") {
+        const interval = parseInt(intervalHours);
+        if (isNaN(interval) || interval < 1) {
+          setIntervalError("间隔必须至少为 1 小时");
+          return;
+        }
+
+        if (inputMethod === "offset") {
+          if (!offsetDuration.trim()) {
+            setOffsetError("请输入持续时间");
+            return;
+          }
+
+          const parsed = parseDurationString(offsetDuration);
+          if (!parsed) {
+            setOffsetError("格式错误，请使用如：3d 5h 44m");
+            return;
+          }
+
+          const totalMinutes =
+            parsed.days * 24 * 60 + parsed.hours * 60 + parsed.minutes;
+          if (totalMinutes < 1) {
+            setOffsetError("持续时间必须至少为 1 分钟");
+            return;
+          }
+
+          const now = new Date();
+          const nextReset = new Date(now.getTime() + totalMinutes * 60 * 1000);
+
+          schedule = createResetSchedule({
+            type: "hourly",
+            enabled: true,
+            intervalHours: interval,
+            timezone,
+          });
+
+          schedule.nextResetTime = nextReset.toISOString();
+        } else {
+          if (!nextResetTimeInput.trim()) {
+            setOffsetError("请输入下次重置时间");
+            return;
+          }
+
+          const nextReset = new Date(nextResetTimeInput);
+          if (isNaN(nextReset.getTime())) {
+            setOffsetError("无效的日期时间格式");
+            return;
+          }
+
+          schedule = createResetSchedule({
+            type: "hourly",
+            enabled: true,
+            intervalHours: interval,
+            timezone,
+          });
+
+          schedule.nextResetTime = nextReset.toISOString();
+        }
+      } else if (scheduleType === "weekly") {
+        const day = parseInt(dayOfWeek);
+
+        if (inputMethod === "offset") {
+          if (!offsetDuration.trim()) {
+            setOffsetError("请输入持续时间");
+            return;
+          }
+
+          const parsed = parseDurationString(offsetDuration);
+          if (!parsed) {
+            setOffsetError("格式错误，请使用如：3d 5h 44m");
+            return;
+          }
+
+          const totalMinutes =
+            parsed.days * 24 * 60 + parsed.hours * 60 + parsed.minutes;
+          if (totalMinutes < 1) {
+            setOffsetError("持续时间必须至少为 1 分钟");
+            return;
+          }
+
+          const now = new Date();
+          const nextReset = new Date(now.getTime() + totalMinutes * 60 * 1000);
+
+          schedule = createResetSchedule({
+            type: "weekly",
+            enabled: true,
+            dayOfWeek: day,
+            timeOfDay,
+            timezone,
+          });
+
+          schedule.nextResetTime = nextReset.toISOString();
+        } else {
+          schedule = createResetSchedule({
+            type: "weekly",
+            enabled: true,
+            dayOfWeek: day,
+            timeOfDay,
+            timezone,
+          });
+        }
+      } else if (scheduleType === "monthly") {
+        const day = parseInt(dayOfMonth);
+
+        if (inputMethod === "offset") {
+          if (!offsetDuration.trim()) {
+            setOffsetError("请输入持续时间");
+            return;
+          }
+
+          const parsed = parseDurationString(offsetDuration);
+          if (!parsed) {
+            setOffsetError("格式错误，请使用如：3d 5h 44m");
+            return;
+          }
+
+          const totalMinutes =
+            parsed.days * 24 * 60 + parsed.hours * 60 + parsed.minutes;
+          if (totalMinutes < 1) {
+            setOffsetError("持续时间必须至少为 1 分钟");
+            return;
+          }
+
+          const now = new Date();
+          const nextReset = new Date(now.getTime() + totalMinutes * 60 * 1000);
+
+          schedule = createResetSchedule({
+            type: "monthly",
+            enabled: true,
+            dayOfMonth: day,
+            timeOfDay,
+            timezone,
+          });
+
+          schedule.nextResetTime = nextReset.toISOString();
+        } else {
+          schedule = createResetSchedule({
+            type: "monthly",
+            enabled: true,
+            dayOfMonth: day,
+            timeOfDay,
+            timezone,
+          });
+        }
+      } else {
         return;
       }
 
-      const finalSchedule = createResetSchedule({
-        type: "hourly",
-        enabled: newSchedule.enabled,
-        durationDays: parsed.days,
-        durationHours: parsed.hours,
-        durationMinutes: parsed.minutes,
-        timezone,
-        timezoneOffset,
-      });
-
-      onChange([...schedules, finalSchedule]);
+      onChange([...schedules, schedule]);
       setShowAddForm(false);
-      setNewSchedule({
-        type: "daily",
-        enabled: true,
-        timeOfDay: "00:00",
-      });
-      setDurationInput("");
-      setDurationError("");
-      return;
+      resetForm();
+    } catch (error) {
+      console.error("Failed to create schedule:", error);
+      setOffsetError("创建计划失败，请检查输入");
     }
+  };
 
-    const finalSchedule = createResetSchedule({
-      ...newSchedule,
-      timezone,
-      timezoneOffset,
-    });
-
-    onChange([...schedules, finalSchedule]);
-    setShowAddForm(false);
-    setNewSchedule({
-      type: "daily",
-      enabled: true,
-      timeOfDay: "00:00",
-    });
-    setDurationInput("");
-    setDurationError("");
+  const resetForm = () => {
+    setScheduleType("hourly");
+    setInputMethod("offset");
+    setIntervalHours("1");
+    setOffsetDuration("");
+    setNextResetTimeInput("");
+    setDayOfWeek("1");
+    setDayOfMonth("1");
+    setTimeOfDay("00:00");
+    setOffsetError("");
+    setIntervalError("");
   };
 
   const handleRemoveSchedule = (scheduleId: string) => {
@@ -124,17 +281,6 @@ export function ResetScheduleConfig({
         s.id === scheduleId ? { ...s, enabled: !s.enabled } : s
       )
     );
-  };
-
-  const handleNewScheduleTypeChange = (type: ResetScheduleType) => {
-    setNewSchedule((prev) => ({
-      ...prev,
-      type,
-      dayOfWeek: type === "weekly" ? 1 : undefined,
-      dayOfMonth: type === "monthly" ? 1 : undefined,
-    }));
-    setDurationInput("");
-    setDurationError("");
   };
 
   return (
@@ -169,18 +315,18 @@ export function ResetScheduleConfig({
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">
-                      {getScheduleTypeLabel(schedule.type)}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
                       {schedule.type === "hourly" &&
-                        schedule.referenceTime &&
-                        "从现在起"}
-                      {schedule.type === "daily" && schedule.timeOfDay}
+                        `每${schedule.intervalHours}小时`}
                       {schedule.type === "weekly" &&
-                        `${getDayOfWeekLabel(schedule.dayOfWeek ?? 0)} ${schedule.timeOfDay}`}
+                        `每${getDayOfWeekLabel(schedule.dayOfWeek ?? 0)}`}
                       {schedule.type === "monthly" &&
-                        `${schedule.dayOfMonth}日 ${schedule.timeOfDay}`}
+                        `每${schedule.dayOfMonth}日`}
                     </span>
+                    {schedule.type !== "hourly" && schedule.timeOfDay && (
+                      <span className="text-xs text-muted-foreground">
+                        {schedule.timeOfDay}
+                      </span>
+                    )}
                     {schedule.timezone && schedule.type !== "hourly" && (
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <Globe className="h-3 w-3" />
@@ -219,51 +365,70 @@ export function ResetScheduleConfig({
             <div className="space-y-2">
               <Label className="text-xs">类型</Label>
               <Select
-                value={newSchedule.type}
-                onValueChange={(value) =>
-                  handleNewScheduleTypeChange(value as ResetScheduleType)
-                }
+                value={scheduleType}
+                onValueChange={(value) => {
+                  setScheduleType(value as ResetScheduleType);
+                  setOffsetError("");
+                  setIntervalError("");
+                }}
               >
                 <SelectTrigger className="h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="hourly">从现在起</SelectItem>
-                  <SelectItem value="daily">每日</SelectItem>
+                  <SelectItem value="hourly">每小时</SelectItem>
                   <SelectItem value="weekly">每周</SelectItem>
                   <SelectItem value="monthly">每月</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {newSchedule.type === "hourly" && (
-              <div className="space-y-2">
-                <Label className="text-xs">持续时间</Label>
-                <Input
-                  type="text"
-                  placeholder="如：3d 5h 44m"
-                  value={durationInput}
-                  onChange={(e) => {
-                    setDurationInput(e.target.value);
-                    setDurationError("");
-                  }}
-                  className="h-8"
-                />
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label className="text-xs">输入方式</Label>
+              <Select
+                value={inputMethod}
+                onValueChange={(value) => {
+                  setInputMethod(value as InputMethod);
+                  setOffsetError("");
+                  setIntervalError("");
+                }}
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="offset">从现在起</SelectItem>
+                  <SelectItem value="direct">直接输入</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-            {newSchedule.type === "weekly" && (
+          {scheduleType === "hourly" && (
+            <div className="space-y-2">
+              <Label className="text-xs">间隔（小时）</Label>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                value={intervalHours}
+                onChange={(e) => {
+                  setIntervalHours(e.target.value);
+                  setIntervalError("");
+                }}
+                className="h-8"
+              />
+              {intervalError && (
+                <div className="text-xs text-red-500">{intervalError}</div>
+              )}
+            </div>
+          )}
+
+          {scheduleType === "weekly" && (
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label className="text-xs">星期</Label>
-                <Select
-                  value={String(newSchedule.dayOfWeek ?? 1)}
-                  onValueChange={(value) =>
-                    setNewSchedule((prev) => ({
-                      ...prev,
-                      dayOfWeek: parseInt(value),
-                    }))
-                  }
-                >
+                <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
                   <SelectTrigger className="h-8">
                     <SelectValue />
                   </SelectTrigger>
@@ -276,20 +441,23 @@ export function ResetScheduleConfig({
                   </SelectContent>
                 </Select>
               </div>
-            )}
+              <div className="space-y-2">
+                <Label className="text-xs">时间</Label>
+                <Input
+                  type="time"
+                  value={timeOfDay}
+                  onChange={(e) => setTimeOfDay(e.target.value)}
+                  className="h-8"
+                />
+              </div>
+            </div>
+          )}
 
-            {newSchedule.type === "monthly" && (
+          {scheduleType === "monthly" && (
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label className="text-xs">日期</Label>
-                <Select
-                  value={String(newSchedule.dayOfMonth ?? 1)}
-                  onValueChange={(value) =>
-                    setNewSchedule((prev) => ({
-                      ...prev,
-                      dayOfMonth: parseInt(value),
-                    }))
-                  }
-                >
+                <Select value={dayOfMonth} onValueChange={setDayOfMonth}>
                   <SelectTrigger className="h-8">
                     <SelectValue />
                   </SelectTrigger>
@@ -302,45 +470,54 @@ export function ResetScheduleConfig({
                   </SelectContent>
                 </Select>
               </div>
-            )}
-          </div>
-
-          {newSchedule.type === "hourly" && durationInput && (
-            <div className="text-xs text-muted-foreground">
-              支持格式：d(天) h(小时) m(分钟)，如：3d 5h 44m
-            </div>
-          )}
-
-          {newSchedule.type === "hourly" && durationError && (
-            <div className="text-xs text-red-500">{durationError}</div>
-          )}
-
-          {newSchedule.type !== "hourly" && (
-            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label className="text-xs">时间</Label>
                 <Input
                   type="time"
-                  value={newSchedule.timeOfDay || "00:00"}
-                  onChange={(e) =>
-                    setNewSchedule((prev) => ({
-                      ...prev,
-                      timeOfDay: e.target.value,
-                    }))
-                  }
+                  value={timeOfDay}
+                  onChange={(e) => setTimeOfDay(e.target.value)}
                   className="h-8"
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="text-xs">时区</Label>
-                <div className="flex items-center gap-2 h-8 px-3 py-1 border rounded-md bg-muted/50">
-                  <Globe className="h-3 w-3" />
-                  <span className="text-xs">
-                    {getTimezoneAbbr(currentTimezone)}
-                  </span>
-                </div>
+            </div>
+          )}
+
+          {inputMethod === "offset" && (
+            <div className="space-y-2">
+              <Label className="text-xs">持续时间</Label>
+              <Input
+                type="text"
+                placeholder="如：3d 5h 44m"
+                value={offsetDuration}
+                onChange={(e) => {
+                  setOffsetDuration(e.target.value);
+                  setOffsetError("");
+                }}
+                className="h-8"
+              />
+              <div className="text-xs text-muted-foreground">
+                支持格式：d(天) h(小时) m(分钟)，如：3d 5h 44m（至少 1m）
               </div>
             </div>
+          )}
+
+          {inputMethod === "direct" && scheduleType === "hourly" && (
+            <div className="space-y-2">
+              <Label className="text-xs">下次重置时间</Label>
+              <Input
+                type="datetime-local"
+                value={nextResetTimeInput}
+                onChange={(e) => {
+                  setNextResetTimeInput(e.target.value);
+                  setOffsetError("");
+                }}
+                className="h-8"
+              />
+            </div>
+          )}
+
+          {offsetError && (
+            <div className="text-xs text-red-500">{offsetError}</div>
           )}
 
           <div className="flex gap-2 justify-end">
@@ -350,8 +527,7 @@ export function ResetScheduleConfig({
               size="sm"
               onClick={() => {
                 setShowAddForm(false);
-                setDurationInput("");
-                setDurationError("");
+                resetForm();
               }}
             >
               取消

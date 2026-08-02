@@ -9,6 +9,7 @@ import {
   defaultCategories,
   defaultProviders,
   ResetSchedule,
+  ResetScheduleType,
 } from "./types";
 import { Provider } from "./types";
 import { v4 as uuidv4 } from "uuid";
@@ -17,6 +18,7 @@ import { encryptApiKey, decryptApiKey } from "./encryption";
 import {
   createResetSchedule,
   updateResetScheduleNextTime,
+  validateResetSchedule,
 } from "./reset-schedule";
 
 const dataFile = path.join(dataDir, "subscriptions.json");
@@ -59,6 +61,8 @@ export function readData(): SubscriptionData {
     data.subscriptions.forEach((sub) => {
       if (sub.resetSchedules) {
         sub.resetSchedules.forEach((schedule) => {
+          validateResetSchedule(schedule);
+
           if (schedule.exhausted === undefined) {
             schedule.exhausted = false;
             needsWrite = true;
@@ -298,10 +302,9 @@ export function recomputeStatus(
 export function addResetSchedule(
   subscriptionId: string,
   scheduleData: {
-    type: "hourly" | "daily" | "weekly" | "monthly";
+    type: ResetScheduleType;
     enabled?: boolean;
     intervalHours?: number;
-    referenceTime?: string;
     timeOfDay?: string;
     dayOfWeek?: number;
     dayOfMonth?: number;
@@ -357,7 +360,6 @@ export function updateResetSchedule(
   if (
     updates.type ||
     updates.intervalHours ||
-    updates.referenceTime ||
     updates.timeOfDay ||
     updates.dayOfWeek ||
     updates.dayOfMonth
