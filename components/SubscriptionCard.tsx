@@ -306,19 +306,19 @@ export function SubscriptionCard({
                 <span className="text-sm text-muted-foreground">
                   额度重置计划
                 </span>
-                <div className="mt-1 space-y-1">
+                <div
+                  className="mt-1 grid gap-y-1 text-xs"
+                  style={{ gridTemplateColumns: "auto 3.5rem 1fr auto" }}
+                >
                   {subscription.resetSchedules
                     .filter((s) => s.enabled)
                     .map((schedule) => (
-                      <div
-                        key={schedule.id}
-                        className="flex items-center gap-2 text-xs"
-                      >
-                        <Clock className="h-3 w-3 text-muted-foreground" />
-                        <span className="font-medium">
+                      <div key={schedule.id} className="contents">
+                        <Clock className="h-3 w-3 text-muted-foreground self-center" />
+                        <span className="font-medium self-center">
                           {getScheduleTypeLabel(schedule.type)}
                         </span>
-                        <span className="text-muted-foreground">
+                        <span className="text-muted-foreground self-center">
                           {formatNextResetTime(schedule.nextResetTime)}
                         </span>
                         <Button
@@ -326,7 +326,7 @@ export function SubscriptionCard({
                             schedule.exhausted ? "destructive" : "outline"
                           }
                           size="sm"
-                          className="h-5 px-2 text-xs ml-auto"
+                          className="h-5 px-2 text-xs"
                           onClick={() =>
                             handleScheduleToggle(
                               schedule.id,
