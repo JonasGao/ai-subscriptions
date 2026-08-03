@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   DndContext,
@@ -7,36 +7,34 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-} from '@dnd-kit/core'
+} from "@dnd-kit/core";
 import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { Plus, Check, X as XIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { PriorityScene, Subscription } from '@/lib/types'
-import { SortablePriorityList } from '@/components/SortablePriorityList'
-import { SceneCard } from '@/components/SceneCard'
-import { usePriorityScenes } from '@/hooks/usePriorityScenes'
+} from "@dnd-kit/sortable";
+import { Plus, Check, X as XIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { PriorityScene, Subscription } from "@/lib/types";
+import { SortablePriorityList } from "@/components/SortablePriorityList";
+import { SceneCard } from "@/components/SceneCard";
+import { usePriorityScenes } from "@/hooks/usePriorityScenes";
 
 interface PriorityManagerProps {
-  subscriptions: Subscription[]
+  subscriptions: Subscription[];
 }
 
 export function PriorityManager({ subscriptions }: PriorityManagerProps) {
   const {
     scenes,
-    selectedSceneId,
     isCreating,
     editingSceneId,
     editingSceneName,
     newSceneName,
     loading,
     setIsCreating,
-    setSelectedSceneId,
     setEditingSceneId,
     setEditingSceneName,
     setNewSceneName,
@@ -45,23 +43,25 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
     handleRenameScene,
     handleDragEnd,
     handleRemoveItem,
-    handleAddItem,
+    handleAddItems,
   } = usePriorityScenes<PriorityScene>({
-    apiPath: '/api/priorities',
-    orderField: 'subscriptionOrder',
-  })
+    apiPath: "/api/priorities",
+    orderField: "subscriptionOrder",
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
-  )
+  );
 
   const getAvailableSubscriptions = (sceneId: string) => {
-    const scene = scenes.find(s => s.id === sceneId)
-    return subscriptions.filter(s => !scene?.subscriptionOrder.includes(s.id))
-  }
+    const scene = scenes.find((s) => s.id === sceneId);
+    return subscriptions.filter(
+      (s) => !scene?.subscriptionOrder.includes(s.id)
+    );
+  };
 
   if (loading) {
     return (
@@ -70,7 +70,7 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
           <div className="text-center text-muted-foreground">加载中...</div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (scenes.length === 0 && !isCreating) {
@@ -95,7 +95,7 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -119,8 +119,8 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setIsCreating(false)
-                  setNewSceneName('')
+                  setIsCreating(false);
+                  setNewSceneName("");
                 }}
               >
                 <XIcon className="h-4 w-4" />
@@ -133,41 +133,40 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
       {scenes.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-stretch">
           {scenes.map((scene) => {
-            const isSelected = scene.id === selectedSceneId
-            const isEditing = editingSceneId === scene.id
-            const availableSubs = getAvailableSubscriptions(scene.id)
+            const isEditing = editingSceneId === scene.id;
+            const availableSubs = getAvailableSubscriptions(scene.id);
 
             return (
               <SceneCard
                 key={scene.id}
                 sceneId={scene.id}
                 sceneName={scene.name}
-                isSelected={isSelected}
                 isEditing={isEditing}
                 editingName={editingSceneName}
-                items={subscriptions.filter(s => scene.subscriptionOrder.includes(s.id))}
+                items={subscriptions.filter((s) =>
+                  scene.subscriptionOrder.includes(s.id)
+                )}
                 availableItems={availableSubs}
                 hasItems={scene.subscriptionOrder.length > 0}
                 emptyLabel="暂无订阅，点击下方添加"
-                addLabel="添加订阅："
-                onSelect={() => setSelectedSceneId(scene.id)}
+                addLabel="订阅"
                 onStartEdit={() => {
-                  setEditingSceneId(scene.id)
-                  setEditingSceneName(scene.name)
+                  setEditingSceneId(scene.id);
+                  setEditingSceneName(scene.name);
                 }}
                 onCancelEdit={() => {
-                  setEditingSceneId('')
-                  setEditingSceneName('')
+                  setEditingSceneId("");
+                  setEditingSceneName("");
                 }}
                 onDelete={() => handleDeleteScene(scene.id)}
                 onRename={handleRenameScene}
                 onEditingNameChange={setEditingSceneName}
-                onAddItem={(id) => handleAddItem(id, scene.id)}
+                onAddItems={(ids) => handleAddItems(ids, scene.id)}
                 sortableList={
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
+                    onDragEnd={(e) => handleDragEnd(e, scene.id)}
                   >
                     <SortableContext
                       items={scene.subscriptionOrder}
@@ -182,7 +181,7 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
                   </DndContext>
                 }
               />
-            )
+            );
           })}
         </div>
       )}
@@ -198,5 +197,5 @@ export function PriorityManager({ subscriptions }: PriorityManagerProps) {
         </Button>
       )}
     </div>
-  )
+  );
 }

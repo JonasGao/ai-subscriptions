@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   DndContext,
@@ -7,36 +7,34 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-} from '@dnd-kit/core'
+} from "@dnd-kit/core";
 import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { Plus, Check, X as XIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { ToolPriorityScene, Tool } from '@/lib/types'
-import { SortableToolPriorityList } from '@/components/SortableToolPriorityList'
-import { SceneCard } from '@/components/SceneCard'
-import { usePriorityScenes } from '@/hooks/usePriorityScenes'
+} from "@dnd-kit/sortable";
+import { Plus, Check, X as XIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ToolPriorityScene, Tool } from "@/lib/types";
+import { SortableToolPriorityList } from "@/components/SortableToolPriorityList";
+import { SceneCard } from "@/components/SceneCard";
+import { usePriorityScenes } from "@/hooks/usePriorityScenes";
 
 interface ToolPriorityManagerProps {
-  tools: Tool[]
+  tools: Tool[];
 }
 
 export function ToolPriorityManager({ tools }: ToolPriorityManagerProps) {
   const {
     scenes,
-    selectedSceneId,
     isCreating,
     editingSceneId,
     editingSceneName,
     newSceneName,
     loading,
     setIsCreating,
-    setSelectedSceneId,
     setEditingSceneId,
     setEditingSceneName,
     setNewSceneName,
@@ -45,23 +43,23 @@ export function ToolPriorityManager({ tools }: ToolPriorityManagerProps) {
     handleRenameScene,
     handleDragEnd,
     handleRemoveItem,
-    handleAddItem,
+    handleAddItems,
   } = usePriorityScenes<ToolPriorityScene>({
-    apiPath: '/api/tool-priorities',
-    orderField: 'toolOrder',
-  })
+    apiPath: "/api/tool-priorities",
+    orderField: "toolOrder",
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
-  )
+  );
 
   const getAvailableTools = (sceneId: string) => {
-    const scene = scenes.find(s => s.id === sceneId)
-    return tools.filter(t => !scene?.toolOrder.includes(t.id))
-  }
+    const scene = scenes.find((s) => s.id === sceneId);
+    return tools.filter((t) => !scene?.toolOrder.includes(t.id));
+  };
 
   if (loading) {
     return (
@@ -70,7 +68,7 @@ export function ToolPriorityManager({ tools }: ToolPriorityManagerProps) {
           <div className="text-center text-muted-foreground">加载中...</div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (scenes.length === 0 && !isCreating) {
@@ -95,7 +93,7 @@ export function ToolPriorityManager({ tools }: ToolPriorityManagerProps) {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -119,8 +117,8 @@ export function ToolPriorityManager({ tools }: ToolPriorityManagerProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setIsCreating(false)
-                  setNewSceneName('')
+                  setIsCreating(false);
+                  setNewSceneName("");
                 }}
               >
                 <XIcon className="h-4 w-4" />
@@ -133,41 +131,38 @@ export function ToolPriorityManager({ tools }: ToolPriorityManagerProps) {
       {scenes.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-stretch">
           {scenes.map((scene) => {
-            const isSelected = scene.id === selectedSceneId
-            const isEditing = editingSceneId === scene.id
-            const availableTools = getAvailableTools(scene.id)
+            const isEditing = editingSceneId === scene.id;
+            const availableTools = getAvailableTools(scene.id);
 
             return (
               <SceneCard
                 key={scene.id}
                 sceneId={scene.id}
                 sceneName={scene.name}
-                isSelected={isSelected}
                 isEditing={isEditing}
                 editingName={editingSceneName}
-                items={tools.filter(t => scene.toolOrder.includes(t.id))}
+                items={tools.filter((t) => scene.toolOrder.includes(t.id))}
                 availableItems={availableTools}
                 hasItems={scene.toolOrder.length > 0}
                 emptyLabel="暂无工具，点击下方添加"
-                addLabel="添加工具："
-                onSelect={() => setSelectedSceneId(scene.id)}
+                addLabel="工具"
                 onStartEdit={() => {
-                  setEditingSceneId(scene.id)
-                  setEditingSceneName(scene.name)
+                  setEditingSceneId(scene.id);
+                  setEditingSceneName(scene.name);
                 }}
                 onCancelEdit={() => {
-                  setEditingSceneId('')
-                  setEditingSceneName('')
+                  setEditingSceneId("");
+                  setEditingSceneName("");
                 }}
                 onDelete={() => handleDeleteScene(scene.id)}
                 onRename={handleRenameScene}
                 onEditingNameChange={setEditingSceneName}
-                onAddItem={(id) => handleAddItem(id, scene.id)}
+                onAddItems={(ids) => handleAddItems(ids, scene.id)}
                 sortableList={
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
+                    onDragEnd={(e) => handleDragEnd(e, scene.id)}
                   >
                     <SortableContext
                       items={scene.toolOrder}
@@ -182,7 +177,7 @@ export function ToolPriorityManager({ tools }: ToolPriorityManagerProps) {
                   </DndContext>
                 }
               />
-            )
+            );
           })}
         </div>
       )}
@@ -198,5 +193,5 @@ export function ToolPriorityManager({ tools }: ToolPriorityManagerProps) {
         </Button>
       )}
     </div>
-  )
+  );
 }
