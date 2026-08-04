@@ -551,3 +551,156 @@ describe("reset event dispatch", () => {
     expect(calls).toHaveLength(2);
   });
 });
+
+describe("three-channel fanout", () => {
+  beforeEach(() => resetState());
+
+  it("fans out a low-balance event to dingtalk+feishu+webhook with correct payload shapes", async () => {
+    storageState.channels = [
+      makeChannel({ id: "ch-dt", type: "dingtalk" }),
+      makeChannel({
+        id: "ch-fs",
+        type: "feishu",
+        url: "https://feishu.example/hook",
+      }),
+      makeChannel({
+        id: "ch-wh",
+        type: "webhook",
+        url: "https://webhook.example/hook",
+      }),
+    ];
+    // Prime transition state so the low-balance event fires on this tick.
+    storageState.transitions["sub-1"] = {
+      status: "above",
+      updatedAt: "2024-01-01T00:00:00Z",
+    };
+    const calls: PreparedSend[] = [];
+    const fakeSender: Sender = async (s) => {
+      calls.push(s);
+    };
+    await runNotificationTick({
+      subscriptions: [makeSub({ balance: 5 })],
+      sender: fakeSender,
+    });
+    expect(calls).toHaveLength(3);
+
+    const byId = new Map(calls.map((c) => [c.channel.id, c]));
+    const dt = byId.get("ch-dt")!;
+    const fs = byId.get("ch-fs")!;
+    const wh = byId.get("ch-wh")!;
+
+    // DingTalk: msgtype=markdown.
+    const dtBody = JSON.parse(dt.body as string);
+    expect(dtBody.msgtype).toBe("markdown");
+    expect(dtBody.markdown.title).toContain("余额不足");
+
+    // Feishu: interactive card with keyword (no secret configured).
+    const fsBody = JSON.parse(fs.body as string);
+    expect(fsBody.msg_type).toBe("interactive");
+    expect(fsBody.card.header.title.content).toContain("AI订阅");
+    // No secret -> no signing fields in the body.
+    expect(fsBody.timestamp).toBeUndefined();
+    expect(fsBody.sign).toBeUndefined();
+    expect(fs.url).toBe("https://feishu.example/hook");
+
+    // Webhook: structured JSON with event discriminator.
+    const whBody = JSON.parse(wh.body as string);
+    expect(whBody.event).toBe("low-balance");
+    expect(whBody.subscription.id).toBe("sub-1");
+    expect(whBody.balance).toBe(5);
+    expect(whBody.threshold).toBe(10);
+    expect(wh.url).toBe("https://webhook.example/hook");
+  });
+
+  it("fans out a reset event to dingtalk+feishu+webhook", async () => {
+    storageState.channels = [
+      makeChannel({ id: "ch-dt", type: "dingtalk" }),
+      makeChannel({ id: "ch-fs", type: "feishu" }),
+      makeChannel({ id: "ch-wh", type: "webhook" }),
+    ];
+    const calls: PreparedSend[] = [];
+    const fakeSender: Sender = async (s) => {
+      calls.push(s);
+    };
+    const triggers = [
+      makeTrigger({ subscriptionId: "sub-1", scheduleType: "monthly" }),
+    ];
+    await runNotificationTick({
+      subscriptions: [makeSub()],
+      sender: fakeSender,
+      resetTriggers: triggers,
+    });
+    expect(calls).toHaveLength(3);
+
+    const wh = calls.find((c) => c.channel.id === "ch-wh")!;
+    const whBody = JSON.parse(wh.body as string);
+    expect(whBody.event).toBe("reset");
+    expect(whBody.scheduleType).toBe("monthly");
+    expect(whBody.nextResetTime).toBe("2024-07-01T00:00:00Z");
+
+    const fs = calls.find((c) => c.channel.id === "ch-fs")!;
+    const fsBody = JSON.parse(fs.body as string);
+    expect(fsBody.msg_type).toBe("interactive");
+    expect(fsBody.card.elements[0].content).toContain("每月");
+  });
+
+  it("single-channel failure does not affect the other two", async () => {
+    storageState.channels = [
+      makeChannel({ id: "ch-dt", type: "dingtalk" }),
+      makeChannel({ id: "ch-fs", type: "feishu" }),
+      makeChannel({ id: "ch-wh", type: "webhook" }),
+    ];
+    storageState.transitions["sub-1"] = {
+      status: "above",
+      updatedAt: "2024-01-01T00:00:00Z",
+    };
+    const calls: PreparedSend[] = [];
+    const fakeSender: Sender = async (s) => {
+      if (s.channel.id === "ch-fs") throw new Error("feishu down");
+      calls.push(s);
+    };
+    const successCount = await dispatchEvent(
+      {
+        kind: "low-balance",
+        subscription: makeSub(),
+        balance: 5,
+        threshold: 10,
+        triggeredAt: "2024-06-01T00:00:00Z",
+      },
+      storageState.channels,
+      fakeSender
+    );
+    expect(calls).toHaveLength(2);
+    expect(successCount).toBe(2);
+    expect(calls.map((c) => c.channel.id).sort()).toEqual(["ch-dt", "ch-wh"]);
+
+    const fsFailure = storageState.sendResultLog.find(
+      (r) => r.channelId === "ch-fs"
+    );
+    expect(fsFailure?.success).toBe(false);
+    expect(fsFailure?.error).toContain("feishu down");
+  });
+
+  it("records lastSendResult for every channel type on success", async () => {
+    storageState.channels = [
+      makeChannel({ id: "ch-dt", type: "dingtalk" }),
+      makeChannel({ id: "ch-fs", type: "feishu" }),
+      makeChannel({ id: "ch-wh", type: "webhook" }),
+    ];
+    const fakeSender: Sender = async () => {};
+    await dispatchEvent(
+      {
+        kind: "low-balance",
+        subscription: makeSub(),
+        balance: 5,
+        threshold: 10,
+        triggeredAt: "2024-06-01T00:00:00Z",
+      },
+      storageState.channels,
+      fakeSender
+    );
+    // One success log per channel.
+    expect(storageState.sendResultLog).toHaveLength(3);
+    expect(storageState.sendResultLog.every((r) => r.success)).toBe(true);
+  });
+});
