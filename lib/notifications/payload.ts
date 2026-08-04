@@ -1,16 +1,28 @@
-import { NotificationChannel, Subscription } from "@/lib/types";
+import {
+  NotificationChannel,
+  Subscription,
+  ResetScheduleType,
+} from "@/lib/types";
 import { computeDingtalkSign } from "./signing";
 
 /**
  * Event shapes the notification system can emit.
  */
-export type NotificationEvent = {
-  kind: "low-balance";
-  subscription: Subscription;
-  balance: number;
-  threshold: number;
-  triggeredAt: string;
-};
+export type NotificationEvent =
+  | {
+      kind: "low-balance";
+      subscription: Subscription;
+      balance: number;
+      threshold: number;
+      triggeredAt: string;
+    }
+  | {
+      kind: "reset";
+      subscription: Subscription;
+      scheduleType: ResetScheduleType;
+      nextResetTime: string;
+      triggeredAt: string;
+    };
 
 // ============ Common markdown builder ============
 
@@ -40,6 +52,42 @@ export function buildLowBalanceMarkdown(
   return { title, body: lines.join("\n") };
 }
 
+/**
+ * Human-readable label for a reset schedule type.
+ */
+export function formatScheduleType(type: ResetScheduleType): string {
+  switch (type) {
+    case "hourly":
+      return "每小时";
+    case "weekly":
+      return "每周";
+    case "monthly":
+      return "每月";
+  }
+}
+
+/**
+ * Builds the markdown card for a quota-reset notification.
+ */
+export function buildResetMarkdown(
+  sub: Subscription,
+  scheduleType: ResetScheduleType,
+  nextResetTime: string,
+  includeKeyword: boolean
+): { title: string; body: string } {
+  const title = includeKeyword
+    ? `【AI订阅】🔄 ${sub.name} 配额已重置`
+    : `🔄 ${sub.name} 配额已重置`;
+  const lines = [
+    `- **订阅**: ${sub.name}`,
+    `- **提供商**: ${sub.provider}`,
+    `- **重置计划**: ${formatScheduleType(scheduleType)}`,
+    `- **下次重置**: ${new Date(nextResetTime).toLocaleString("zh-CN")}`,
+    `- **时间**: ${new Date().toLocaleString("zh-CN")}`,
+  ];
+  return { title, body: lines.join("\n") };
+}
+
 // ============ DingTalk ============
 
 export interface DingtalkPayload {
@@ -54,12 +102,20 @@ export function buildDingtalkPayload(
   event: NotificationEvent,
   includeKeyword: boolean
 ): DingtalkPayload {
-  const { title, body } = buildLowBalanceMarkdown(
-    event.subscription,
-    event.balance,
-    event.threshold,
-    includeKeyword
-  );
+  const { title, body } =
+    event.kind === "low-balance"
+      ? buildLowBalanceMarkdown(
+          event.subscription,
+          event.balance,
+          event.threshold,
+          includeKeyword
+        )
+      : buildResetMarkdown(
+          event.subscription,
+          event.scheduleType,
+          event.nextResetTime,
+          includeKeyword
+        );
   return {
     msgtype: "markdown",
     markdown: { title, text: body },
