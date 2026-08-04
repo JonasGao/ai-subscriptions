@@ -23,12 +23,39 @@ async function getDb() {
   return await import("@/lib/db");
 }
 
-import type { SubscriptionData } from "@/lib/types";
+import type { Subscription, SubscriptionData } from "@/lib/types";
 
 function makeData(overrides: Partial<SubscriptionData> = {}): SubscriptionData {
   return {
     subscriptions: [],
     categories: [],
+    ...overrides,
+  };
+}
+
+function makeSubscription(overrides: Partial<Subscription> = {}): Subscription {
+  return {
+    id: "sub-1",
+    name: "Active Sub",
+    category: "AI助手",
+    provider: "openai",
+    subscriptionType: "recurring",
+    billingCycle: "monthly",
+    price: 20,
+    status: "active",
+    resetSchedules: [
+      {
+        id: "sched-1",
+        enabled: true,
+        type: "monthly",
+        nextResetTime: "2024-01-01T00:00:00Z",
+        exhausted: false,
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      },
+    ],
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
     ...overrides,
   };
 }
@@ -47,29 +74,7 @@ describe("processResetTick filtering", () => {
     const db = await getDb();
     const data = makeData({
       subscriptions: [
-        {
-          id: "sub-1",
-          name: "Cancelled Sub",
-          category: "AI助手",
-          provider: "openai",
-          subscriptionType: "recurring",
-          billingCycle: "monthly",
-          price: 20,
-          status: "cancelled",
-          resetSchedules: [
-            {
-              id: "sched-1",
-              enabled: true,
-              type: "monthly",
-              nextResetTime: "2024-01-01T00:00:00Z",
-              exhausted: false,
-              createdAt: "2024-01-01T00:00:00Z",
-              updatedAt: "2024-01-01T00:00:00Z",
-            },
-          ],
-          createdAt: "2024-01-01T00:00:00Z",
-          updatedAt: "2024-01-01T00:00:00Z",
-        },
+        makeSubscription({ name: "Cancelled Sub", status: "cancelled" }),
       ],
     });
     db.writeData(data);
@@ -81,15 +86,7 @@ describe("processResetTick filtering", () => {
     const db = await getDb();
     const data = makeData({
       subscriptions: [
-        {
-          id: "sub-1",
-          name: "Active Sub",
-          category: "AI助手",
-          provider: "openai",
-          subscriptionType: "recurring",
-          billingCycle: "monthly",
-          price: 20,
-          status: "active",
+        makeSubscription({
           resetSchedules: [
             {
               id: "sched-1",
@@ -101,9 +98,7 @@ describe("processResetTick filtering", () => {
               updatedAt: "2024-01-01T00:00:00Z",
             },
           ],
-          createdAt: "2024-01-01T00:00:00Z",
-          updatedAt: "2024-01-01T00:00:00Z",
-        },
+        }),
       ],
     });
     db.writeData(data);
@@ -115,15 +110,7 @@ describe("processResetTick filtering", () => {
     const db = await getDb();
     const data = makeData({
       subscriptions: [
-        {
-          id: "sub-1",
-          name: "Active Sub",
-          category: "AI助手",
-          provider: "openai",
-          subscriptionType: "recurring",
-          billingCycle: "monthly",
-          price: 20,
-          status: "active",
+        makeSubscription({
           resetSchedules: [
             {
               id: "sched-1",
@@ -137,9 +124,7 @@ describe("processResetTick filtering", () => {
               updatedAt: "2024-01-01T00:00:00Z",
             },
           ],
-          createdAt: "2024-01-01T00:00:00Z",
-          updatedAt: "2024-01-01T00:00:00Z",
-        },
+        }),
       ],
     });
     db.writeData(data);
