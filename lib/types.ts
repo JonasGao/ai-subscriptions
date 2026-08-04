@@ -295,3 +295,39 @@ export interface BalanceResult {
   isAvailable: boolean;
   balanceInfos: BalanceInfo[];
 }
+
+// ============ Notification ============
+
+export type NotificationChannelType = "dingtalk" | "feishu" | "webhook";
+
+export interface NotificationChannel {
+  id: string;
+  type: NotificationChannelType;
+  name: string;
+  url: string;
+  secret?: string;
+  enabled: boolean;
+  lastSendResult?: SendResult;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SendResult {
+  success: boolean;
+  timestamp: string;
+  error?: string;
+}
+
+export interface NotificationData {
+  channels: NotificationChannel[];
+  defaultLowBalanceThreshold: number;
+  balanceTransitionStates: Record<string, BalanceTransitionState>;
+}
+
+export interface BalanceTransitionState {
+  /** "above" = last check balance >= threshold; "below" = last check balance < threshold */
+  status: "above" | "below";
+  updatedAt: string;
+}
+
+export const DEFAULT_LOW_BALANCE_THRESHOLD = 10;
