@@ -13,20 +13,23 @@ export function initScheduler() {
 
   cron.schedule("*/5 * * * *", async () => {
     console.log("[Scheduler] Checking for schedules needing reset...");
+    let resetTriggers: Awaited<ReturnType<typeof processResetTick>> = [];
     try {
-      const result = processResetTick();
-      if (result > 0) {
-        console.log("[Scheduler] Processed reset tick");
+      resetTriggers = processResetTick();
+      if (resetTriggers.length > 0) {
+        console.log(
+          `[Scheduler] Processed reset tick: ${resetTriggers.length} trigger(s)`
+        );
       }
     } catch (error) {
       console.error("[Scheduler] Reset check failed:", error);
     }
 
-    // Notification tick: detect low-balance threshold transitions and fan-out
-    // to configured IM channels. Failures are recorded but never throw.
+    // Notification tick: detect low-balance threshold transitions and
+    // dispatch reset notifications. Failures are recorded but never throw.
     try {
       const subscriptions = getSubscriptions();
-      await runNotificationTick(subscriptions);
+      await runNotificationTick(subscriptions, undefined, resetTriggers);
     } catch (error) {
       console.error("[Scheduler] Notification tick failed:", error);
     }
