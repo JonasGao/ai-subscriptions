@@ -2,6 +2,7 @@ import {
   Subscription,
   NotificationChannel,
   DEFAULT_LOW_BALANCE_THRESHOLD,
+  ResetTickTrigger,
 } from "@/lib/types";
 import {
   NotificationEvent,
@@ -161,28 +162,66 @@ export function rollbackTransition(subscriptionId: string): void {
 }
 
 /**
- * Top-level tick entry point: detects low-balance events for one-time
- * subscriptions and dispatches them to all enabled channels.
+ * Builds one NotificationEvent per reset tick trigger. Triggers already come
+ * pre-filtered by processResetTick (cancelled subscriptions and disabled
+ * schedules never appear), so this function just needs to resolve the
+ * subscription record and stamp the event.
  *
- * If dispatch fails for ALL channels of a given event, the transition state
- * is rolled back so the next tick can retry. If at least one channel
- * succeeded, the "below" state persists.
+ * A trigger whose subscription no longer exists (deleted between the reset
+ * tick and the notification tick) is silently skipped.
+ */
+export function detectResetEvents(
+  triggers: ResetTickTrigger[],
+  subscriptions: Subscription[]
+): NotificationEvent[] {
+  const byId = new Map(subscriptions.map((s) => [s.id, s]));
+  const nowIso = new Date().toISOString();
+  const events: NotificationEvent[] = [];
+  for (const t of triggers) {
+    const sub = byId.get(t.subscriptionId);
+    if (!sub) continue;
+    events.push({
+      kind: "reset",
+      subscription: sub,
+      scheduleType: t.scheduleType,
+      nextResetTime: t.nextResetTime,
+      triggeredAt: nowIso,
+    });
+  }
+  return events;
+}
+
+/**
+ * Top-level tick entry point: detects low-balance events for one-time
+ * subscriptions and dispatches them to all enabled channels. Also dispatches
+ * one notification per reset tick trigger — reset events fire every time,
+ * with no deduplication or rollback (they are not state transitions).
+ *
+ * If dispatch fails for ALL channels of a given low-balance event, the
+ * transition state is rolled back so the next tick can retry. Reset events
+ * do not roll back — they are fire-and-forget.
  *
  * Mounted on the existing 5-minute scheduler after processResetTick.
  */
 export async function runNotificationTick(
   subscriptions: Subscription[],
-  sender: Sender = httpSender
+  sender: Sender = httpSender,
+  resetTriggers: ResetTickTrigger[] = []
 ): Promise<void> {
   const channels = listChannels();
   if (channels.length === 0) return;
 
-  const events = detectLowBalanceEvents(subscriptions);
-  for (const event of events) {
+  const lowBalanceEvents = detectLowBalanceEvents(subscriptions);
+  for (const event of lowBalanceEvents) {
     const successCount = await dispatchEvent(event, channels, sender);
     if (successCount === 0) {
       // Every enabled channel failed — roll back so the next tick retries.
       rollbackTransition(event.subscription.id);
     }
+  }
+
+  const resetEvents = detectResetEvents(resetTriggers, subscriptions);
+  for (const event of resetEvents) {
+    await dispatchEvent(event, channels, sender);
   }
 }
