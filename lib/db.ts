@@ -10,6 +10,7 @@ import {
   defaultProviders,
   ResetSchedule,
   ResetScheduleType,
+  ResetTickTrigger,
 } from "./types";
 import { Provider } from "./types";
 import { v4 as uuidv4 } from "uuid";
@@ -413,11 +414,11 @@ export function deleteResetSchedule(
   return true;
 }
 
-export function processResetTick(): number {
+export function processResetTick(): ResetTickTrigger[] {
   const data = readData();
   const now = new Date();
   const nowIso = now.toISOString();
-  let anyFired = false;
+  const triggers: ResetTickTrigger[] = [];
 
   data.subscriptions.forEach((sub) => {
     if (sub.status === "cancelled") {
@@ -442,11 +443,17 @@ export function processResetTick(): number {
         schedule.nextResetTime = nextSchedule.nextResetTime;
         schedule.updatedAt = nowIso;
         subAnyFired = true;
+        triggers.push({
+          subscriptionId: sub.id,
+          subscriptionName: sub.name,
+          scheduleId: schedule.id,
+          scheduleType: schedule.type,
+          nextResetTime: schedule.nextResetTime,
+        });
       }
     });
 
     if (subAnyFired) {
-      anyFired = true;
       const newStatus = recomputeStatus(sub);
       if (newStatus !== sub.status) {
         sub.status = newStatus;
@@ -455,11 +462,11 @@ export function processResetTick(): number {
     }
   });
 
-  if (anyFired) {
+  if (triggers.length > 0) {
     writeData(data);
   }
 
-  return anyFired ? 1 : 0;
+  return triggers;
 }
 
 export function toggleScheduleExhausted(

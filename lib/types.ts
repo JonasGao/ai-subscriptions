@@ -331,3 +331,18 @@ export interface BalanceTransitionState {
 }
 
 export const DEFAULT_LOW_BALANCE_THRESHOLD = 10;
+
+// ============ Reset tick ============
+
+/**
+ * A single (subscription, schedule) pair that fired during a reset tick.
+ * `nextResetTime` is the recomputed next reset time AFTER firing — i.e. the
+ * schedule has already been advanced, so this is when it will fire again.
+ */
+export interface ResetTickTrigger {
+  subscriptionId: string;
+  subscriptionName: string;
+  scheduleId: string;
+  scheduleType: ResetScheduleType;
+  nextResetTime: string;
+}
