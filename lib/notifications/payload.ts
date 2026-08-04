@@ -28,8 +28,10 @@ export type NotificationEvent =
 
 /**
  * Shared markdown card assembly. Builds a keyword-aware title and a
- * subscription/provider/…/time field list. The timestamp footer is added
- * automatically so callers only specify the event-specific fields.
+ * subscription/provider/…/time field list. The timestamp footer is rendered
+ * from the caller-supplied `triggeredAt` (the event's own timestamp) so the
+ * message's visible time matches the event that produced it — never wall
+ * clock at send time, which can differ under retries / batching.
  */
 function buildMarkdownCard(
   sub: Subscription,
@@ -37,7 +39,8 @@ function buildMarkdownCard(
   longLabel: string,
   shortLabel: string,
   fields: string[],
-  includeKeyword: boolean
+  includeKeyword: boolean,
+  triggeredAt: string
 ): { title: string; body: string } {
   const title = includeKeyword
     ? `【AI订阅】${emoji} ${sub.name} ${longLabel}`
@@ -46,7 +49,7 @@ function buildMarkdownCard(
     `- **订阅**: ${sub.name}`,
     `- **提供商**: ${sub.provider}`,
     ...fields,
-    `- **时间**: ${new Date().toLocaleString("zh-CN")}`,
+    `- **时间**: ${new Date(triggeredAt).toLocaleString("zh-CN")}`,
   ];
   return { title, body: lines.join("\n") };
 }
@@ -62,7 +65,8 @@ export function buildLowBalanceMarkdown(
   sub: Subscription,
   balance: number,
   threshold: number,
-  includeKeyword: boolean
+  includeKeyword: boolean,
+  triggeredAt: string
 ): { title: string; body: string } {
   return buildMarkdownCard(
     sub,
@@ -70,7 +74,8 @@ export function buildLowBalanceMarkdown(
     "余额不足提醒",
     "余额不足",
     [`- **当前余额**: ${balance}`, `- **阈值**: ${threshold}`],
-    includeKeyword
+    includeKeyword,
+    triggeredAt
   );
 }
 
@@ -95,7 +100,8 @@ export function buildResetMarkdown(
   sub: Subscription,
   scheduleType: ResetScheduleType,
   nextResetTime: string,
-  includeKeyword: boolean
+  includeKeyword: boolean,
+  triggeredAt: string
 ): { title: string; body: string } {
   return buildMarkdownCard(
     sub,
@@ -106,8 +112,35 @@ export function buildResetMarkdown(
       `- **重置计划**: ${formatScheduleType(scheduleType)}`,
       `- **下次重置**: ${new Date(nextResetTime).toLocaleString("zh-CN")}`,
     ],
-    includeKeyword
+    includeKeyword,
+    triggeredAt
   );
+}
+
+/**
+ * Builds the markdown (title + body) for any notification event. Single
+ * source of truth for the event.kind dispatch used by both DingTalk and
+ * Feishu — they render the same markdown, just in different envelope shapes.
+ */
+export function buildEventMarkdown(
+  event: NotificationEvent,
+  includeKeyword: boolean
+): { title: string; body: string } {
+  return event.kind === "low-balance"
+    ? buildLowBalanceMarkdown(
+        event.subscription,
+        event.balance,
+        event.threshold,
+        includeKeyword,
+        event.triggeredAt
+      )
+    : buildResetMarkdown(
+        event.subscription,
+        event.scheduleType,
+        event.nextResetTime,
+        includeKeyword,
+        event.triggeredAt
+      );
 }
 
 // ============ DingTalk ============
@@ -124,20 +157,7 @@ export function buildDingtalkPayload(
   event: NotificationEvent,
   includeKeyword: boolean
 ): DingtalkPayload {
-  const { title, body } =
-    event.kind === "low-balance"
-      ? buildLowBalanceMarkdown(
-          event.subscription,
-          event.balance,
-          event.threshold,
-          includeKeyword
-        )
-      : buildResetMarkdown(
-          event.subscription,
-          event.scheduleType,
-          event.nextResetTime,
-          includeKeyword
-        );
+  const { title, body } = buildEventMarkdown(event, includeKeyword);
   return {
     msgtype: "markdown",
     markdown: { title, text: body },
@@ -181,20 +201,7 @@ export function buildFeishuPayload(
   channel: NotificationChannel
 ): FeishuPayload {
   const includeKeyword = !channel.secret;
-  const { title, body } =
-    event.kind === "low-balance"
-      ? buildLowBalanceMarkdown(
-          event.subscription,
-          event.balance,
-          event.threshold,
-          includeKeyword
-        )
-      : buildResetMarkdown(
-          event.subscription,
-          event.scheduleType,
-          event.nextResetTime,
-          includeKeyword
-        );
+  const { title, body } = buildEventMarkdown(event, includeKeyword);
 
   const payload: FeishuPayload = {
     msg_type: "interactive",
@@ -247,7 +254,7 @@ export interface WebhookPayload {
 
 export function buildWebhookPayload(event: NotificationEvent): WebhookPayload {
   const sub = event.subscription;
-  const common = {
+  return {
     event: event.kind,
     timestamp: event.triggeredAt,
     subscription: {
@@ -258,16 +265,17 @@ export function buildWebhookPayload(event: NotificationEvent): WebhookPayload {
       subscriptionType: sub.subscriptionType,
       price: sub.price,
     },
-  } as WebhookPayload;
-
-  if (event.kind === "low-balance") {
-    common.balance = event.balance;
-    common.threshold = event.threshold;
-  } else {
-    common.scheduleType = event.scheduleType;
-    common.nextResetTime = event.nextResetTime;
-  }
-  return common;
+    // Event-specific fields: low-balance carries balance/threshold,
+    // reset carries scheduleType/nextResetTime. Conditional spread lets
+    // TypeScript narrow each branch against the WebhookPayload type
+    // without a cast.
+    ...(event.kind === "low-balance"
+      ? { balance: event.balance, threshold: event.threshold }
+      : {
+          scheduleType: event.scheduleType,
+          nextResetTime: event.nextResetTime,
+        }),
+  };
 }
 
 // ============ Dispatch unit ============

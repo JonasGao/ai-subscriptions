@@ -5,6 +5,7 @@ import {
   buildDingtalkUrl,
   buildFeishuPayload,
   buildWebhookPayload,
+  buildEventMarkdown,
   buildLowBalanceMarkdown,
   buildResetMarkdown,
   formatScheduleType,
@@ -57,7 +58,13 @@ const lowBalanceEvent: NotificationEvent = {
 
 describe("buildLowBalanceMarkdown", () => {
   it("weaves keyword into title when includeKeyword is true", () => {
-    const { title, body } = buildLowBalanceMarkdown(makeSub(), 5, 10, true);
+    const { title, body } = buildLowBalanceMarkdown(
+      makeSub(),
+      5,
+      10,
+      true,
+      "2024-06-01T00:00:00Z"
+    );
     expect(title).toContain("【AI订阅】");
     expect(title).toContain("Claude Pro");
     // Keyword lives in the title naturally; the body itself has no separate
@@ -66,9 +73,35 @@ describe("buildLowBalanceMarkdown", () => {
   });
 
   it("omits keyword from title when includeKeyword is false", () => {
-    const { title } = buildLowBalanceMarkdown(makeSub(), 5, 10, false);
+    const { title } = buildLowBalanceMarkdown(
+      makeSub(),
+      5,
+      10,
+      false,
+      "2024-06-01T00:00:00Z"
+    );
     expect(title).not.toContain("AI订阅");
     expect(title).toContain("余额不足");
+  });
+
+  it("renders the event's triggeredAt in the time footer", () => {
+    const triggeredAt = "2024-06-01T12:34:56Z";
+    const { body } = buildLowBalanceMarkdown(
+      makeSub(),
+      5,
+      10,
+      false,
+      triggeredAt
+    );
+    // zh-CN rendering of 2024-06-01 12:34:56 UTC; just assert the date
+    // components appear — exact separator varies by Node/ICU version.
+    expect(body).toContain("2024");
+    expect(body).toContain("6");
+    expect(body).toContain("1");
+    // Sanity: the fake system time (also 2024-06-01T00:00:00Z) would render
+    // "0:00", so asserting the distinct minutes rules out accidental use of
+    // new Date() as the time source.
+    expect(body).toContain("34");
   });
 });
 
@@ -185,7 +218,8 @@ describe("buildResetMarkdown", () => {
       sub,
       "monthly",
       "2024-07-01T00:00:00Z",
-      false
+      false,
+      "2024-06-01T00:00:00Z"
     );
     expect(title).toContain("OpenAI Plus");
     expect(title).toContain("配额已重置");
@@ -200,7 +234,8 @@ describe("buildResetMarkdown", () => {
       sub,
       "weekly",
       "2024-07-01T00:00:00Z",
-      true
+      true,
+      "2024-06-01T00:00:00Z"
     );
     expect(title).toContain("【AI订阅】");
     expect(title).toContain("OpenAI Plus");
@@ -211,9 +246,35 @@ describe("buildResetMarkdown", () => {
       sub,
       "weekly",
       "2024-07-01T00:00:00Z",
-      false
+      false,
+      "2024-06-01T00:00:00Z"
     );
     expect(title).not.toContain("AI订阅");
+  });
+});
+
+describe("buildEventMarkdown", () => {
+  it("dispatches to low-balance markdown with event's triggeredAt", () => {
+    const { title, body } = buildEventMarkdown(lowBalanceEvent, false);
+    expect(title).toContain("余额不足");
+    // TriggeredAt (2024-06-01T00:00:00Z) appears in the footer.
+    expect(body).toContain("2024");
+  });
+
+  it("dispatches to reset markdown with event's triggeredAt", () => {
+    const resetEvent: NotificationEvent = {
+      kind: "reset",
+      subscription: makeSub({ name: "OpenAI Plus" }),
+      scheduleType: "monthly",
+      nextResetTime: "2024-07-01T00:00:00Z",
+      triggeredAt: "2024-06-15T08:30:00Z",
+    };
+    const { title, body } = buildEventMarkdown(resetEvent, false);
+    expect(title).toContain("配额已重置");
+    expect(body).toContain("每月");
+    // Footer reflects the event's triggeredAt, not wall-clock.
+    expect(body).toContain("6");
+    expect(body).toContain("15");
   });
 });
 
