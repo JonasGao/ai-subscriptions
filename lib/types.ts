@@ -30,6 +30,7 @@ export interface Subscription {
   notes?: string;
   apiKey?: string;
   balance?: number;
+  lowBalanceThreshold?: number;
   resetSchedules?: ResetSchedule[];
   createdAt: string;
   updatedAt: string;
@@ -199,6 +200,7 @@ export interface SubscriptionFormData {
   notes?: string;
   apiKey?: string;
   balance?: number;
+  lowBalanceThreshold?: number;
   resetSchedules?: ResetSchedule[];
 }
 
