@@ -1,5 +1,6 @@
 import cron from "node-cron";
-import { processResetTick } from "./db";
+import { processResetTick, getSubscriptions } from "./db";
+import { runNotificationTick } from "./notifications/dispatcher";
 
 let isInitialized = false;
 
@@ -19,6 +20,15 @@ export function initScheduler() {
       }
     } catch (error) {
       console.error("[Scheduler] Reset check failed:", error);
+    }
+
+    // Notification tick: detect low-balance threshold transitions and fan-out
+    // to configured IM channels. Failures are recorded but never throw.
+    try {
+      const subscriptions = getSubscriptions();
+      await runNotificationTick(subscriptions);
+    } catch (error) {
+      console.error("[Scheduler] Notification tick failed:", error);
     }
   });
 

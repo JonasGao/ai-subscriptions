@@ -251,7 +251,9 @@ describe("dispatchEvent", () => {
 
   it("skips disabled channels", async () => {
     const calls: PreparedSend[] = [];
-    const fakeSender: Sender = async (s) => calls.push(s);
+    const fakeSender: Sender = async (s) => {
+      calls.push(s);
+    };
     const ch = makeChannel({ enabled: false });
     const event = {
       kind: "low-balance" as const,
@@ -295,7 +297,9 @@ describe("runNotificationTick", () => {
 
   it("no-ops when no channels configured", async () => {
     const calls: PreparedSend[] = [];
-    const fakeSender: Sender = async (s) => calls.push(s);
+    const fakeSender: Sender = async (s) => {
+      calls.push(s);
+    };
     await runNotificationTick([makeSub()], fakeSender);
     expect(calls).toHaveLength(0);
   });
@@ -303,7 +307,9 @@ describe("runNotificationTick", () => {
   it("dispatches low-balance event to configured channel", async () => {
     storageState.channels = [makeChannel({ id: "ch-1", type: "webhook" })];
     const calls: PreparedSend[] = [];
-    const fakeSender: Sender = async (s) => calls.push(s);
+    const fakeSender: Sender = async (s) => {
+      calls.push(s);
+    };
     await runNotificationTick([makeSub({ balance: 5 })], fakeSender);
     expect(calls).toHaveLength(1);
     const body = JSON.parse(calls[0].body as string);
