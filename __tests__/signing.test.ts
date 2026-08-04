@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { computeDingtalkSign } from "@/lib/notifications/signing";
+import {
+  computeDingtalkSign,
+  computeFeishuSign,
+} from "@/lib/notifications/signing";
 
 describe("computeDingtalkSign", () => {
   it("returns null when secret is empty", () => {
@@ -36,5 +39,55 @@ describe("computeDingtalkSign", () => {
     expect(decoded).toMatch(/^[A-Za-z0-9+/]+=*$/);
     // And if the raw form had unsafe chars, it would differ from the decoded form.
     expect(result!.sign).not.toMatch(/[+/=]/);
+  });
+});
+
+describe("computeFeishuSign", () => {
+  it("returns null when secret is empty", () => {
+    expect(computeFeishuSign(undefined, 1754300000)).toBeNull();
+    expect(computeFeishuSign("", 1754300000)).toBeNull();
+  });
+
+  // Reference value generated via Node's crypto with the documented Feishu
+  // algorithm: key = `timestamp + "\n" + secret`, data = "".
+  //
+  //   key  = "1754300000\ntest-feishu-secret"
+  //   out  = base64(HMAC-SHA256(key, ""))
+  //        = "TOjmNE0/gdXWiUBBctTQNdftMsBHtkNSOeswvkAA7FM="
+  it("matches the official Feishu signing algorithm", () => {
+    const result = computeFeishuSign("test-feishu-secret", 1754300000);
+    expect(result).not.toBeNull();
+    expect(result!.timestamp).toBe("1754300000");
+    expect(result!.sign).toBe("TOjmNE0/gdXWiUBBctTQNdftMsBHtkNSOeswvkAA7FM=");
+  });
+
+  it("returns timestamp as a string (Feishu convention)", () => {
+    const result = computeFeishuSign("any-secret", 1754300000);
+    expect(typeof result!.timestamp).toBe("string");
+  });
+
+  it("produces deterministic output for the same (secret, timestamp)", () => {
+    const a = computeFeishuSign("secret", 1754300000);
+    const b = computeFeishuSign("secret", 1754300000);
+    expect(a).toEqual(b);
+  });
+
+  it("different secrets yield different signs", () => {
+    const a = computeFeishuSign("secret-a", 1754300000);
+    const b = computeFeishuSign("secret-b", 1754300000);
+    expect(a!.sign).not.toBe(b!.sign);
+  });
+
+  it("different timestamps yield different signs", () => {
+    const a = computeFeishuSign("secret", 1754300000);
+    const b = computeFeishuSign("secret", 1754300001);
+    expect(a!.sign).not.toBe(b!.sign);
+  });
+
+  it("sign is standard base64 (NOT URL-encoded — goes in body)", () => {
+    // Unlike DingTalk, Feishu signs live in the JSON body and must be plain
+    // base64 — raw '+' and '/' are allowed, and trailing '=' padding is kept.
+    const result = computeFeishuSign("secret", 1754300000);
+    expect(result!.sign).toMatch(/^[A-Za-z0-9+/]+=*$/);
   });
 });
