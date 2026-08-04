@@ -27,6 +27,31 @@ export type NotificationEvent =
 // ============ Common markdown builder ============
 
 /**
+ * Shared markdown card assembly. Builds a keyword-aware title and a
+ * subscription/provider/…/time field list. The timestamp footer is added
+ * automatically so callers only specify the event-specific fields.
+ */
+function buildMarkdownCard(
+  sub: Subscription,
+  emoji: string,
+  longLabel: string,
+  shortLabel: string,
+  fields: string[],
+  includeKeyword: boolean
+): { title: string; body: string } {
+  const title = includeKeyword
+    ? `【AI订阅】${emoji} ${sub.name} ${longLabel}`
+    : `${emoji} ${sub.name} ${shortLabel}`;
+  const lines = [
+    `- **订阅**: ${sub.name}`,
+    `- **提供商**: ${sub.provider}`,
+    ...fields,
+    `- **时间**: ${new Date().toLocaleString("zh-CN")}`,
+  ];
+  return { title, body: lines.join("\n") };
+}
+
+/**
  * Builds the natural-language title and body for a low-balance alert.
  *
  * When the channel has no signing secret we assume keyword security mode and
@@ -39,17 +64,14 @@ export function buildLowBalanceMarkdown(
   threshold: number,
   includeKeyword: boolean
 ): { title: string; body: string } {
-  const title = includeKeyword
-    ? `【AI订阅】🪫 ${sub.name} 余额不足提醒`
-    : `🪫 ${sub.name} 余额不足`;
-  const lines = [
-    `- **订阅**: ${sub.name}`,
-    `- **提供商**: ${sub.provider}`,
-    `- **当前余额**: ${balance}`,
-    `- **阈值**: ${threshold}`,
-    `- **时间**: ${new Date().toLocaleString("zh-CN")}`,
-  ];
-  return { title, body: lines.join("\n") };
+  return buildMarkdownCard(
+    sub,
+    "🪫",
+    "余额不足提醒",
+    "余额不足",
+    [`- **当前余额**: ${balance}`, `- **阈值**: ${threshold}`],
+    includeKeyword
+  );
 }
 
 /**
@@ -75,17 +97,17 @@ export function buildResetMarkdown(
   nextResetTime: string,
   includeKeyword: boolean
 ): { title: string; body: string } {
-  const title = includeKeyword
-    ? `【AI订阅】🔄 ${sub.name} 配额已重置`
-    : `🔄 ${sub.name} 配额已重置`;
-  const lines = [
-    `- **订阅**: ${sub.name}`,
-    `- **提供商**: ${sub.provider}`,
-    `- **重置计划**: ${formatScheduleType(scheduleType)}`,
-    `- **下次重置**: ${new Date(nextResetTime).toLocaleString("zh-CN")}`,
-    `- **时间**: ${new Date().toLocaleString("zh-CN")}`,
-  ];
-  return { title, body: lines.join("\n") };
+  return buildMarkdownCard(
+    sub,
+    "🔄",
+    "配额已重置",
+    "配额已重置",
+    [
+      `- **重置计划**: ${formatScheduleType(scheduleType)}`,
+      `- **下次重置**: ${new Date(nextResetTime).toLocaleString("zh-CN")}`,
+    ],
+    includeKeyword
+  );
 }
 
 // ============ DingTalk ============
