@@ -3,7 +3,7 @@ import {
   Subscription,
   ResetScheduleType,
 } from "@/lib/types";
-import { computeDingtalkSign } from "./signing";
+import { computeDingtalkSign, computeFeishuSign } from "./signing";
 
 /**
  * Event shapes the notification system can emit.
@@ -152,6 +152,124 @@ export function buildDingtalkUrl(channel: NotificationChannel): string {
   return `${channel.url}${separator}timestamp=${signResult.timestamp}&sign=${signResult.sign}`;
 }
 
+// ============ Feishu (Lark) ============
+
+/**
+ * Feishu interactive-card payload. The card carries the same markdown
+ * (title + field list) built for DingTalk, rendered through Feishu's native
+ * `markdown` element so it gets proper formatting in the chat UI.
+ *
+ * When the channel has a signing secret, the body also carries top-level
+ * `timestamp` and `sign` fields (Feishu's own signing scheme) — this is why
+ * the builder takes the channel, not just the event.
+ */
+export interface FeishuPayload {
+  msg_type: "interactive";
+  card: {
+    header: {
+      title: { tag: "plain_text"; content: string };
+    };
+    elements: Array<{ tag: "markdown"; content: string }>;
+  };
+  // Feishu signing fields; only present when the channel has a secret.
+  timestamp?: string;
+  sign?: string;
+}
+
+export function buildFeishuPayload(
+  event: NotificationEvent,
+  channel: NotificationChannel
+): FeishuPayload {
+  const includeKeyword = !channel.secret;
+  const { title, body } =
+    event.kind === "low-balance"
+      ? buildLowBalanceMarkdown(
+          event.subscription,
+          event.balance,
+          event.threshold,
+          includeKeyword
+        )
+      : buildResetMarkdown(
+          event.subscription,
+          event.scheduleType,
+          event.nextResetTime,
+          includeKeyword
+        );
+
+  const payload: FeishuPayload = {
+    msg_type: "interactive",
+    card: {
+      header: {
+        title: { tag: "plain_text", content: title },
+      },
+      elements: [{ tag: "markdown", content: body }],
+    },
+  };
+
+  if (channel.secret) {
+    const signResult = computeFeishuSign(
+      channel.secret,
+      Math.floor(Date.now() / 1000)
+    );
+    if (signResult) {
+      payload.timestamp = signResult.timestamp;
+      payload.sign = signResult.sign;
+    }
+  }
+  return payload;
+}
+
+// ============ Generic webhook ============
+
+/**
+ * Structured JSON payload for the generic webhook channel. Intentionally
+ * platform-agnostic: consumers parse the `event` discriminator to decide how
+ * to render / route / store the notification.
+ */
+export interface WebhookPayload {
+  event: "low-balance" | "reset";
+  timestamp: string;
+  subscription: {
+    id: string;
+    name: string;
+    category: string;
+    provider: string;
+    subscriptionType: "recurring" | "one-time";
+    price: number;
+  };
+  // Present only for `low-balance` events.
+  balance?: number;
+  threshold?: number;
+  // Present only for `reset` events.
+  scheduleType?: ResetScheduleType;
+  nextResetTime?: string;
+}
+
+export function buildWebhookPayload(event: NotificationEvent): WebhookPayload {
+  const sub = event.subscription;
+  const common = {
+    event: event.kind,
+    timestamp: event.triggeredAt,
+    subscription: {
+      id: sub.id,
+      name: sub.name,
+      category: sub.category,
+      provider: sub.provider,
+      subscriptionType: sub.subscriptionType,
+      price: sub.price,
+    },
+  } as WebhookPayload;
+
+  if (event.kind === "low-balance") {
+    common.balance = event.balance;
+    common.threshold = event.threshold;
+  } else {
+    common.scheduleType = event.scheduleType;
+    common.nextResetTime = event.nextResetTime;
+  }
+  return common;
+}
+
 // ============ Dispatch unit ============
 
 export interface PreparedSend {
@@ -163,10 +281,8 @@ export interface PreparedSend {
 
 /**
  * Builds a channel-specific (url, body, headers) triple for the event.
- * Only DingTalk and webhook are implemented here; Feishu and other channels
- * will be added in follow-up tickets.
  *
- * Throws when the channel type is not implemented or the channel is disabled.
+ * Throws when the channel is disabled.
  */
 export function prepareSend(
   channel: NotificationChannel,
@@ -187,13 +303,25 @@ export function prepareSend(
         headers: { "Content-Type": "application/json" },
       };
     }
-    case "webhook": {
-      // Webhook support deferred to follow-up ticket (#4).
-      throw new Error(`Channel type '${channel.type}' is not yet implemented`);
-    }
     case "feishu": {
-      // Feishu support deferred to follow-up ticket (#4).
-      throw new Error(`Channel type '${channel.type}' is not yet implemented`);
+      const payload = buildFeishuPayload(event, channel);
+      const body = JSON.stringify(payload);
+      return {
+        channel,
+        url: channel.url,
+        body,
+        headers: { "Content-Type": "application/json" },
+      };
+    }
+    case "webhook": {
+      const payload = buildWebhookPayload(event);
+      const body = JSON.stringify(payload);
+      return {
+        channel,
+        url: channel.url,
+        body,
+        headers: { "Content-Type": "application/json" },
+      };
     }
   }
 }

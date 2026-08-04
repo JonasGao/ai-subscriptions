@@ -3,6 +3,8 @@ import type { NotificationChannel, Subscription } from "@/lib/types";
 import {
   buildDingtalkPayload,
   buildDingtalkUrl,
+  buildFeishuPayload,
+  buildWebhookPayload,
   buildLowBalanceMarkdown,
   buildResetMarkdown,
   formatScheduleType,
@@ -119,18 +121,51 @@ describe("prepareSend", () => {
     JSON.parse(prepared.body as string);
   });
 
-  it("throws for feishu channel (deferred to follow-up ticket)", () => {
-    const ch = makeChannel({ type: "feishu" });
-    expect(() => prepareSend(ch, lowBalanceEvent)).toThrow(
-      /not yet implemented/
-    );
+  it("prepares a Feishu interactive-card payload with JSON content-type", () => {
+    const ch = makeChannel({ id: "feishu-1", type: "feishu" });
+    const prepared = prepareSend(ch, lowBalanceEvent);
+    expect(prepared.url).toBe(ch.url);
+    expect(prepared.headers["Content-Type"]).toBe("application/json");
+    const body = JSON.parse(prepared.body as string);
+    expect(body.msg_type).toBe("interactive");
+    expect(body.card.header.title.content).toContain("Claude Pro");
+    expect(body.card.elements[0].tag).toBe("markdown");
+    expect(body.card.elements[0].content).toContain("5");
+    // No secret -> no timestamp/sign in body, but keyword present in title.
+    expect(body.timestamp).toBeUndefined();
+    expect(body.sign).toBeUndefined();
+    expect(body.card.header.title.content).toContain("AI订阅");
   });
 
-  it("throws for webhook channel (deferred to follow-up ticket)", () => {
-    const ch = makeChannel({ type: "webhook" });
-    expect(() => prepareSend(ch, lowBalanceEvent)).toThrow(
-      /not yet implemented/
-    );
+  it("prepares a Feishu payload with timestamp+sign when secret present", () => {
+    const ch = makeChannel({
+      id: "feishu-signed",
+      type: "feishu",
+      secret: "test-feishu-secret",
+    });
+    const prepared = prepareSend(ch, lowBalanceEvent);
+    const body = JSON.parse(prepared.body as string);
+    expect(body.msg_type).toBe("interactive");
+    // Signed -> timestamp and sign are present.
+    expect(typeof body.timestamp).toBe("string");
+    expect(typeof body.sign).toBe("string");
+    expect(body.sign.length).toBeGreaterThan(0);
+    // Signed -> no keyword in title.
+    expect(body.card.header.title.content).not.toContain("AI订阅");
+  });
+
+  it("prepares a webhook JSON payload with event metadata", () => {
+    const ch = makeChannel({ id: "wh-1", type: "webhook" });
+    const prepared = prepareSend(ch, lowBalanceEvent);
+    expect(prepared.url).toBe(ch.url);
+    expect(prepared.headers["Content-Type"]).toBe("application/json");
+    const body = JSON.parse(prepared.body as string);
+    expect(body.event).toBe("low-balance");
+    expect(body.subscription.id).toBe("sub-1");
+    expect(body.subscription.name).toBe("Claude Pro");
+    expect(body.balance).toBe(5);
+    expect(body.threshold).toBe(10);
+    expect(body.timestamp).toBe("2024-06-01T00:00:00Z");
   });
 });
 
@@ -216,6 +251,104 @@ describe("prepareSend (reset)", () => {
     expect(body.msgtype).toBe("markdown");
     expect(body.markdown.title).toContain("OpenAI Plus");
     expect(body.markdown.text).toContain("每周");
+  });
+});
+
+// ============ Feishu ============
+
+describe("buildFeishuPayload", () => {
+  it("builds an interactive card with markdown element", () => {
+    const ch = makeChannel({ type: "feishu" });
+    const payload = buildFeishuPayload(lowBalanceEvent, ch);
+    expect(payload.msg_type).toBe("interactive");
+    expect(payload.card.header.title.tag).toBe("plain_text");
+    expect(payload.card.header.title.content).toContain("Claude Pro");
+    expect(payload.card.elements).toHaveLength(1);
+    expect(payload.card.elements[0].tag).toBe("markdown");
+    expect(payload.card.elements[0].content).toContain("5");
+    expect(payload.card.elements[0].content).toContain("10");
+  });
+
+  it("omits timestamp/sign when channel has no secret", () => {
+    const ch = makeChannel({ type: "feishu" });
+    const payload = buildFeishuPayload(lowBalanceEvent, ch);
+    expect(payload.timestamp).toBeUndefined();
+    expect(payload.sign).toBeUndefined();
+  });
+
+  it("includes timestamp+sign when channel has a secret", () => {
+    const ch = makeChannel({ type: "feishu", secret: "my-secret" });
+    const payload = buildFeishuPayload(lowBalanceEvent, ch);
+    expect(typeof payload.timestamp).toBe("string");
+    expect(typeof payload.sign).toBe("string");
+    expect(payload.sign!.length).toBeGreaterThan(0);
+  });
+
+  it("renders reset events with schedule type in markdown body", () => {
+    const ch = makeChannel({ type: "feishu" });
+    const resetEvent: NotificationEvent = {
+      kind: "reset",
+      subscription: makeSub({ name: "OpenAI Plus" }),
+      scheduleType: "monthly",
+      nextResetTime: "2024-07-01T00:00:00Z",
+      triggeredAt: "2024-06-01T00:00:00Z",
+    };
+    const payload = buildFeishuPayload(resetEvent, ch);
+    expect(payload.card.header.title.content).toContain("OpenAI Plus");
+    expect(payload.card.header.title.content).toContain("配额已重置");
+    expect(payload.card.elements[0].content).toContain("每月");
+  });
+
+  it("keyword is present only when channel has no secret", () => {
+    const chNoSecret = makeChannel({ id: "a", type: "feishu" });
+    const chWithSecret = makeChannel({
+      id: "b",
+      type: "feishu",
+      secret: "s3cret",
+    });
+    const noSecret = buildFeishuPayload(lowBalanceEvent, chNoSecret);
+    const withSecret = buildFeishuPayload(lowBalanceEvent, chWithSecret);
+    expect(noSecret.card.header.title.content).toContain("AI订阅");
+    expect(withSecret.card.header.title.content).not.toContain("AI订阅");
+  });
+});
+
+// ============ Generic webhook ============
+
+describe("buildWebhookPayload", () => {
+  it("includes event discriminator and subscription metadata", () => {
+    const payload = buildWebhookPayload(lowBalanceEvent);
+    expect(payload.event).toBe("low-balance");
+    expect(payload.timestamp).toBe("2024-06-01T00:00:00Z");
+    expect(payload.subscription).toEqual({
+      id: "sub-1",
+      name: "Claude Pro",
+      category: "AI助手",
+      provider: "anthropic",
+      subscriptionType: "one-time",
+      price: 20,
+    });
+    expect(payload.balance).toBe(5);
+    expect(payload.threshold).toBe(10);
+    // Reset-only fields must NOT appear on a low-balance event.
+    expect(payload.scheduleType).toBeUndefined();
+    expect(payload.nextResetTime).toBeUndefined();
+  });
+
+  it("includes schedule fields and omits balance fields for reset events", () => {
+    const resetEvent: NotificationEvent = {
+      kind: "reset",
+      subscription: makeSub({ name: "OpenAI Plus", provider: "openai" }),
+      scheduleType: "weekly",
+      nextResetTime: "2024-07-01T00:00:00Z",
+      triggeredAt: "2024-06-01T00:00:00Z",
+    };
+    const payload = buildWebhookPayload(resetEvent);
+    expect(payload.event).toBe("reset");
+    expect(payload.scheduleType).toBe("weekly");
+    expect(payload.nextResetTime).toBe("2024-07-01T00:00:00Z");
+    expect(payload.balance).toBeUndefined();
+    expect(payload.threshold).toBeUndefined();
   });
 });
 
