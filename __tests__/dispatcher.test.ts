@@ -3,6 +3,7 @@ import type {
   Subscription,
   NotificationChannel,
   BalanceTransitionState,
+  ResetTickTrigger,
 } from "@/lib/types";
 import type { PreparedSend } from "@/lib/notifications/payload";
 import type { Sender } from "@/lib/notifications/dispatcher";
@@ -49,6 +50,7 @@ import {
   evaluateLowBalanceTransition,
   resolveThreshold,
   detectLowBalanceEvents,
+  detectResetEvents,
   dispatchEvent,
   runNotificationTick,
   rollbackTransition,
@@ -382,5 +384,133 @@ describe("runNotificationTick", () => {
     await runNotificationTick([makeSub({ balance: 5 })], fakeSender);
     // ch-2 succeeded, so state persists as "below".
     expect(storageState.transitions["sub-1"].status).toBe("below");
+  });
+});
+
+function makeTrigger(
+  overrides: Partial<ResetTickTrigger> = {}
+): ResetTickTrigger {
+  return {
+    subscriptionId: "sub-1",
+    subscriptionName: "Claude Pro",
+    scheduleId: "sched-1",
+    scheduleType: "monthly",
+    nextResetTime: "2024-07-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+describe("detectResetEvents", () => {
+  it("emits one event per trigger, resolving subscription by id", () => {
+    const sub = makeSub({ id: "sub-1", name: "Claude Pro" });
+    const triggers = [
+      makeTrigger({ subscriptionId: "sub-1", scheduleType: "monthly" }),
+    ];
+    const events = detectResetEvents(triggers, [sub]);
+    expect(events).toHaveLength(1);
+    expect(events[0].kind).toBe("reset");
+    if (events[0].kind === "reset") {
+      expect(events[0].subscription.id).toBe("sub-1");
+      expect(events[0].scheduleType).toBe("monthly");
+      expect(events[0].nextResetTime).toBe("2024-07-01T00:00:00Z");
+    }
+  });
+
+  it("emits multiple events for multiple triggers", () => {
+    const sub1 = makeSub({ id: "sub-1", name: "Claude Pro" });
+    const sub2 = makeSub({ id: "sub-2", name: "OpenAI Plus" });
+    const triggers = [
+      makeTrigger({ subscriptionId: "sub-1" }),
+      makeTrigger({ subscriptionId: "sub-2" }),
+    ];
+    const events = detectResetEvents(triggers, [sub1, sub2]);
+    expect(events).toHaveLength(2);
+  });
+
+  it("silently skips triggers whose subscription no longer exists", () => {
+    const triggers = [makeTrigger({ subscriptionId: "missing" })];
+    const events = detectResetEvents(triggers, []);
+    expect(events).toHaveLength(0);
+  });
+
+  it("returns empty when no triggers", () => {
+    const events = detectResetEvents([], [makeSub()]);
+    expect(events).toHaveLength(0);
+  });
+});
+
+describe("reset event dispatch", () => {
+  beforeEach(() => resetState());
+
+  it("fake sender receives reset payload for each trigger", async () => {
+    storageState.channels = [makeChannel({ id: "ch-1", type: "dingtalk" })];
+    const calls: PreparedSend[] = [];
+    const fakeSender: Sender = async (s) => {
+      calls.push(s);
+    };
+    const sub = makeSub({ id: "sub-1", name: "Claude Pro" });
+    const triggers = [
+      makeTrigger({ subscriptionId: "sub-1", scheduleType: "weekly" }),
+    ];
+    await runNotificationTick([sub], fakeSender, triggers);
+    expect(calls).toHaveLength(1);
+    const body = JSON.parse(calls[0].body as string);
+    expect(body.msgtype).toBe("markdown");
+    expect(body.markdown.title).toContain("Claude Pro");
+    expect(body.markdown.title).toContain("配额已重置");
+    expect(body.markdown.text).toContain("每周");
+  });
+
+  it("no triggers produces no reset notifications", async () => {
+    storageState.channels = [makeChannel({ id: "ch-1", type: "dingtalk" })];
+    const calls: PreparedSend[] = [];
+    const fakeSender: Sender = async (s) => {
+      calls.push(s);
+    };
+    await runNotificationTick([makeSub()], fakeSender, []);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("reset events dispatch to all enabled channels", async () => {
+    storageState.channels = [
+      makeChannel({ id: "ch-1", type: "dingtalk" }),
+      makeChannel({ id: "ch-2", type: "dingtalk" }),
+    ];
+    const calls: PreparedSend[] = [];
+    const fakeSender: Sender = async (s) => {
+      calls.push(s);
+    };
+    const triggers = [makeTrigger()];
+    await runNotificationTick([makeSub()], fakeSender, triggers);
+    // One trigger × two enabled channels = 2 calls.
+    expect(calls).toHaveLength(2);
+    expect(calls.map((c) => c.channel.id).sort()).toEqual(["ch-1", "ch-2"]);
+  });
+
+  it("disabled channels do not receive reset notifications", async () => {
+    storageState.channels = [
+      makeChannel({ id: "ch-1", enabled: true }),
+      makeChannel({ id: "ch-2", enabled: false }),
+    ];
+    const calls: PreparedSend[] = [];
+    const fakeSender: Sender = async (s) => {
+      calls.push(s);
+    };
+    const triggers = [makeTrigger()];
+    await runNotificationTick([makeSub()], fakeSender, triggers);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].channel.id).toBe("ch-1");
+  });
+
+  it("does not dedupe: same trigger fires every tick", async () => {
+    storageState.channels = [makeChannel({ id: "ch-1", type: "dingtalk" })];
+    const calls: PreparedSend[] = [];
+    const fakeSender: Sender = async (s) => {
+      calls.push(s);
+    };
+    const triggers = [makeTrigger()];
+    await runNotificationTick([makeSub()], fakeSender, triggers);
+    await runNotificationTick([makeSub()], fakeSender, triggers);
+    expect(calls).toHaveLength(2);
   });
 });

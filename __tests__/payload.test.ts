@@ -4,6 +4,8 @@ import {
   buildDingtalkPayload,
   buildDingtalkUrl,
   buildLowBalanceMarkdown,
+  buildResetMarkdown,
+  formatScheduleType,
   prepareSend,
   type NotificationEvent,
 } from "@/lib/notifications/payload";
@@ -129,6 +131,91 @@ describe("prepareSend", () => {
     expect(() => prepareSend(ch, lowBalanceEvent)).toThrow(
       /not yet implemented/
     );
+  });
+});
+
+describe("formatScheduleType", () => {
+  it("maps hourly/weekly/monthly to Chinese labels", () => {
+    expect(formatScheduleType("hourly")).toBe("每小时");
+    expect(formatScheduleType("weekly")).toBe("每周");
+    expect(formatScheduleType("monthly")).toBe("每月");
+  });
+});
+
+describe("buildResetMarkdown", () => {
+  const sub = makeSub({ name: "OpenAI Plus", provider: "openai" });
+
+  it("includes subscription name, schedule type, and next reset time", () => {
+    const { title, body } = buildResetMarkdown(
+      sub,
+      "monthly",
+      "2024-07-01T00:00:00Z",
+      false
+    );
+    expect(title).toContain("OpenAI Plus");
+    expect(title).toContain("配额已重置");
+    expect(body).toContain("每月");
+    expect(body).toContain("openai");
+    // nextResetTime is rendered via zh-CN locale; just check presence.
+    expect(body).toMatch(/下次重置/);
+  });
+
+  it("weaves keyword into title when includeKeyword is true", () => {
+    const { title } = buildResetMarkdown(
+      sub,
+      "weekly",
+      "2024-07-01T00:00:00Z",
+      true
+    );
+    expect(title).toContain("【AI订阅】");
+    expect(title).toContain("OpenAI Plus");
+  });
+
+  it("omits keyword when includeKeyword is false", () => {
+    const { title } = buildResetMarkdown(
+      sub,
+      "weekly",
+      "2024-07-01T00:00:00Z",
+      false
+    );
+    expect(title).not.toContain("AI订阅");
+  });
+});
+
+describe("buildDingtalkPayload (reset)", () => {
+  const resetEvent: NotificationEvent = {
+    kind: "reset",
+    subscription: makeSub({ name: "OpenAI Plus" }),
+    scheduleType: "monthly",
+    nextResetTime: "2024-07-01T00:00:00Z",
+    triggeredAt: "2024-06-01T00:00:00Z",
+  };
+
+  it("returns a markdown payload for a reset event", () => {
+    const payload = buildDingtalkPayload(resetEvent, false);
+    expect(payload.msgtype).toBe("markdown");
+    expect(payload.markdown.title).toContain("OpenAI Plus");
+    expect(payload.markdown.text).toContain("每月");
+  });
+});
+
+describe("prepareSend (reset)", () => {
+  const resetEvent: NotificationEvent = {
+    kind: "reset",
+    subscription: makeSub({ name: "OpenAI Plus" }),
+    scheduleType: "weekly",
+    nextResetTime: "2024-07-01T00:00:00Z",
+    triggeredAt: "2024-06-01T00:00:00Z",
+  };
+
+  it("prepares a DingTalk reset payload with JSON content-type", () => {
+    const ch = makeChannel();
+    const prepared = prepareSend(ch, resetEvent);
+    expect(prepared.headers["Content-Type"]).toBe("application/json");
+    const body = JSON.parse(prepared.body as string);
+    expect(body.msgtype).toBe("markdown");
+    expect(body.markdown.title).toContain("OpenAI Plus");
+    expect(body.markdown.text).toContain("每周");
   });
 });
 
