@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import { processResetTick, getSubscriptions } from "./db";
 import { runNotificationTick } from "./notifications/dispatcher";
+import type { ResetTickTrigger } from "./types";
 
 let isInitialized = false;
 
@@ -13,7 +14,7 @@ export function initScheduler() {
 
   cron.schedule("*/5 * * * *", async () => {
     console.log("[Scheduler] Checking for schedules needing reset...");
-    let resetTriggers: Awaited<ReturnType<typeof processResetTick>> = [];
+    let resetTriggers: ResetTickTrigger[] = [];
     try {
       resetTriggers = processResetTick();
       if (resetTriggers.length > 0) {
@@ -25,11 +26,11 @@ export function initScheduler() {
       console.error("[Scheduler] Reset check failed:", error);
     }
 
-    // Notification tick: detect low-balance threshold transitions and
-    // dispatch reset notifications. Failures are recorded but never throw.
+    // Notification tick: dispatch reset events first, then detect low-balance
+    // threshold transitions. Failures are recorded but never throw.
     try {
       const subscriptions = getSubscriptions();
-      await runNotificationTick(subscriptions, undefined, resetTriggers);
+      await runNotificationTick({ subscriptions, resetTriggers });
     } catch (error) {
       console.error("[Scheduler] Notification tick failed:", error);
     }

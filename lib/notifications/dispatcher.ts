@@ -192,24 +192,32 @@ export function detectResetEvents(
 }
 
 /**
- * Top-level tick entry point: detects low-balance events for one-time
- * subscriptions and dispatches them to all enabled channels. Also dispatches
- * one notification per reset tick trigger — reset events fire every time,
- * with no deduplication or rollback (they are not state transitions).
- *
- * If dispatch fails for ALL channels of a given low-balance event, the
- * transition state is rolled back so the next tick can retry. Reset events
- * do not roll back — they are fire-and-forget.
+ * Options for runNotificationTick.
+ */
+export interface NotificationTickOptions {
+  subscriptions: Subscription[];
+  resetTriggers?: ResetTickTrigger[];
+  sender?: Sender;
+}
+
+/**
+ * Top-level tick entry point: dispatches reset events first (fire-and-forget,
+ * no deduplication or rollback), then detects and dispatches low-balance
+ * events (with rollback on total channel failure).
  *
  * Mounted on the existing 5-minute scheduler after processResetTick.
  */
 export async function runNotificationTick(
-  subscriptions: Subscription[],
-  sender: Sender = httpSender,
-  resetTriggers: ResetTickTrigger[] = []
+  options: NotificationTickOptions
 ): Promise<void> {
+  const { subscriptions, resetTriggers = [], sender = httpSender } = options;
   const channels = listChannels();
   if (channels.length === 0) return;
+
+  const resetEvents = detectResetEvents(resetTriggers, subscriptions);
+  for (const event of resetEvents) {
+    await dispatchEvent(event, channels, sender);
+  }
 
   const lowBalanceEvents = detectLowBalanceEvents(subscriptions);
   for (const event of lowBalanceEvents) {
@@ -218,10 +226,5 @@ export async function runNotificationTick(
       // Every enabled channel failed — roll back so the next tick retries.
       rollbackTransition(event.subscription.id);
     }
-  }
-
-  const resetEvents = detectResetEvents(resetTriggers, subscriptions);
-  for (const event of resetEvents) {
-    await dispatchEvent(event, channels, sender);
   }
 }

@@ -323,7 +323,10 @@ describe("runNotificationTick", () => {
     const fakeSender: Sender = async (s) => {
       calls.push(s);
     };
-    await runNotificationTick([makeSub()], fakeSender);
+    await runNotificationTick({
+      subscriptions: [makeSub()],
+      sender: fakeSender,
+    });
     expect(calls).toHaveLength(0);
   });
 
@@ -334,14 +337,20 @@ describe("runNotificationTick", () => {
       calls.push(s);
     };
     // First tick: no event (first observation)
-    await runNotificationTick([makeSub({ balance: 5 })], fakeSender);
+    await runNotificationTick({
+      subscriptions: [makeSub({ balance: 5 })],
+      sender: fakeSender,
+    });
     expect(calls).toHaveLength(0);
     // Bring balance above, then drop: second tick fires.
     storageState.transitions["sub-1"] = {
       status: "above",
       updatedAt: "2024-01-01T00:00:00Z",
     };
-    await runNotificationTick([makeSub({ balance: 5 })], fakeSender);
+    await runNotificationTick({
+      subscriptions: [makeSub({ balance: 5 })],
+      sender: fakeSender,
+    });
     expect(calls).toHaveLength(1);
     const body = JSON.parse(calls[0].body as string);
     // DingTalk markdown payload has msgtype=markdown with title/body
@@ -360,7 +369,10 @@ describe("runNotificationTick", () => {
       status: "above",
       updatedAt: "2024-01-01T00:00:00Z",
     };
-    await runNotificationTick([makeSub({ balance: 5 })], fakeSender);
+    await runNotificationTick({
+      subscriptions: [makeSub({ balance: 5 })],
+      sender: fakeSender,
+    });
     // Transition was rolled back to "above" so the next tick can retry.
     expect(storageState.transitions["sub-1"].status).toBe("above");
     const failureLog = storageState.sendResultLog.find(
@@ -381,7 +393,10 @@ describe("runNotificationTick", () => {
       status: "above",
       updatedAt: "2024-01-01T00:00:00Z",
     };
-    await runNotificationTick([makeSub({ balance: 5 })], fakeSender);
+    await runNotificationTick({
+      subscriptions: [makeSub({ balance: 5 })],
+      sender: fakeSender,
+    });
     // ch-2 succeeded, so state persists as "below".
     expect(storageState.transitions["sub-1"].status).toBe("below");
   });
@@ -450,7 +465,11 @@ describe("reset event dispatch", () => {
     const triggers = [
       makeTrigger({ subscriptionId: "sub-1", scheduleType: "weekly" }),
     ];
-    await runNotificationTick([sub], fakeSender, triggers);
+    await runNotificationTick({
+      subscriptions: [sub],
+      sender: fakeSender,
+      resetTriggers: triggers,
+    });
     expect(calls).toHaveLength(1);
     const body = JSON.parse(calls[0].body as string);
     expect(body.msgtype).toBe("markdown");
@@ -465,7 +484,11 @@ describe("reset event dispatch", () => {
     const fakeSender: Sender = async (s) => {
       calls.push(s);
     };
-    await runNotificationTick([makeSub()], fakeSender, []);
+    await runNotificationTick({
+      subscriptions: [makeSub()],
+      sender: fakeSender,
+      resetTriggers: [],
+    });
     expect(calls).toHaveLength(0);
   });
 
@@ -479,7 +502,11 @@ describe("reset event dispatch", () => {
       calls.push(s);
     };
     const triggers = [makeTrigger()];
-    await runNotificationTick([makeSub()], fakeSender, triggers);
+    await runNotificationTick({
+      subscriptions: [makeSub()],
+      sender: fakeSender,
+      resetTriggers: triggers,
+    });
     // One trigger × two enabled channels = 2 calls.
     expect(calls).toHaveLength(2);
     expect(calls.map((c) => c.channel.id).sort()).toEqual(["ch-1", "ch-2"]);
@@ -495,7 +522,11 @@ describe("reset event dispatch", () => {
       calls.push(s);
     };
     const triggers = [makeTrigger()];
-    await runNotificationTick([makeSub()], fakeSender, triggers);
+    await runNotificationTick({
+      subscriptions: [makeSub()],
+      sender: fakeSender,
+      resetTriggers: triggers,
+    });
     expect(calls).toHaveLength(1);
     expect(calls[0].channel.id).toBe("ch-1");
   });
@@ -507,8 +538,16 @@ describe("reset event dispatch", () => {
       calls.push(s);
     };
     const triggers = [makeTrigger()];
-    await runNotificationTick([makeSub()], fakeSender, triggers);
-    await runNotificationTick([makeSub()], fakeSender, triggers);
+    await runNotificationTick({
+      subscriptions: [makeSub()],
+      sender: fakeSender,
+      resetTriggers: triggers,
+    });
+    await runNotificationTick({
+      subscriptions: [makeSub()],
+      sender: fakeSender,
+      resetTriggers: triggers,
+    });
     expect(calls).toHaveLength(2);
   });
 });
