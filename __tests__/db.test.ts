@@ -146,8 +146,6 @@ describe("processResetTick filtering", () => {
     const triggers = db.processResetTick();
     expect(triggers).toHaveLength(1);
     expect(triggers[0].subscriptionId).toBe("sub-1");
-    expect(triggers[0].subscriptionName).toBe("Active Sub");
-    expect(triggers[0].scheduleId).toBe("sched-1");
     expect(triggers[0].scheduleType).toBe("monthly");
     // nextResetTime should be advanced to the next monthly occurrence.
     expect(new Date(triggers[0].nextResetTime).getTime()).toBeGreaterThan(

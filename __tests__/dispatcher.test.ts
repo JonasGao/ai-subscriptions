@@ -392,8 +392,6 @@ function makeTrigger(
 ): ResetTickTrigger {
   return {
     subscriptionId: "sub-1",
-    subscriptionName: "Claude Pro",
-    scheduleId: "sched-1",
     scheduleType: "monthly",
     nextResetTime: "2024-07-01T00:00:00Z",
     ...overrides,

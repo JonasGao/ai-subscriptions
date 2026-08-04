@@ -341,8 +341,6 @@ export const DEFAULT_LOW_BALANCE_THRESHOLD = 10;
  */
 export interface ResetTickTrigger {
   subscriptionId: string;
-  subscriptionName: string;
-  scheduleId: string;
   scheduleType: ResetScheduleType;
   nextResetTime: string;
 }

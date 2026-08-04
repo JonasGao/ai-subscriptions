@@ -445,8 +445,6 @@ export function processResetTick(): ResetTickTrigger[] {
         subAnyFired = true;
         triggers.push({
           subscriptionId: sub.id,
-          subscriptionName: sub.name,
-          scheduleId: schedule.id,
           scheduleType: schedule.type,
           nextResetTime: schedule.nextResetTime,
         });
