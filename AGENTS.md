@@ -9,9 +9,9 @@ npm run dev      # Development server
 npm run build    # Production build
 npm run lint     # ESLint check
 npm start        # Production server (port 3000)
+npm test         # Run vitest test suite (single run)
+npm run test:watch  # Run vitest in watch mode
 ```
-
-**Note:** No test suite exists. `npm test` will fail.
 
 ## Architecture
 
@@ -24,13 +24,13 @@ npm start        # Production server (port 3000)
 
 ## Key Files
 
-| Path | Purpose |
-|------|---------|
-| `lib/db.ts` | Subscription CRUD + category management |
-| `lib/tools.ts` | Tool management |
-| `lib/priorities.ts` | Priority scene management |
-| `lib/auth.ts` | NextAuth config + password change |
-| `lib/types.ts` | All TypeScript types + default providers/categories |
+| Path                | Purpose                                             |
+| ------------------- | --------------------------------------------------- |
+| `lib/db.ts`         | Subscription CRUD + category management             |
+| `lib/tools.ts`      | Tool management                                     |
+| `lib/priorities.ts` | Priority scene management                           |
+| `lib/auth.ts`       | NextAuth config + password change                   |
+| `lib/types.ts`      | All TypeScript types + default providers/categories |
 
 ## Deployment
 
@@ -52,8 +52,8 @@ Service runs on port 3000, uses Node v24.13.0 from NVM.
 Use `@/` alias for all imports from lib/components:
 
 ```typescript
-import { Subscription } from '@/lib/types'
-import { StatsCards } from '@/components/StatsCards'
+import { Subscription } from "@/lib/types";
+import { StatsCards } from "@/components/StatsCards";
 ```
 
 ## Data Model
