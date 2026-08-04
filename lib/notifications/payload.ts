@@ -74,34 +74,6 @@ export function buildDingtalkUrl(channel: NotificationChannel): string {
   return `${channel.url}${separator}timestamp=${signResult.timestamp}&sign=${signResult.sign}`;
 }
 
-// ============ Generic webhook ============
-
-export interface WebhookPayload {
-  event: "low-balance";
-  subscription: {
-    id: string;
-    name: string;
-    provider: string;
-    subscriptionType: string;
-  };
-  lowBalance: { balance: number; threshold: number };
-  triggeredAt: string;
-}
-
-export function buildWebhookPayload(event: NotificationEvent): WebhookPayload {
-  return {
-    event: "low-balance",
-    subscription: {
-      id: event.subscription.id,
-      name: event.subscription.name,
-      provider: event.subscription.provider,
-      subscriptionType: event.subscription.subscriptionType,
-    },
-    lowBalance: { balance: event.balance, threshold: event.threshold },
-    triggeredAt: event.triggeredAt,
-  };
-}
-
 // ============ Dispatch unit ============
 
 export interface PreparedSend {
@@ -138,14 +110,8 @@ export function prepareSend(
       };
     }
     case "webhook": {
-      const payload = buildWebhookPayload(event);
-      const body = JSON.stringify(payload);
-      return {
-        channel,
-        url: channel.url,
-        body,
-        headers: { "Content-Type": "application/json" },
-      };
+      // Webhook support deferred to follow-up ticket (#4).
+      throw new Error(`Channel type '${channel.type}' is not yet implemented`);
     }
     case "feishu": {
       // Feishu support deferred to follow-up ticket (#4).
@@ -157,8 +123,8 @@ export function prepareSend(
 // ============ Shared HTTP sender ============
 
 /**
- * Default HTTP sender used by both the dispatcher and the API test-send
- * endpoint. Exported so tests and callers share one implementation.
+ * Default HTTP sender used by the notification dispatcher.
+ * Exported so tests and callers share one implementation.
  */
 export async function httpSender(send: PreparedSend): Promise<void> {
   const response = await fetch(send.url, {

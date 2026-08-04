@@ -7,7 +7,6 @@ import {
   DEFAULT_LOW_BALANCE_THRESHOLD,
 } from "@/lib/types";
 import { ensureDataDir, atomicWriteFile, dataDir } from "@/lib/file-ops";
-import { v4 as uuidv4 } from "uuid";
 
 const notificationsFile = path.join(dataDir, "notifications.json");
 
@@ -55,55 +54,6 @@ export function listChannels(): NotificationChannel[] {
   return readNotificationData().channels;
 }
 
-export function getChannelById(id: string): NotificationChannel | null {
-  const data = readNotificationData();
-  return data.channels.find((c) => c.id === id) ?? null;
-}
-
-export function createChannel(input: {
-  type: NotificationChannel["type"];
-  name: string;
-  url: string;
-  secret?: string;
-  enabled?: boolean;
-}): NotificationChannel {
-  const data = readNotificationData();
-  const now = new Date().toISOString();
-  const channel: NotificationChannel = {
-    id: uuidv4(),
-    type: input.type,
-    name: input.name,
-    url: input.url,
-    secret: input.secret,
-    enabled: input.enabled ?? true,
-    createdAt: now,
-    updatedAt: now,
-  };
-  data.channels.push(channel);
-  writeNotificationData(data);
-  return channel;
-}
-
-export function updateChannel(
-  id: string,
-  patch: Partial<
-    Pick<NotificationChannel, "type" | "name" | "url" | "secret" | "enabled">
-  >
-): NotificationChannel | null {
-  const data = readNotificationData();
-  const idx = data.channels.findIndex((c) => c.id === id);
-  if (idx === -1) return null;
-
-  const existing = data.channels[idx];
-  data.channels[idx] = {
-    ...existing,
-    ...patch,
-    updatedAt: new Date().toISOString(),
-  };
-  writeNotificationData(data);
-  return data.channels[idx];
-}
-
 export function updateChannelSendResult(
   id: string,
   result: NotificationChannel["lastSendResult"]
@@ -113,15 +63,6 @@ export function updateChannelSendResult(
   if (idx === -1) return;
   data.channels[idx].lastSendResult = result;
   writeNotificationData(data);
-}
-
-export function deleteChannel(id: string): boolean {
-  const data = readNotificationData();
-  const before = data.channels.length;
-  data.channels = data.channels.filter((c) => c.id !== id);
-  if (data.channels.length === before) return false;
-  writeNotificationData(data);
-  return true;
 }
 
 export function getBalanceTransitionState(

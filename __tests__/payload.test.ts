@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from "vitest";
 import type { NotificationChannel, Subscription } from "@/lib/types";
 import {
   buildDingtalkPayload,
-  buildWebhookPayload,
   buildDingtalkUrl,
   buildLowBalanceMarkdown,
   prepareSend,
@@ -93,16 +92,6 @@ describe("buildDingtalkUrl", () => {
   });
 });
 
-describe("buildWebhookPayload", () => {
-  it("emits structured JSON with event kind and subscription info", () => {
-    const payload = buildWebhookPayload(lowBalanceEvent);
-    expect(payload.event).toBe("low-balance");
-    expect(payload.subscription.id).toBe("sub-1");
-    expect(payload.lowBalance.balance).toBe(5);
-    expect(payload.lowBalance.threshold).toBe(10);
-  });
-});
-
 describe("prepareSend", () => {
   it("throws for disabled channels", () => {
     const ch = makeChannel({ enabled: false });
@@ -130,6 +119,13 @@ describe("prepareSend", () => {
 
   it("throws for feishu channel (deferred to follow-up ticket)", () => {
     const ch = makeChannel({ type: "feishu" });
+    expect(() => prepareSend(ch, lowBalanceEvent)).toThrow(
+      /not yet implemented/
+    );
+  });
+
+  it("throws for webhook channel (deferred to follow-up ticket)", () => {
+    const ch = makeChannel({ type: "webhook" });
     expect(() => prepareSend(ch, lowBalanceEvent)).toThrow(
       /not yet implemented/
     );

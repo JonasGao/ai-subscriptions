@@ -240,7 +240,7 @@ describe("dispatchEvent", () => {
       calls.push(s);
     };
     const ch1 = makeChannel({ id: "ch-1", type: "dingtalk" });
-    const ch2 = makeChannel({ id: "ch-2", type: "webhook" });
+    const ch2 = makeChannel({ id: "ch-2", type: "dingtalk" });
     const event = {
       kind: "low-balance" as const,
       subscription: makeSub(),
@@ -326,7 +326,7 @@ describe("runNotificationTick", () => {
   });
 
   it("dispatches low-balance event to configured channel", async () => {
-    storageState.channels = [makeChannel({ id: "ch-1", type: "webhook" })];
+    storageState.channels = [makeChannel({ id: "ch-1", type: "dingtalk" })];
     const calls: PreparedSend[] = [];
     const fakeSender: Sender = async (s) => {
       calls.push(s);
@@ -342,12 +342,14 @@ describe("runNotificationTick", () => {
     await runNotificationTick([makeSub({ balance: 5 })], fakeSender);
     expect(calls).toHaveLength(1);
     const body = JSON.parse(calls[0].body as string);
-    expect(body.event).toBe("low-balance");
-    expect(body.lowBalance.balance).toBe(5);
+    // DingTalk markdown payload has msgtype=markdown with title/body
+    expect(body.msgtype).toBe("markdown");
+    expect(body.markdown.title).toContain("余额不足");
+    expect(body.markdown.text).toContain("5");
   });
 
   it("rolls back transition when all channels fail", async () => {
-    storageState.channels = [makeChannel({ id: "ch-1", type: "webhook" })];
+    storageState.channels = [makeChannel({ id: "ch-1", type: "dingtalk" })];
     const fakeSender: Sender = async () => {
       throw new Error("network down");
     };
@@ -367,8 +369,8 @@ describe("runNotificationTick", () => {
 
   it("persists below when at least one channel succeeds", async () => {
     storageState.channels = [
-      makeChannel({ id: "ch-1", type: "webhook" }),
-      makeChannel({ id: "ch-2", type: "webhook" }),
+      makeChannel({ id: "ch-1", type: "dingtalk" }),
+      makeChannel({ id: "ch-2", type: "dingtalk" }),
     ];
     const fakeSender: Sender = async (s) => {
       if (s.channel.id === "ch-1") throw new Error("boom");
