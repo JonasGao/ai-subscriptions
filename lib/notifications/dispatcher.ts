@@ -3,7 +3,12 @@ import {
   NotificationChannel,
   DEFAULT_LOW_BALANCE_THRESHOLD,
 } from "@/lib/types";
-import { NotificationEvent, PreparedSend, prepareSend } from "./payload";
+import {
+  NotificationEvent,
+  PreparedSend,
+  prepareSend,
+  httpSender,
+} from "./payload";
 import {
   readNotificationData,
   getBalanceTransitionState,
@@ -22,27 +27,28 @@ export type Sender = (send: PreparedSend) => Promise<void>;
  * Determines whether the balance has just transitioned from above to below
  * the threshold for a subscription.
  *
- * Returns null when no transition should fire:
- * - balance still above threshold
- * - already below and previously notified
+ * First observation: the subscription has no prior transition state. We only
+ * record the current status without firing an event, so existing low-balance
+ * subscriptions don't all trigger on first deployment.
  *
- * Returns "fire" when the balance just crossed below; the caller is
- * responsible for persisting the new transition state.
+ * Subsequent observations: fires only when status flips from "above" to
+ * "below". The caller is responsible for persisting the new transition state
+ * (and rolling back if all dispatch attempts fail).
  */
 export function evaluateLowBalanceTransition(
   subscriptionId: string,
   balance: number,
-  threshold: number,
-  now: Date = new Date()
+  threshold: number
 ): { shouldFire: boolean; newStatus: "above" | "below" } {
   const currentStatus: "above" | "below" =
     balance >= threshold ? "above" : "below";
   const prev = getBalanceTransitionState(subscriptionId);
 
   if (!prev) {
-    // First observation: only fire if immediately below, so we don't spam
-    // every existing low-balance subscription on first run.
-    return { shouldFire: currentStatus === "below", newStatus: currentStatus };
+    // First observation: only record state, never fire. This avoids a
+    // notification storm for every pre-existing low-balance subscription
+    // when the notification system is first enabled.
+    return { shouldFire: false, newStatus: currentStatus };
   }
 
   const transitionedFromAbove =
@@ -63,14 +69,15 @@ export function resolveThreshold(
 
 /**
  * Detects which subscriptions should fire low-balance events on this tick.
- * Returns events + updates transition state.
+ * Updates transition state; caller must roll back if dispatch fails for all
+ * channels (see dispatchEvent return value).
  */
 export function detectLowBalanceEvents(
-  subscriptions: Subscription[],
-  now: Date = new Date()
+  subscriptions: Subscription[]
 ): NotificationEvent[] {
   const data = readNotificationData();
   const events: NotificationEvent[] = [];
+  const now = new Date();
 
   for (const sub of subscriptions) {
     if (sub.subscriptionType !== "one-time") continue;
@@ -81,8 +88,7 @@ export function detectLowBalanceEvents(
     const { shouldFire, newStatus } = evaluateLowBalanceTransition(
       sub.id,
       sub.balance,
-      threshold,
-      now
+      threshold
     );
 
     setBalanceTransitionState(sub.id, {
@@ -106,13 +112,18 @@ export function detectLowBalanceEvents(
 /**
  * Dispatches an event to all enabled channels. Individual channel failures
  * are recorded in lastSendResult but never thrown upward.
+ *
+ * Returns the number of channels that succeeded. Caller uses this to decide
+ * whether to persist the transition state (any success) or roll it back
+ * (all failed).
  */
 export async function dispatchEvent(
   event: NotificationEvent,
   channels: NotificationChannel[],
   sender: Sender
-): Promise<void> {
+): Promise<number> {
   const enabled = channels.filter((c) => c.enabled);
+  let successCount = 0;
   for (const channel of enabled) {
     try {
       const prepared = prepareSend(channel, event);
@@ -121,6 +132,7 @@ export async function dispatchEvent(
         success: true,
         timestamp: new Date().toISOString(),
       });
+      successCount += 1;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(
@@ -134,37 +146,43 @@ export async function dispatchEvent(
       });
     }
   }
+  return successCount;
+}
+
+/**
+ * Rolls back a subscription's transition state to "above" so that the next
+ * tick can re-evaluate it. Used when every enabled channel failed to send.
+ */
+export function rollbackTransition(subscriptionId: string): void {
+  setBalanceTransitionState(subscriptionId, {
+    status: "above",
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 /**
  * Top-level tick entry point: detects low-balance events for one-time
  * subscriptions and dispatches them to all enabled channels.
  *
+ * If dispatch fails for ALL channels of a given event, the transition state
+ * is rolled back so the next tick can retry. If at least one channel
+ * succeeded, the "below" state persists.
+ *
  * Mounted on the existing 5-minute scheduler after processResetTick.
  */
 export async function runNotificationTick(
   subscriptions: Subscription[],
-  sender: Sender = defaultSender
+  sender: Sender = httpSender
 ): Promise<void> {
   const channels = listChannels();
   if (channels.length === 0) return;
 
   const events = detectLowBalanceEvents(subscriptions);
   for (const event of events) {
-    await dispatchEvent(event, channels, sender);
-  }
-}
-
-async function defaultSender(send: PreparedSend): Promise<void> {
-  const response = await fetch(send.url, {
-    method: "POST",
-    headers: send.headers,
-    body: typeof send.body === "string" ? send.body : JSON.stringify(send.body),
-  });
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(
-      `HTTP ${response.status} ${response.statusText}${text ? `: ${text}` : ""}`
-    );
+    const successCount = await dispatchEvent(event, channels, sender);
+    if (successCount === 0) {
+      // Every enabled channel failed — roll back so the next tick retries.
+      rollbackTransition(event.subscription.id);
+    }
   }
 }

@@ -124,16 +124,6 @@ export function deleteChannel(id: string): boolean {
   return true;
 }
 
-export function getDefaultLowBalanceThreshold(): number {
-  return readNotificationData().defaultLowBalanceThreshold;
-}
-
-export function setDefaultLowBalanceThreshold(value: number): void {
-  const data = readNotificationData();
-  data.defaultLowBalanceThreshold = value;
-  writeNotificationData(data);
-}
-
 export function getBalanceTransitionState(
   subscriptionId: string
 ): BalanceTransitionState | null {

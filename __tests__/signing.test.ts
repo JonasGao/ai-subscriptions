@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  computeDingtalkSign,
-  computeFeishuSign,
-} from "@/lib/notifications/signing";
+import { computeDingtalkSign } from "@/lib/notifications/signing";
 
 describe("computeDingtalkSign", () => {
   it("returns null when secret is empty", () => {
@@ -39,24 +36,5 @@ describe("computeDingtalkSign", () => {
     expect(decoded).toMatch(/^[A-Za-z0-9+/]+=*$/);
     // And if the raw form had unsafe chars, it would differ from the decoded form.
     expect(result!.sign).not.toMatch(/[+/=]/);
-  });
-});
-
-describe("computeFeishuSign", () => {
-  it("returns null when secret is empty", () => {
-    expect(computeFeishuSign(undefined, 1700000000)).toBeNull();
-    expect(computeFeishuSign("", 1700000000)).toBeNull();
-  });
-
-  it("produces deterministic sign", () => {
-    const a = computeFeishuSign("test-secret", 1700000000);
-    const b = computeFeishuSign("test-secret", 1700000000);
-    expect(a).toEqual(b);
-  });
-
-  it("sign is raw base64 (not URL-encoded)", () => {
-    const result = computeFeishuSign("test-secret", 1700000000);
-    // Feishu sign lives in the payload body, not the URL.
-    expect(result!.sign).toMatch(/^[A-Za-z0-9+/]+=*$/);
   });
 });

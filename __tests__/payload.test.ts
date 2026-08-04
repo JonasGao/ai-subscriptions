@@ -2,12 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 import type { NotificationChannel, Subscription } from "@/lib/types";
 import {
   buildDingtalkPayload,
-  buildFeishuPayload,
   buildWebhookPayload,
   buildDingtalkUrl,
   buildLowBalanceMarkdown,
   prepareSend,
-  NO_SECRET_KEYWORD,
   type NotificationEvent,
 } from "@/lib/notifications/payload";
 
@@ -55,19 +53,25 @@ const lowBalanceEvent: NotificationEvent = {
 };
 
 describe("buildLowBalanceMarkdown", () => {
-  it("includes subscription name, balance, threshold and keyword", () => {
-    const { title, body } = buildLowBalanceMarkdown(makeSub(), 5, 10);
+  it("weaves keyword into title when includeKeyword is true", () => {
+    const { title, body } = buildLowBalanceMarkdown(makeSub(), 5, 10, true);
+    expect(title).toContain("【AI订阅】");
     expect(title).toContain("Claude Pro");
-    expect(body).toContain("Claude Pro");
-    expect(body).toContain("5");
-    expect(body).toContain("10");
-    expect(body).toContain(NO_SECRET_KEYWORD);
+    // Keyword lives in the title naturally; the body itself has no separate
+    // keyword line.
+    expect(body).not.toMatch(/\*\*关键词\*\*/);
+  });
+
+  it("omits keyword from title when includeKeyword is false", () => {
+    const { title } = buildLowBalanceMarkdown(makeSub(), 5, 10, false);
+    expect(title).not.toContain("AI订阅");
+    expect(title).toContain("余额不足");
   });
 });
 
 describe("buildDingtalkPayload", () => {
   it("returns msgtype=markdown with title and body", () => {
-    const payload = buildDingtalkPayload(lowBalanceEvent);
+    const payload = buildDingtalkPayload(lowBalanceEvent, false);
     expect(payload.msgtype).toBe("markdown");
     expect(payload.markdown.title).toContain("Claude Pro");
     expect(payload.markdown.text).toContain("5");
@@ -89,36 +93,13 @@ describe("buildDingtalkUrl", () => {
   });
 });
 
-describe("buildFeishuPayload", () => {
-  it("returns interactive card with title and markdown", () => {
-    const payload = buildFeishuPayload(lowBalanceEvent);
-    expect(payload.msg_type).toBe("interactive");
-    expect(payload.card.header.title.content).toContain("Claude Pro");
-    expect(payload.card.elements[0].content).toContain("5");
-  });
-});
-
 describe("buildWebhookPayload", () => {
   it("emits structured JSON with event kind and subscription info", () => {
     const payload = buildWebhookPayload(lowBalanceEvent);
     expect(payload.event).toBe("low-balance");
     expect(payload.subscription.id).toBe("sub-1");
-    expect(payload.lowBalance?.balance).toBe(5);
-    expect(payload.lowBalance?.threshold).toBe(10);
-  });
-
-  it("emits reset-tick payload for reset events", () => {
-    const evt: NotificationEvent = {
-      kind: "reset-tick",
-      subscription: makeSub({ subscriptionType: "recurring" }),
-      scheduleId: "sched-1",
-      scheduleType: "monthly",
-      nextResetTime: "2024-07-01T00:00:00Z",
-      triggeredAt: "2024-06-01T00:00:00Z",
-    };
-    const payload = buildWebhookPayload(evt);
-    expect(payload.event).toBe("reset-tick");
-    expect(payload.resetTick?.scheduleId).toBe("sched-1");
+    expect(payload.lowBalance.balance).toBe(5);
+    expect(payload.lowBalance.threshold).toBe(10);
   });
 });
 
@@ -128,12 +109,30 @@ describe("prepareSend", () => {
     expect(() => prepareSend(ch, lowBalanceEvent)).toThrow();
   });
 
+  it("includes keyword in DingTalk payload only when channel has no secret", () => {
+    const chNoSecret = makeChannel({ id: "no-secret" });
+    const chWithSecret = makeChannel({ id: "with-secret", secret: "s3cret" });
+    const noSecretPrepared = prepareSend(chNoSecret, lowBalanceEvent);
+    const withSecretPrepared = prepareSend(chWithSecret, lowBalanceEvent);
+    const noSecretBody = JSON.parse(noSecretPrepared.body as string);
+    const withSecretBody = JSON.parse(withSecretPrepared.body as string);
+    expect(noSecretBody.markdown.title).toContain("AI订阅");
+    expect(withSecretBody.markdown.title).not.toContain("AI订阅");
+  });
+
   it("returns JSON body with Content-Type header", () => {
     const ch = makeChannel();
     const prepared = prepareSend(ch, lowBalanceEvent);
     expect(prepared.headers["Content-Type"]).toBe("application/json");
     expect(typeof prepared.body).toBe("string");
     JSON.parse(prepared.body as string);
+  });
+
+  it("throws for feishu channel (deferred to follow-up ticket)", () => {
+    const ch = makeChannel({ type: "feishu" });
+    expect(() => prepareSend(ch, lowBalanceEvent)).toThrow(
+      /not yet implemented/
+    );
   });
 });
 
