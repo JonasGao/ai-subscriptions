@@ -106,7 +106,7 @@ describe("processResetTick filtering", () => {
     expect(triggers).toHaveLength(0);
   });
 
-  it("produces one trigger per enabled schedule that fired", async () => {
+  it("does NOT produce triggers when schedule was not exhausted", async () => {
     const db = await getDb();
     const data = makeData({
       subscriptions: [
@@ -129,6 +129,38 @@ describe("processResetTick filtering", () => {
     });
     db.writeData(data);
     const triggers = db.processResetTick();
+    // Schedule was already available — no notification needed.
+    expect(triggers).toHaveLength(0);
+    // But the schedule should still have been advanced.
+    const saved = db.getSubscriptions();
+    expect(
+      new Date(saved[0].resetSchedules![0].nextResetTime).getTime()
+    ).toBeGreaterThan(new Date("2024-06-01T01:00:00Z").getTime());
+  });
+
+  it("produces a trigger when an exhausted schedule resets", async () => {
+    const db = await getDb();
+    const data = makeData({
+      subscriptions: [
+        makeSubscription({
+          resetSchedules: [
+            {
+              id: "sched-1",
+              enabled: true,
+              type: "monthly",
+              dayOfMonth: 15,
+              timeOfDay: "10:00",
+              nextResetTime: "2024-01-01T00:00:00Z",
+              exhausted: true,
+              createdAt: "2024-01-01T00:00:00Z",
+              updatedAt: "2024-01-01T00:00:00Z",
+            },
+          ],
+        }),
+      ],
+    });
+    db.writeData(data);
+    const triggers = db.processResetTick();
     expect(triggers).toHaveLength(1);
     expect(triggers[0].subscriptionId).toBe("sub-1");
     expect(triggers[0].scheduleType).toBe("monthly");
@@ -136,5 +168,8 @@ describe("processResetTick filtering", () => {
     expect(new Date(triggers[0].nextResetTime).getTime()).toBeGreaterThan(
       new Date("2024-06-01T01:00:00Z").getTime()
     );
+    // Schedule should now be marked as not exhausted.
+    const saved = db.getSubscriptions();
+    expect(saved[0].resetSchedules![0].exhausted).toBe(false);
   });
 });

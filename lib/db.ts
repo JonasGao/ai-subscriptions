@@ -439,6 +439,7 @@ export function processResetTick(): ResetTickTrigger[] {
   const now = new Date();
   const nowIso = now.toISOString();
   const triggers: ResetTickTrigger[] = [];
+  let anyFired = false;
 
   data.subscriptions.forEach((sub) => {
     if (sub.status === "cancelled") {
@@ -458,16 +459,23 @@ export function processResetTick(): ResetTickTrigger[] {
 
       const nextReset = new Date(schedule.nextResetTime);
       if (now >= nextReset) {
+        const wasExhausted = schedule.exhausted;
         schedule.exhausted = false;
         const nextSchedule = updateResetScheduleNextTime(schedule);
         schedule.nextResetTime = nextSchedule.nextResetTime;
         schedule.updatedAt = nowIso;
         subAnyFired = true;
-        triggers.push({
-          subscriptionId: sub.id,
-          scheduleType: schedule.type,
-          nextResetTime: schedule.nextResetTime,
-        });
+        anyFired = true;
+        // Only notify when the schedule was genuinely exhausted and the
+        // reset actually restores availability.  If it was already available
+        // (exhausted=false), there is nothing worth notifying about.
+        if (wasExhausted) {
+          triggers.push({
+            subscriptionId: sub.id,
+            scheduleType: schedule.type,
+            nextResetTime: schedule.nextResetTime,
+          });
+        }
       }
     });
 
@@ -480,7 +488,7 @@ export function processResetTick(): ResetTickTrigger[] {
     }
   });
 
-  if (triggers.length > 0) {
+  if (anyFired) {
     writeData(data);
   }
 
