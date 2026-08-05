@@ -86,7 +86,7 @@ export function setBalanceTransitionState(
 
 /**
  * Creates a new notification channel. The caller is responsible for
- * validating the input (url/type/name) before calling.
+ * validating the input (type-specific fields) before calling.
  */
 export function createChannel(
   input: Omit<
@@ -104,6 +104,10 @@ export function createChannel(
     name: input.name,
     url: input.url,
     secret: input.secret,
+    appId: input.appId,
+    appSecret: input.appSecret,
+    receiveId: input.receiveId,
+    receiveIdType: input.receiveIdType,
     enabled: input.enabled ?? true,
     createdAt: now,
     updatedAt: now,
@@ -129,7 +133,18 @@ export function getChannelById(id: string): NotificationChannel | null {
 export function updateChannel(
   id: string,
   patch: Partial<
-    Pick<NotificationChannel, "type" | "name" | "url" | "secret" | "enabled">
+    Pick<
+      NotificationChannel,
+      | "type"
+      | "name"
+      | "url"
+      | "secret"
+      | "appId"
+      | "appSecret"
+      | "receiveId"
+      | "receiveIdType"
+      | "enabled"
+    >
   >
 ): NotificationChannel | null {
   const data = readNotificationData();
