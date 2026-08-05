@@ -298,14 +298,35 @@ export interface BalanceResult {
 
 // ============ Notification ============
 
-export type NotificationChannelType = "dingtalk" | "feishu" | "webhook";
+export type NotificationChannelType =
+  "dingtalk" | "feishu" | "webhook" | "feishu-app";
+
+/**
+ * Receive ID type for feishu-app channel:
+ * - "open_id": single chat (user)
+ * - "chat_id": group chat
+ */
+export type FeishuReceiveIdType = "open_id" | "chat_id";
 
 export interface NotificationChannel {
   id: string;
   type: NotificationChannelType;
   name: string;
-  url: string;
+  /** Webhook URL — used by dingtalk / feishu / webhook. Unused by feishu-app. */
+  url?: string;
+  /** HMAC signing secret — used by dingtalk / feishu. Unused by feishu-app. */
   secret?: string;
+  /** Feishu app ID — used by feishu-app only. */
+  appId?: string;
+  /**
+   * Feishu app secret — used by feishu-app only. Treated like `secret`:
+   * never returned verbatim to the client (hasSecret flag instead).
+   */
+  appSecret?: string;
+  /** Feishu receive ID (open_id or chat_id) — used by feishu-app only. */
+  receiveId?: string;
+  /** Feishu receive ID type — used by feishu-app only. */
+  receiveIdType?: FeishuReceiveIdType;
   enabled: boolean;
   lastSendResult?: SendResult;
   createdAt: string;
