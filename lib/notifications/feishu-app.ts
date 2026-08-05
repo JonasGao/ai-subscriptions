@@ -14,6 +14,7 @@
 import type { NotificationChannel } from "@/lib/types";
 import type { NotificationEvent } from "./payload";
 import { buildEventMarkdown, buildFeishuCard } from "./payload";
+import { throwFeishuError } from "./feishu-errors";
 
 // ============ Seams for testing ============
 
@@ -190,6 +191,9 @@ const SEND_URL_BASE = "https://open.feishu.cn/open-apis/im/v1/messages";
  * retry on 401 or error code 99991663.
  *
  * Returns void on success, throws on failure after retry is exhausted.
+ * Errors are routed through `throwFeishuError` so missing scopes (e.g.
+ * im:message:send_as_bot) surface a friendly message with the permission
+ * name instead of a raw Feishu error code.
  */
 export async function sendFeishuAppMessage(
   event: NotificationEvent,
@@ -241,14 +245,18 @@ async function sendWithRetry(
   }
 
   if (!response.ok) {
+    // If the body carries a Feishu error code, route through the
+    // translator so missing scopes / bad tokens get friendly messages.
+    // Otherwise surface the raw HTTP error with Chinese context prefix.
+    if (bodyJson?.code !== undefined) {
+      throwFeishuError(bodyJson.code, bodyJson.msg, "发送消息失败");
+    }
     throw new Error(
-      `Feishu app send failed: HTTP ${response.status} ${response.statusText}${bodyText ? `: ${bodyText}` : ""}`
+      `发送消息失败: HTTP ${response.status} ${response.statusText}${bodyText ? `: ${bodyText}` : ""}`
     );
   }
 
-  if (bodyJson && bodyJson.code !== 0) {
-    throw new Error(
-      `Feishu app send failed: code=${bodyJson.code} msg=${bodyJson.msg ?? "unknown"}`
-    );
+  if (bodyJson && bodyJson.code !== undefined && bodyJson.code !== 0) {
+    throwFeishuError(bodyJson.code, bodyJson.msg, "发送消息失败");
   }
 }
