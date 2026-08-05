@@ -165,11 +165,12 @@ export function buildDingtalkPayload(
 }
 
 export function buildDingtalkUrl(channel: NotificationChannel): string {
-  if (!channel.secret) return channel.url;
+  const baseUrl = channel.url ?? "";
+  if (!channel.secret) return baseUrl;
   const signResult = computeDingtalkSign(channel.secret, Date.now());
-  if (!signResult) return channel.url;
-  const separator = channel.url.includes("?") ? "&" : "?";
-  return `${channel.url}${separator}timestamp=${signResult.timestamp}&sign=${signResult.sign}`;
+  if (!signResult) return baseUrl;
+  const separator = baseUrl.includes("?") ? "&" : "?";
+  return `${baseUrl}${separator}timestamp=${signResult.timestamp}&sign=${signResult.sign}`;
 }
 
 // ============ Feishu (Lark) ============
@@ -290,7 +291,8 @@ export interface PreparedSend {
 /**
  * Builds a channel-specific (url, body, headers) triple for the event.
  *
- * Throws when the channel is disabled.
+ * Throws when the channel is disabled. Throws for feishu-app channels: those
+ * are handled by a dedicated sender (see dispatcher.ts).
  */
 export function prepareSend(
   channel: NotificationChannel,
@@ -316,7 +318,7 @@ export function prepareSend(
       const body = JSON.stringify(payload);
       return {
         channel,
-        url: channel.url,
+        url: channel.url ?? "",
         body,
         headers: { "Content-Type": "application/json" },
       };
@@ -326,10 +328,17 @@ export function prepareSend(
       const body = JSON.stringify(payload);
       return {
         channel,
-        url: channel.url,
+        url: channel.url ?? "",
         body,
         headers: { "Content-Type": "application/json" },
       };
+    }
+    case "feishu-app": {
+      // feishu-app channels are dispatched via a dedicated sender that handles
+      // token management. This path should never be reached in normal flow.
+      throw new Error(
+        `prepareSend does not support feishu-app channel ${channel.id}; use the feishu-app sender`
+      );
     }
   }
 }
