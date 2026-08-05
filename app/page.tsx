@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   CreditCard,
   Wrench,
+  Bell,
 } from "lucide-react";
 import Link from "next/link";
 import { PriorityManager } from "@/components/PriorityManager";
@@ -267,6 +268,11 @@ export default function Home() {
               </Button>
             </div>
             <ThemeToggle />
+            <Link href="/notifications">
+              <Button variant="outline" size="icon" title="通知设置">
+                <Bell className="h-4 w-4" />
+              </Button>
+            </Link>
             <Link href="/change-password">
               <Button variant="outline" size="icon">
                 <Settings className="h-4 w-4" />
