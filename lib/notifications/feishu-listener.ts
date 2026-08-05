@@ -7,7 +7,11 @@
  *
  * The WSClient factory is injectable for testing.
  */
-import lark from "@larksuiteoapi/node-sdk";
+import {
+  WSClient,
+  EventDispatcher,
+  LoggerLevel,
+} from "@larksuiteoapi/node-sdk";
 
 // ============ Types ============
 
@@ -33,7 +37,7 @@ export interface ReceivedMessage {
 
 export interface ListenerState {
   appId: string;
-  wsClient: lark.WSClient;
+  wsClient: WSClient;
   messages: ReceivedMessage[];
   startedAt: string;
   /** Timer handle for auto-stop */
@@ -51,12 +55,9 @@ export interface ListenerStatus {
 
 /**
  * Factory function that creates a WSClient. Injectable for testing.
- * Default implementation creates a real lark.WSClient.
+ * Default implementation creates a real WSClient.
  */
-export type WSClientFactory = (
-  appId: string,
-  appSecret: string
-) => lark.WSClient;
+export type WSClientFactory = (appId: string, appSecret: string) => WSClient;
 
 // ============ Module state ============
 
@@ -66,12 +67,12 @@ const listeners = new Map<string, ListenerState>();
 /** Default TTL for listeners (2 minutes). */
 const DEFAULT_TTL_MS = 2 * 60 * 1000;
 
-/** Injectable WSClient factory. Defaults to creating real lark.WSClient. */
+/** Injectable WSClient factory. Defaults to creating real WSClient. */
 let wsClientFactory: WSClientFactory = (appId, appSecret) => {
-  return new lark.WSClient({
+  return new WSClient({
     appId,
     appSecret,
-    loggerLevel: lark.LoggerLevel.info,
+    loggerLevel: LoggerLevel.info,
   });
 };
 
@@ -140,7 +141,7 @@ export async function startFeishuListener(
   };
 
   // Set up event dispatcher
-  const eventDispatcher = new lark.EventDispatcher({}).register({
+  const eventDispatcher = new EventDispatcher({}).register({
     "im.message.receive_v1": async (data) => {
       const msg = data.message;
       const sender = data.sender;
