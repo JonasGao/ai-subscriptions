@@ -40,12 +40,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { NotificationChannel, NotificationChannelType } from "@/lib/types";
+import type {
+  NotificationChannel,
+  NotificationChannelType,
+  FeishuReceiveIdType,
+} from "@/lib/types";
 
 // ============ Types ============
 
-type ChannelView = Omit<NotificationChannel, "secret"> & {
+type ChannelView = Omit<NotificationChannel, "secret" | "appSecret"> & {
   hasSecret: boolean;
+  hasAppSecret: boolean;
 };
 
 interface NotificationsConfig {
@@ -60,12 +65,19 @@ interface ChannelFormState {
   secret: string;
   enabled: boolean;
   clearSecret: boolean;
+  // Feishu-app fields
+  appId: string;
+  appSecret: string;
+  receiveId: string;
+  receiveIdType: FeishuReceiveIdType;
+  clearAppSecret: boolean;
 }
 
 const TYPE_LABELS: Record<NotificationChannelType, string> = {
   dingtalk: "钉钉",
   feishu: "飞书",
   webhook: "Webhook",
+  "feishu-app": "飞书应用",
 };
 
 const TYPE_VARIANTS: Record<
@@ -75,6 +87,7 @@ const TYPE_VARIANTS: Record<
   dingtalk: "default",
   feishu: "secondary",
   webhook: "outline",
+  "feishu-app": "secondary",
 };
 
 const EMPTY_FORM: ChannelFormState = {
@@ -84,6 +97,11 @@ const EMPTY_FORM: ChannelFormState = {
   secret: "",
   enabled: true,
   clearSecret: false,
+  appId: "",
+  appSecret: "",
+  receiveId: "",
+  receiveIdType: "open_id",
+  clearAppSecret: false,
 };
 
 // ============ Helpers ============
@@ -161,10 +179,15 @@ export default function NotificationsPage() {
     setForm({
       name: channel.name,
       type: channel.type,
-      url: channel.url,
+      url: channel.url ?? "",
       secret: "",
       enabled: channel.enabled,
       clearSecret: false,
+      appId: channel.appId ?? "",
+      appSecret: "",
+      receiveId: channel.receiveId ?? "",
+      receiveIdType: channel.receiveIdType ?? "open_id",
+      clearAppSecret: false,
     });
     setFormError(null);
     setDialogOpen(true);
@@ -178,15 +201,41 @@ export default function NotificationsPage() {
       setFormError("请填写渠道名称");
       return;
     }
-    if (!form.url.trim()) {
-      setFormError("请填写 webhook URL");
-      return;
-    }
-    try {
-      new URL(form.url.trim());
-    } catch {
-      setFormError("webhook URL 格式不正确");
-      return;
+
+    const isFeishuApp = form.type === "feishu-app";
+
+    // Validate based on channel type
+    if (isFeishuApp) {
+      if (!form.appId.trim()) {
+        setFormError("请填写 App ID");
+        return;
+      }
+      if (!editingId && !form.appSecret.trim()) {
+        setFormError("请填写 App Secret");
+        return;
+      }
+      if (!form.receiveId.trim()) {
+        setFormError("请填写 Receive ID");
+        return;
+      }
+      if (
+        form.receiveIdType !== "open_id" &&
+        form.receiveIdType !== "chat_id"
+      ) {
+        setFormError("Receive ID 类型必须是 open_id 或 chat_id");
+        return;
+      }
+    } else {
+      if (!form.url.trim()) {
+        setFormError("请填写 webhook URL");
+        return;
+      }
+      try {
+        new URL(form.url.trim());
+      } catch {
+        setFormError("webhook URL 格式不正确");
+        return;
+      }
     }
 
     setFormSubmitting(true);
@@ -194,16 +243,32 @@ export default function NotificationsPage() {
       const body: Record<string, unknown> = {
         name: form.name.trim(),
         type: form.type,
-        url: form.url.trim(),
         enabled: form.enabled,
       };
+
+      if (isFeishuApp) {
+        body.appId = form.appId.trim();
+        body.receiveId = form.receiveId.trim();
+        body.receiveIdType = form.receiveIdType;
+      } else {
+        body.url = form.url.trim();
+      }
+
       if (editingId) {
-        // On edit, only touch secret when the user typed a new one or asked to
-        // clear it. Sending `null` clears, sending a string replaces.
-        if (form.clearSecret) {
-          body.secret = null;
-        } else if (form.secret.length > 0) {
-          body.secret = form.secret;
+        // On edit, only touch secret/appSecret when the user typed a new one
+        // or asked to clear it. Sending `null` clears, sending a string replaces.
+        if (!isFeishuApp) {
+          if (form.clearSecret) {
+            body.secret = null;
+          } else if (form.secret.length > 0) {
+            body.secret = form.secret;
+          }
+        } else {
+          if (form.clearAppSecret) {
+            body.appSecret = null;
+          } else if (form.appSecret.length > 0) {
+            body.appSecret = form.appSecret;
+          }
         }
         const res = await fetch(`/api/notifications/${editingId}`, {
           method: "PUT",
@@ -215,7 +280,11 @@ export default function NotificationsPage() {
           throw new Error(data.error || `HTTP ${res.status}`);
         }
       } else {
-        if (form.secret.length > 0) body.secret = form.secret;
+        if (!isFeishuApp) {
+          if (form.secret.length > 0) body.secret = form.secret;
+        } else {
+          if (form.appSecret.length > 0) body.appSecret = form.appSecret;
+        }
         const res = await fetch("/api/notifications", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -478,11 +547,31 @@ export default function NotificationsPage() {
                           </Badge>
                         </div>
                         <div className="text-sm text-muted-foreground mt-1 truncate">
-                          {truncateUrl(channel.url)}
-                          {channel.hasSecret && (
-                            <span className="ml-2 text-xs">
-                              · 🔒 已配置签名
-                            </span>
+                          {channel.type === "feishu-app" ? (
+                            <>
+                              <span>App ID: {channel.appId ?? "-"}</span>
+                              <span className="mx-1">·</span>
+                              <span>
+                                {channel.receiveIdType === "open_id"
+                                  ? "单聊"
+                                  : "群聊"}
+                                : {channel.receiveId ?? "-"}
+                              </span>
+                              {channel.hasAppSecret && (
+                                <span className="ml-2 text-xs">
+                                  · 🔒 已配置 App Secret
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {truncateUrl(channel.url ?? "")}
+                              {channel.hasSecret && (
+                                <span className="ml-2 text-xs">
+                                  · 🔒 已配置签名
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
                         <div className="text-xs mt-1 flex items-center gap-1.5">
@@ -586,8 +675,8 @@ export default function NotificationsPage() {
               <DialogTitle>{dialogTitle}</DialogTitle>
               <DialogDescription>
                 {editingId
-                  ? "修改渠道配置。签名留空表示保持不变，勾选「清除」以移除。"
-                  : "添加一个新的通知渠道（钉钉 / 飞书 / 通用 webhook）。"}
+                  ? "修改渠道配置。密钥留空表示保持不变，勾选「清除」以移除。"
+                  : "添加一个新的通知渠道（钉钉 / 飞书 / 飞书应用 / 通用 webhook）。"}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={submitForm} className="flex flex-col gap-4">
@@ -615,49 +704,145 @@ export default function NotificationsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="dingtalk">钉钉</SelectItem>
-                    <SelectItem value="feishu">飞书</SelectItem>
+                    <SelectItem value="feishu">飞书群机器人</SelectItem>
+                    <SelectItem value="feishu-app">飞书应用机器人</SelectItem>
                     <SelectItem value="webhook">通用 Webhook</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-1">
-                <Label htmlFor="ch-url">Webhook URL</Label>
-                <Input
-                  id="ch-url"
-                  value={form.url}
-                  onChange={(e) => setForm({ ...form, url: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="ch-secret">加签 Secret（可选）</Label>
-                <Input
-                  id="ch-secret"
-                  type="password"
-                  value={form.secret}
-                  onChange={(e) => setForm({ ...form, secret: e.target.value })}
-                  placeholder={
-                    editingChannel?.hasSecret
-                      ? "••••••••（留空保持不变）"
-                      : "选填，用于 HMAC 加签"
-                  }
-                />
-                {editingChannel?.hasSecret && (
-                  <label className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                    <input
-                      type="checkbox"
-                      checked={form.clearSecret}
+              {form.type === "feishu-app" ? (
+                <>
+                  <div className="space-y-1">
+                    <Label htmlFor="ch-appId">App ID</Label>
+                    <Input
+                      id="ch-appId"
+                      value={form.appId}
                       onChange={(e) =>
-                        setForm({ ...form, clearSecret: e.target.checked })
+                        setForm({ ...form, appId: e.target.value })
                       }
-                      className="accent-primary"
+                      placeholder="飞书应用 App ID"
                     />
-                    清除已配置的签名
-                  </label>
-                )}
-              </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="ch-appSecret">App Secret</Label>
+                    <Input
+                      id="ch-appSecret"
+                      type="password"
+                      value={form.appSecret}
+                      onChange={(e) =>
+                        setForm({ ...form, appSecret: e.target.value })
+                      }
+                      placeholder={
+                        editingChannel?.hasAppSecret
+                          ? "••••••••（留空保持不变）"
+                          : "飞书应用 App Secret"
+                      }
+                    />
+                    {editingChannel?.hasAppSecret && (
+                      <label className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                        <input
+                          type="checkbox"
+                          checked={form.clearAppSecret}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              clearAppSecret: e.target.checked,
+                            })
+                          }
+                          className="accent-primary"
+                        />
+                        清除已配置的 App Secret
+                      </label>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="ch-receiveIdType">接收类型</Label>
+                    <Select
+                      value={form.receiveIdType}
+                      onValueChange={(v) =>
+                        setForm({
+                          ...form,
+                          receiveIdType: v as FeishuReceiveIdType,
+                        })
+                      }
+                    >
+                      <SelectTrigger id="ch-receiveIdType">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open_id">单聊 (open_id)</SelectItem>
+                        <SelectItem value="chat_id">群聊 (chat_id)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="ch-receiveId">Receive ID</Label>
+                    <Input
+                      id="ch-receiveId"
+                      value={form.receiveId}
+                      onChange={(e) =>
+                        setForm({ ...form, receiveId: e.target.value })
+                      }
+                      placeholder={
+                        form.receiveIdType === "open_id"
+                          ? "用户 open_id"
+                          : "群组 chat_id"
+                      }
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-1">
+                    <Label htmlFor="ch-url">Webhook URL</Label>
+                    <Input
+                      id="ch-url"
+                      value={form.url}
+                      onChange={(e) =>
+                        setForm({ ...form, url: e.target.value })
+                      }
+                      placeholder="https://..."
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="ch-secret">加签 Secret（可选）</Label>
+                    <Input
+                      id="ch-secret"
+                      type="password"
+                      value={form.secret}
+                      onChange={(e) =>
+                        setForm({ ...form, secret: e.target.value })
+                      }
+                      placeholder={
+                        editingChannel?.hasSecret
+                          ? "••••••••（留空保持不变）"
+                          : "选填，用于 HMAC 加签"
+                      }
+                    />
+                    {editingChannel?.hasSecret && (
+                      <label className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                        <input
+                          type="checkbox"
+                          checked={form.clearSecret}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              clearSecret: e.target.checked,
+                            })
+                          }
+                          className="accent-primary"
+                        />
+                        清除已配置的签名
+                      </label>
+                    )}
+                  </div>
+                </>
+              )}
 
               <label className="flex items-center gap-2 text-sm">
                 <input
