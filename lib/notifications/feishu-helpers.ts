@@ -7,18 +7,28 @@
  * - Translate Feishu error codes to human-readable messages
  *
  * Reuses token cache and fetch seams from feishu-app.ts.
+ *
+ * The canonical scope list lives in feishu-permissions.ts; this module
+ * imports it so error translations stay in sync with the UI checklist.
  */
 import { getTenantToken, fetchFn } from "./feishu-app";
+import {
+  FEISHU_PERMISSIONS,
+  allScopeNames,
+  findPermissionByScope,
+} from "./feishu-permissions";
 
 // ============ Error translation ============
 
-// TODO(issue #9): 权限清单集中化 - 将 scope 名称与错误码统一收敛到一处配置
 /**
  * Maps Feishu error codes to human-readable messages.
  * Only includes codes verified against official Feishu documentation
  * (https://open.feishu.cn/document/server-docs/getting-started/server-error-codes).
  *
  * For unknown codes, falls back to the raw msg from the API response.
+ *
+ * Permission-related messages reference the centralized scope list in
+ * feishu-permissions.ts so UI and error hints never drift apart.
  */
 export function translateFeishuError(
   code: number,
@@ -32,7 +42,7 @@ export function translateFeishuError(
     99991668: "tenant_access_token 已过期,请刷新",
 
     // Permission errors (official)
-    99991400: "权限不足,请在飞书开放平台为应用开通相应权限",
+    99991400: `权限不足,请在飞书开放平台为应用开通相应权限(所需权限: ${allScopeNames()})`,
     99991672: parseScopeError(msg), // 动态解析 msg 中的权限名列表
   };
 
@@ -42,16 +52,31 @@ export function translateFeishuError(
 /**
  * Parses scope error messages to extract missing permission names.
  * Feishu's 99991672 msg often contains the missing scope names.
+ *
+ * Recognized scopes are resolved against the centralized
+ * FEISHU_PERMISSIONS list so the message points users at the right
+ * feature. Unrecognized scopes are surfaced verbatim.
  */
 function parseScopeError(msg?: string): string {
+  const fallback = `权限不足,请在飞书开放平台为应用开通相应权限(所需权限: ${allScopeNames()})`;
   if (!msg) {
-    return "权限不足,请在飞书开放平台为应用开通相应权限";
+    return fallback;
   }
   // Try to extract scope names from msg (e.g., "missing scope: im:chat:readonly")
   // Scope names can contain letters, digits, colons, dots, underscores, commas, spaces
   const scopeMatch = msg.match(/scope[s]?:\s*([a-zA-Z0-9_:.,\s]+)/i);
   if (scopeMatch) {
-    return `权限不足,需要开通以下权限: ${scopeMatch[1].trim()}`;
+    const rawScopes = scopeMatch[1]
+      .split(/[,\s]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const resolved = rawScopes.map((s) => {
+      const found = findPermissionByScope(s);
+      return found ? `${s}(${found.name})` : s;
+    });
+    if (resolved.length > 0) {
+      return `权限不足,需要开通以下权限: ${resolved.join(", ")}`;
+    }
   }
   return `权限不足: ${msg}`;
 }
@@ -144,7 +169,8 @@ export interface FeishuChatListResult {
  * @param opts - Optional pagination parameters
  * @returns Paginated list of chats
  *
- * Required scope: im:chat:readonly or im:chat
+ * Required scope: see `FEISHU_PERMISSIONS` in feishu-permissions.ts
+ * (currently `im:chat:readonly`).
  */
 export async function listFeishuChats(
   appId: string,
@@ -204,7 +230,8 @@ export interface FeishuUserLookupResult {
  * @param mobiles - Array of phone numbers in international format (e.g., ["+8613800138000"])
  * @returns List of matched users with open_id
  *
- * Required scope: contact:user.id:readonly
+ * Required scope: see `FEISHU_PERMISSIONS` in feishu-permissions.ts
+ * (currently `contact:user.id:readonly`).
  */
 export async function lookupFeishuUserByPhone(
   appId: string,
