@@ -8,6 +8,8 @@ import {
   resetListeners,
   setWSClientFactory,
   setListenerNow,
+  setListenerUUID,
+  DEFAULT_LISTENER_TTL_SECONDS,
 } from "@/lib/notifications/feishu-listener";
 
 // Mock WSClient factory
@@ -38,12 +40,15 @@ function createFakeWSClient() {
 
 describe("feishu-listener", () => {
   let fakeClient: ReturnType<typeof createFakeWSClient>;
+  let uuidCounter = 0;
 
   beforeEach(() => {
     resetListeners();
     fakeClient = createFakeWSClient();
     setWSClientFactory(() => fakeClient.instance as never);
     setListenerNow(() => new Date("2024-06-01T00:00:00Z"));
+    setListenerUUID(() => `listen-id-${++uuidCounter}`);
+    uuidCounter = 0;
     vi.useFakeTimers();
   });
 
@@ -52,22 +57,36 @@ describe("feishu-listener", () => {
     resetListeners();
   });
 
-  it("starts a listener and returns status", async () => {
+  it("starts a listener and returns status with listenId and ttlSeconds", async () => {
     const status = await startFeishuListener("app-1", "secret-1");
 
     expect(status.appId).toBe("app-1");
+    expect(status.listenId).toBe("listen-id-1");
     expect(status.stopped).toBe(false);
     expect(status.messageCount).toBe(0);
     expect(status.startedAt).toBe("2024-06-01T00:00:00.000Z");
+    expect(status.ttlSeconds).toBe(DEFAULT_LISTENER_TTL_SECONDS);
     expect(fakeClient.instance.start).toHaveBeenCalledTimes(1);
   });
 
   it("returns existing status when listener already active (idempotent)", async () => {
-    await startFeishuListener("app-1", "secret-1");
-    const status = await startFeishuListener("app-1", "secret-1");
+    const status1 = await startFeishuListener("app-1", "secret-1");
+    const status2 = await startFeishuListener("app-1", "secret-1");
 
-    expect(status.appId).toBe("app-1");
+    expect(status1.listenId).toBe(status2.listenId);
     expect(fakeClient.instance.start).toHaveBeenCalledTimes(1); // Still only 1 call
+  });
+
+  it("prevents race condition on concurrent starts", async () => {
+    // Start two concurrent starts for the same appId
+    const promise1 = startFeishuListener("app-1", "secret-1");
+    const promise2 = startFeishuListener("app-1", "secret-1");
+
+    const [status1, status2] = await Promise.all([promise1, promise2]);
+
+    // Both should return the same listener
+    expect(status1.listenId).toBe(status2.listenId);
+    expect(fakeClient.instance.start).toHaveBeenCalledTimes(1);
   });
 
   it("isListenerActive returns correct state", async () => {
@@ -80,15 +99,28 @@ describe("feishu-listener", () => {
     expect(isListenerActive("app-1")).toBe(false);
   });
 
-  it("stops a listener and cleans up", async () => {
-    await startFeishuListener("app-1", "secret-1");
+  it("stops a listener and keeps tombstone state", async () => {
+    const status = await startFeishuListener("app-1", "secret-1");
 
-    const stopped = await stopFeishuListener("app-1");
+    const stopped = await stopFeishuListener(status.listenId);
 
     expect(stopped).toBe(true);
     expect(fakeClient.instance.close).toHaveBeenCalledTimes(1);
     expect(isListenerActive("app-1")).toBe(false);
-    expect(getListenerStatus("app-1")).toBeNull();
+
+    // Tombstone: status should still be available with stopped=true
+    const tombstoneStatus = getListenerStatus("app-1");
+    expect(tombstoneStatus).not.toBeNull();
+    expect(tombstoneStatus?.stopped).toBe(true);
+    expect(tombstoneStatus?.stopReason).toBe("manual");
+  });
+
+  it("can stop by listenId (snapshot from start response)", async () => {
+    const status = await startFeishuListener("app-1", "secret-1");
+
+    // Even if user changes form appId, stopping by listenId still works
+    const stopped = await stopFeishuListener(status.listenId);
+    expect(stopped).toBe(true);
   });
 
   it("stop returns false when no listener exists", async () => {
@@ -96,8 +128,8 @@ describe("feishu-listener", () => {
     expect(stopped).toBe(false);
   });
 
-  it("auto-stops after TTL expires", async () => {
-    await startFeishuListener("app-1", "secret-1", { ttlMs: 5000 });
+  it("auto-stops after TTL expires with timeout reason", async () => {
+    await startFeishuListener("app-1", "secret-1", { ttlSeconds: 5 });
 
     expect(isListenerActive("app-1")).toBe(true);
 
@@ -108,6 +140,25 @@ describe("feishu-listener", () => {
 
     expect(isListenerActive("app-1")).toBe(false);
     expect(fakeClient.instance.close).toHaveBeenCalledTimes(1);
+
+    // Tombstone shows timeout reason
+    const status = getListenerStatus("app-1");
+    expect(status?.stopReason).toBe("timeout");
+  });
+
+  it("tombstone is cleaned up after 30 seconds", async () => {
+    await startFeishuListener("app-1", "secret-1");
+    await stopFeishuListener("app-1");
+
+    // Tombstone exists immediately
+    expect(getListenerStatus("app-1")).not.toBeNull();
+
+    // Advance past tombstone TTL (30s)
+    vi.advanceTimersByTime(30_000);
+    await Promise.resolve();
+
+    // Tombstone is cleaned up
+    expect(getListenerStatus("app-1")).toBeNull();
   });
 
   it("receives messages and stores them", async () => {
@@ -158,5 +209,13 @@ describe("feishu-listener", () => {
 
     expect(isListenerActive("app-1")).toBe(false);
     expect(isListenerActive("app-2")).toBe(true);
+  });
+
+  it("uses custom ttlSeconds when provided", async () => {
+    const status = await startFeishuListener("app-1", "secret-1", {
+      ttlSeconds: 60,
+    });
+
+    expect(status.ttlSeconds).toBe(60);
   });
 });

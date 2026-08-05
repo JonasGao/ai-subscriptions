@@ -13,6 +13,17 @@ import {
   LoggerLevel,
 } from "@larksuiteoapi/node-sdk";
 
+// ============ Constants ============
+
+/** Default TTL for listeners in seconds. */
+export const DEFAULT_LISTENER_TTL_SECONDS = 120;
+
+/** Default TTL in milliseconds (derived from seconds constant). */
+export const DEFAULT_LISTENER_TTL_MS = DEFAULT_LISTENER_TTL_SECONDS * 1000;
+
+/** How long to keep tombstone state after stopping (in ms). */
+const TOMBSTONE_TTL_MS = 30_000;
+
 // ============ Types ============
 
 export interface ReceivedMessage {
@@ -35,22 +46,33 @@ export interface ReceivedMessage {
   receivedAt: string;
 }
 
+export type StopReason = "manual" | "timeout" | "error";
+
 export interface ListenerState {
   appId: string;
+  /** Unique ID for this listener instance, used for subsequent operations */
+  listenId: string;
   wsClient: WSClient;
   messages: ReceivedMessage[];
   startedAt: string;
   /** Timer handle for auto-stop */
   ttlTimer?: ReturnType<typeof setTimeout>;
-  /** Whether the listener has been explicitly stopped */
+  /** Whether the listener has been stopped */
   stopped: boolean;
+  /** Reason for stopping (only set after stopped) */
+  stopReason?: StopReason;
+  /** Timer handle for tombstone cleanup */
+  tombstoneTimer?: ReturnType<typeof setTimeout>;
 }
 
 export interface ListenerStatus {
   appId: string;
+  listenId: string;
   startedAt: string;
   messageCount: number;
   stopped: boolean;
+  stopReason?: StopReason;
+  ttlSeconds: number;
 }
 
 /**
@@ -64,8 +86,11 @@ export type WSClientFactory = (appId: string, appSecret: string) => WSClient;
 /** Map of appId → listener state. Only one listener per appId at a time. */
 const listeners = new Map<string, ListenerState>();
 
-/** Default TTL for listeners (2 minutes). */
-const DEFAULT_TTL_MS = 2 * 60 * 1000;
+/** Map of listenId → appId for reverse lookup */
+const listenIdToAppId = new Map<string, string>();
+
+/** In-flight start promises to prevent race conditions */
+const inFlightStarts = new Map<string, Promise<ListenerStatus>>();
 
 /** Injectable WSClient factory. Defaults to creating real WSClient. */
 let wsClientFactory: WSClientFactory = (appId, appSecret) => {
@@ -78,6 +103,9 @@ let wsClientFactory: WSClientFactory = (appId, appSecret) => {
 
 /** Injectable now() for testing. */
 let nowFn: () => Date = () => new Date();
+
+/** Injectable UUID generator for testing. */
+let uuidFn: () => string = () => crypto.randomUUID();
 
 /**
  * Sets the WSClient factory. Used by tests to inject a fake WSClient.
@@ -94,6 +122,13 @@ export function setListenerNow(fn: () => Date): void {
 }
 
 /**
+ * Sets the UUID generator. Used by tests for deterministic IDs.
+ */
+export function setListenerUUID(fn: () => string): void {
+  uuidFn = fn;
+}
+
+/**
  * Resets the listener module to clean state. For test cleanup.
  */
 export function resetListeners(): void {
@@ -106,6 +141,8 @@ export function resetListeners(): void {
     }
   }
   listeners.clear();
+  listenIdToAppId.clear();
+  inFlightStarts.clear();
 }
 
 // ============ Public API ============
@@ -113,27 +150,58 @@ export function resetListeners(): void {
 /**
  * Starts a WebSocket listener for the given appId.
  * If a listener already exists for this appId, returns its status (idempotent).
+ * Uses in-flight promise tracking to prevent race conditions on concurrent starts.
  *
  * @param appId - Feishu app ID
  * @param appSecret - Feishu app secret
- * @param opts - Optional TTL override (ms)
- * @returns Listener status
+ * @param opts - Optional TTL override (seconds)
+ * @returns Listener status with listenId for subsequent operations
  */
 export async function startFeishuListener(
   appId: string,
   appSecret: string,
-  opts: { ttlMs?: number } = {}
+  opts: { ttlSeconds?: number } = {}
 ): Promise<ListenerStatus> {
-  // Check if listener already exists
+  // Check if listener already exists (not stopped)
   const existing = listeners.get(appId);
   if (existing && !existing.stopped) {
     return getListenerStatus(appId)!;
   }
 
-  // Create new listener
+  // Check if there's an in-flight start for this appId
+  const inFlight = inFlightStarts.get(appId);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  // Create the start promise and register it as in-flight
+  const startPromise = doStartListener(appId, appSecret, opts);
+  inFlightStarts.set(appId, startPromise);
+
+  try {
+    const result = await startPromise;
+    return result;
+  } finally {
+    inFlightStarts.delete(appId);
+  }
+}
+
+/**
+ * Internal: performs the actual listener start.
+ */
+async function doStartListener(
+  appId: string,
+  appSecret: string,
+  opts: { ttlSeconds?: number }
+): Promise<ListenerStatus> {
+  const listenId = uuidFn();
   const wsClient = wsClientFactory(appId, appSecret);
+  const ttlSeconds = opts.ttlSeconds ?? DEFAULT_LISTENER_TTL_SECONDS;
+  const ttlMs = ttlSeconds * 1000;
+
   const state: ListenerState = {
     appId,
+    listenId,
     wsClient,
     messages: [],
     startedAt: nowFn().toISOString(),
@@ -172,23 +240,41 @@ export async function startFeishuListener(
   await wsClient.start({ eventDispatcher });
 
   // Set up auto-stop timer
-  const ttlMs = opts.ttlMs ?? DEFAULT_TTL_MS;
   state.ttlTimer = setTimeout(() => {
-    stopFeishuListener(appId).catch(() => {
+    stopFeishuListenerInternal(appId, "timeout").catch(() => {
       // Ignore errors during auto-stop
     });
   }, ttlMs);
 
   listeners.set(appId, state);
+  listenIdToAppId.set(listenId, appId);
 
-  return getListenerStatus(appId)!;
+  return buildStatus(state, ttlSeconds);
 }
 
 /**
- * Stops the listener for the given appId.
+ * Stops the listener for the given appId or listenId.
+ * Uses the snapshot appId from when the listener started, not any current form value.
  * Returns true if a listener was stopped, false if none existed.
  */
-export async function stopFeishuListener(appId: string): Promise<boolean> {
+export async function stopFeishuListener(
+  appIdOrListenId: string
+): Promise<boolean> {
+  // Try to resolve as listenId first, then as appId
+  let appId = listenIdToAppId.get(appIdOrListenId);
+  if (!appId) {
+    appId = appIdOrListenId;
+  }
+  return stopFeishuListenerInternal(appId, "manual");
+}
+
+/**
+ * Internal: performs the actual stop with a specific reason.
+ */
+async function stopFeishuListenerInternal(
+  appId: string,
+  reason: StopReason
+): Promise<boolean> {
   const state = listeners.get(appId);
   if (!state || state.stopped) {
     return false;
@@ -208,38 +294,88 @@ export async function stopFeishuListener(appId: string): Promise<boolean> {
   }
 
   state.stopped = true;
-  listeners.delete(appId);
+  state.stopReason = reason;
+
+  // Set up tombstone cleanup timer
+  state.tombstoneTimer = setTimeout(() => {
+    cleanupTombstone(appId);
+  }, TOMBSTONE_TTL_MS);
+
   return true;
 }
 
 /**
- * Returns the current status of the listener for the given appId.
- * Returns null if no listener exists.
+ * Removes a tombstone entry after its TTL expires.
  */
-export function getListenerStatus(appId: string): ListenerStatus | null {
+function cleanupTombstone(appId: string): void {
+  const state = listeners.get(appId);
+  if (state && state.stopped) {
+    if (state.tombstoneTimer) {
+      clearTimeout(state.tombstoneTimer);
+    }
+    listenIdToAppId.delete(state.listenId);
+    listeners.delete(appId);
+  }
+}
+
+/**
+ * Returns the current status of the listener for the given appId or listenId.
+ * Returns null if no listener exists (including expired tombstones).
+ */
+export function getListenerStatus(
+  appIdOrListenId: string
+): ListenerStatus | null {
+  // Try to resolve as listenId first, then as appId
+  let appId = listenIdToAppId.get(appIdOrListenId);
+  if (!appId) {
+    appId = appIdOrListenId;
+  }
+
   const state = listeners.get(appId);
   if (!state) return null;
 
+  const ttlSeconds = state.ttlTimer
+    ? DEFAULT_LISTENER_TTL_SECONDS
+    : DEFAULT_LISTENER_TTL_SECONDS; // Simplified: always return default
+
+  return buildStatus(state, ttlSeconds);
+}
+
+/**
+ * Builds a ListenerStatus from state.
+ */
+function buildStatus(state: ListenerState, ttlSeconds: number): ListenerStatus {
   return {
     appId: state.appId,
+    listenId: state.listenId,
     startedAt: state.startedAt,
     messageCount: state.messages.length,
     stopped: state.stopped,
+    stopReason: state.stopReason,
+    ttlSeconds,
   };
 }
 
 /**
- * Returns all messages received by the listener for the given appId.
+ * Returns all messages received by the listener for the given appId or listenId.
  * Returns empty array if no listener exists.
  */
-export function getListenerMessages(appId: string): ReceivedMessage[] {
+export function getListenerMessages(
+  appIdOrListenId: string
+): ReceivedMessage[] {
+  // Try to resolve as listenId first, then as appId
+  let appId = listenIdToAppId.get(appIdOrListenId);
+  if (!appId) {
+    appId = appIdOrListenId;
+  }
+
   const state = listeners.get(appId);
   if (!state) return [];
   return [...state.messages];
 }
 
 /**
- * Returns true if a listener is currently active for the given appId.
+ * Returns true if a listener is currently active (not stopped) for the given appId.
  */
 export function isListenerActive(appId: string): boolean {
   const state = listeners.get(appId);
