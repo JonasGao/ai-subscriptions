@@ -10,6 +10,7 @@ import {
   prepareSend,
   httpSender,
 } from "./payload";
+import { sendFeishuAppMessage } from "./feishu-app";
 import {
   readNotificationData,
   getBalanceTransitionState,
@@ -23,6 +24,38 @@ import {
  * substitute a fake that records calls.
  */
 export type Sender = (send: PreparedSend) => Promise<void>;
+
+/**
+ * Feishu-app sender: routes to sendFeishuAppMessage. This is separate from
+ * the HTTP sender because feishu-app needs token management + retry logic.
+ */
+export type FeishuAppSender = (
+  event: NotificationEvent,
+  channel: NotificationChannel
+) => Promise<void>;
+
+/**
+ * Default feishu-app sender used in production. Delegates to the feishu-app
+ * module's sendFeishuAppMessage.
+ */
+export const defaultFeishuAppSender: FeishuAppSender = (event, channel) => {
+  if (
+    !channel.appId ||
+    !channel.appSecret ||
+    !channel.receiveId ||
+    !channel.receiveIdType
+  ) {
+    throw new Error(
+      `feishu-app channel ${channel.id} is missing required fields (appId/appSecret/receiveId/receiveIdType)`
+    );
+  }
+  return sendFeishuAppMessage(event, {
+    appId: channel.appId,
+    appSecret: channel.appSecret,
+    receiveId: channel.receiveId,
+    receiveIdType: channel.receiveIdType,
+  });
+};
 
 /**
  * Determines whether the balance has just transitioned from above to below
@@ -117,18 +150,26 @@ export function detectLowBalanceEvents(
  * Returns the number of channels that succeeded. Caller uses this to decide
  * whether to persist the transition state (any success) or roll it back
  * (all failed).
+ *
+ * feishu-app channels are routed to `feishuAppSender` (which handles token
+ * management + retry); other channel types go through the generic `sender`.
  */
 export async function dispatchEvent(
   event: NotificationEvent,
   channels: NotificationChannel[],
-  sender: Sender
+  sender: Sender,
+  feishuAppSender: FeishuAppSender = defaultFeishuAppSender
 ): Promise<number> {
   const enabled = channels.filter((c) => c.enabled);
   let successCount = 0;
   for (const channel of enabled) {
     try {
-      const prepared = prepareSend(channel, event);
-      await sender(prepared);
+      if (channel.type === "feishu-app") {
+        await feishuAppSender(event, channel);
+      } else {
+        const prepared = prepareSend(channel, event);
+        await sender(prepared);
+      }
       updateChannelSendResult(channel.id, {
         success: true,
         timestamp: new Date().toISOString(),

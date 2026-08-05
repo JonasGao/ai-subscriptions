@@ -11,6 +11,7 @@ import {
   httpSender,
   NotificationEvent,
 } from "@/lib/notifications/payload";
+import { sendFeishuAppMessage } from "@/lib/notifications/feishu-app";
 import { NotificationChannel, Subscription } from "@/lib/types";
 import {
   VALID_CHANNEL_TYPES,
@@ -48,6 +49,25 @@ function buildTestEvent(): NotificationEvent {
 
 async function sendTest(channel: NotificationChannel): Promise<void> {
   const event = buildTestEvent();
+  if (channel.type === "feishu-app") {
+    if (
+      !channel.appId ||
+      !channel.appSecret ||
+      !channel.receiveId ||
+      !channel.receiveIdType
+    ) {
+      throw new Error(
+        "feishu-app channel is missing required fields (appId/appSecret/receiveId/receiveIdType)"
+      );
+    }
+    await sendFeishuAppMessage(event, {
+      appId: channel.appId,
+      appSecret: channel.appSecret,
+      receiveId: channel.receiveId,
+      receiveIdType: channel.receiveIdType,
+    });
+    return;
+  }
   const prepared = prepareSend(channel, event);
   await httpSender(prepared);
 }
