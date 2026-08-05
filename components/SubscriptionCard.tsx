@@ -10,7 +10,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Subscription, defaultProviders, BalanceResult, UsageResult } from "@/lib/types";
+import {
+  Subscription,
+  defaultProviders,
+  BalanceResult,
+  UsageResult,
+  UsageWindow,
+} from "@/lib/types";
 import { useNow } from "@/hooks/useNow";
 import {
   formatDate,
@@ -20,6 +26,9 @@ import {
   getScheduleTypeLabel,
   getStatusReason,
   formatResetTimeTooltip,
+  getUsagePercent,
+  getProgressTier,
+  type ProgressTier,
 } from "@/lib/utils";
 import {
   Edit,
@@ -84,8 +93,9 @@ function getTypeLabel(type: string): string {
 }
 
 function formatUsageAmount(value: string): string {
-  const num = parseInt(value, 10);
-  return Number.isNaN(num) ? value : num.toLocaleString();
+  if (value.trim() === "") return value;
+  const num = Number(value);
+  return Number.isFinite(num) ? num.toLocaleString() : value;
 }
 
 function getUsageUnitLabel(unit: string): string {
@@ -107,10 +117,7 @@ function getTimeUnitLabel(timeUnit: string): string {
   }
 }
 
-function formatLimitWindowDuration(
-  duration: number,
-  timeUnit: string
-): string {
+function formatLimitWindowDuration(duration: number, timeUnit: string): string {
   if (timeUnit === "TIME_UNIT_MINUTE" && duration % 60 === 0) {
     return `${duration / 60} 小时`;
   }
@@ -138,6 +145,58 @@ function formatMembershipLevel(level: string): string {
     default:
       return clean;
   }
+}
+
+function UsageAmountText({ window }: { window: UsageWindow }) {
+  return (
+    <span className="text-xs font-medium">
+      已用{" "}
+      <span className="tabular-nums">{formatUsageAmount(window.used)}</span> ·
+      剩余{" "}
+      <span className="tabular-nums text-green-600">
+        {formatUsageAmount(window.remaining)}
+      </span>
+    </span>
+  );
+}
+
+const PROGRESS_BAR_COLORS: Record<ProgressTier, string> = {
+  normal: "bg-primary",
+  warning: "bg-amber-500",
+  danger: "bg-red-500",
+};
+
+function UsageProgressBar({ window }: { window: UsageWindow }) {
+  const percent = getUsagePercent(window.used, window.limit);
+  const tier = percent === null ? null : getProgressTier(percent);
+  const width = percent === null ? 0 : Math.round(percent);
+  return (
+    <div className="mt-1 space-y-1">
+      {tier !== null && (
+        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className={`h-full rounded-full transition-all ${PROGRESS_BAR_COLORS[tier]}`}
+            style={{ width: `${width}%` }}
+          />
+        </div>
+      )}
+      {window.resetTime && (
+        <div className="flex items-center gap-1">
+          <Clock className="h-3 w-3 text-muted-foreground" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="cursor-default text-xs text-muted-foreground">
+                {formatNextResetTime(window.resetTime)}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              {formatResetTimeTooltip(window.resetTime)}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function SubscriptionCard({
@@ -383,35 +442,13 @@ export function SubscriptionCard({
               <>
                 {usage.usage && (
                   <div className="pt-2">
-                    <span className="text-sm text-muted-foreground">周用量</span>
-                    <div className="mt-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">限额</span>
-                        <span className="text-sm font-medium">
-                          {usage.usage.limit}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">已用</span>
-                        <span className="text-sm font-medium">
-                          {usage.usage.used}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">剩余</span>
-                        <span className="text-sm font-medium text-green-600">
-                          {usage.usage.remaining}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          重置时间
-                        </span>
-                        <span className="text-sm font-medium">
-                          {formatDate(usage.usage.resetTime)}
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        周用量
+                      </span>
+                      <UsageAmountText window={usage.usage} />
                     </div>
+                    <UsageProgressBar window={usage.usage} />
                   </div>
                 )}
                 {usage.limits.length > 0 && (
@@ -421,53 +458,25 @@ export function SubscriptionCard({
                     </span>
                     {usage.limits.map((limit, index) => (
                       <div key={index} className="mt-1">
-                        <span className="text-xs text-muted-foreground">
-                          {formatLimitWindowDuration(
-                            limit.window.duration,
-                            limit.window.timeUnit
-                          )}
-                        </span>
-                        <div className="mt-1 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">
-                              限额
-                            </span>
-                            <span className="text-sm font-medium">
-                              {limit.detail.limit}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">
-                              已用
-                            </span>
-                            <span className="text-sm font-medium">
-                              {limit.detail.used}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">
-                              剩余
-                            </span>
-                            <span className="text-sm font-medium text-green-600">
-                              {limit.detail.remaining}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">
-                              重置时间
-                            </span>
-                            <span className="text-sm font-medium">
-                              {formatDate(limit.detail.resetTime)}
-                            </span>
-                          </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">
+                            {formatLimitWindowDuration(
+                              limit.window.duration,
+                              limit.window.timeUnit
+                            )}
+                          </span>
+                          <UsageAmountText window={limit.detail} />
                         </div>
+                        <UsageProgressBar window={limit.detail} />
                       </div>
                     ))}
                   </div>
                 )}
                 {usage.boosterWallet && (
                   <div className="pt-2">
-                    <span className="text-sm text-muted-foreground">加速包</span>
+                    <span className="text-sm text-muted-foreground">
+                      加速包
+                    </span>
                     <div className="mt-1 space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">
@@ -496,7 +505,9 @@ export function SubscriptionCard({
                 )}
                 {usage.parallel && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">并行上限</span>
+                    <span className="text-sm text-muted-foreground">
+                      并行上限
+                    </span>
                     <span className="text-sm font-medium">
                       {usage.parallel.limit}
                     </span>
@@ -504,7 +515,9 @@ export function SubscriptionCard({
                 )}
                 {usage.membership && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">会员等级</span>
+                    <span className="text-sm text-muted-foreground">
+                      会员等级
+                    </span>
                     <span className="text-sm font-medium">
                       {formatMembershipLevel(usage.membership.level)}
                     </span>
