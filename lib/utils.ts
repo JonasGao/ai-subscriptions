@@ -86,7 +86,7 @@ export function formatNextResetTime(isoString: string): string {
   const diffDays = Math.floor(diffHours / 24);
 
   if (diffMins < 0) {
-    return "已过期";
+    return "即将重置";
   } else if (diffMins < 60) {
     return `${diffMins}分钟后重置`;
   } else if (diffHours < 24) {
