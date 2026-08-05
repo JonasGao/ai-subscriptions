@@ -161,12 +161,22 @@ export function deleteChannel(id: string): boolean {
 
 /**
  * Toggles a channel's enabled state. Returns the updated channel, or null
- * if not found.
+ * if not found. Implemented as a single read+write (not a read-then-call-
+ * to-updateChannel) so we don't pay for two file reads.
  */
 export function toggleChannelEnabled(id: string): NotificationChannel | null {
-  const channel = getChannelById(id);
-  if (!channel) return null;
-  return updateChannel(id, { enabled: !channel.enabled });
+  const data = readNotificationData();
+  const idx = data.channels.findIndex((c) => c.id === id);
+  if (idx === -1) return null;
+  const existing = data.channels[idx];
+  const updated: NotificationChannel = {
+    ...existing,
+    enabled: !existing.enabled,
+    updatedAt: new Date().toISOString(),
+  };
+  data.channels[idx] = updated;
+  writeNotificationData(data);
+  return updated;
 }
 
 // ============ Global default threshold ============

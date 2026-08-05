@@ -11,43 +11,17 @@ import {
   httpSender,
   NotificationEvent,
 } from "@/lib/notifications/payload";
+import { NotificationChannel, Subscription } from "@/lib/types";
 import {
-  NotificationChannel,
-  NotificationChannelType,
-  Subscription,
-} from "@/lib/types";
-
-const VALID_TYPES: NotificationChannelType[] = [
-  "dingtalk",
-  "feishu",
-  "webhook",
-];
-
-function safeUrl(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
-  const trimmed = raw.trim();
-  if (trimmed.length === 0) return null;
-  try {
-    const parsed = new URL(trimmed);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:")
-      return null;
-    return trimmed;
-  } catch {
-    return null;
-  }
-}
-
-function stripSecret(
-  channel: NotificationChannel
-): Omit<NotificationChannel, "secret"> & { hasSecret: boolean } {
-  const { secret, ...rest } = channel;
-  return { ...rest, hasSecret: Boolean(secret) };
-}
+  VALID_CHANNEL_TYPES,
+  safeWebhookUrl,
+  sanitizeChannelForClient,
+  parseJsonBody,
+} from "@/lib/notifications/channel-validate";
 
 /**
  * Builds a synthetic low-balance event for test sends. The event uses a
  * placeholder subscription so the payload builder has something to render.
- * The channel itself is swapped in by the caller before send.
  */
 function buildTestEvent(): NotificationEvent {
   const now = new Date().toISOString();
@@ -78,32 +52,13 @@ async function sendTest(channel: NotificationChannel): Promise<void> {
   await httpSender(prepared);
 }
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const channel = getChannelById(params.id);
-    if (!channel) {
-      return NextResponse.json({ error: "Channel not found" }, { status: 404 });
-    }
-    return NextResponse.json(stripSecret(channel));
-  } catch (error) {
-    console.error("GET /api/notifications/[id] error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch channel" },
-      { status: 500 }
-    );
-  }
-}
-
 /**
  * PUT updates a channel's mutable fields: name, type, url, secret, enabled.
  *
  * Special case for `secret`:
- *  - omitted / null → leave existing secret untouched
- *  - empty string → clear the secret
- *  - string → replace
+ *  - omitted → leave existing secret untouched
+ *  - null or empty string → clear the secret
+ *  - non-empty string → replace
  */
 export async function PUT(
   request: NextRequest,
@@ -115,10 +70,15 @@ export async function PUT(
       return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    const body = await request.json();
+    const parsed = await parseJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.body;
 
     const patch: Partial<
-      Pick<NotificationChannel, "name" | "type" | "url" | "secret" | "enabled">
+      Pick<
+        import("@/lib/types").NotificationChannel,
+        "name" | "type" | "url" | "secret" | "enabled"
+      >
     > = {};
 
     if (body.name !== undefined) {
@@ -133,17 +93,22 @@ export async function PUT(
     }
 
     if (body.type !== undefined) {
-      if (!VALID_TYPES.includes(body.type)) {
+      if (
+        typeof body.type !== "string" ||
+        !(VALID_CHANNEL_TYPES as readonly string[]).includes(body.type)
+      ) {
         return NextResponse.json(
-          { error: `Invalid type. Must be one of: ${VALID_TYPES.join(", ")}` },
+          {
+            error: `Invalid type. Must be one of: ${VALID_CHANNEL_TYPES.join(", ")}`,
+          },
           { status: 400 }
         );
       }
-      patch.type = body.type;
+      patch.type = body.type as import("@/lib/types").NotificationChannelType;
     }
 
     if (body.url !== undefined) {
-      const url = safeUrl(body.url);
+      const url = safeWebhookUrl(body.url);
       if (!url) {
         return NextResponse.json(
           { error: "A valid http(s) webhook URL is required" },
@@ -175,15 +140,9 @@ export async function PUT(
       return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    return NextResponse.json(stripSecret(updated));
+    return NextResponse.json(sanitizeChannelForClient(updated));
   } catch (error) {
     console.error("PUT /api/notifications/[id] error:", error);
-    if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        { error: "Invalid JSON in request body" },
-        { status: 400 }
-      );
-    }
     return NextResponse.json(
       { error: "Failed to update channel" },
       { status: 500 }
@@ -229,7 +188,9 @@ export async function POST(
       return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    const body = await request.json();
+    const parsed = await parseJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.body;
     const action = typeof body.action === "string" ? body.action : "";
 
     if (action === "test") {
@@ -249,7 +210,7 @@ export async function POST(
         const refreshed = getChannelById(channel.id);
         return NextResponse.json({
           success: true,
-          channel: refreshed ? stripSecret(refreshed) : null,
+          channel: refreshed ? sanitizeChannelForClient(refreshed) : null,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -263,7 +224,7 @@ export async function POST(
           {
             success: false,
             error: message,
-            channel: refreshed ? stripSecret(refreshed) : null,
+            channel: refreshed ? sanitizeChannelForClient(refreshed) : null,
           },
           { status: 502 }
         );
@@ -278,7 +239,7 @@ export async function POST(
           { status: 404 }
         );
       }
-      return NextResponse.json(stripSecret(updated));
+      return NextResponse.json(sanitizeChannelForClient(updated));
     }
 
     return NextResponse.json(
@@ -287,12 +248,6 @@ export async function POST(
     );
   } catch (error) {
     console.error("POST /api/notifications/[id] error:", error);
-    if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        { error: "Invalid JSON in request body" },
-        { status: 400 }
-      );
-    }
     return NextResponse.json(
       { error: "Failed to perform action" },
       { status: 500 }

@@ -5,43 +5,17 @@ import {
   getDefaultLowBalanceThreshold,
   setDefaultLowBalanceThreshold,
 } from "@/lib/notifications/storage";
-import { NotificationChannel, NotificationChannelType } from "@/lib/types";
-
-const VALID_TYPES: NotificationChannelType[] = [
-  "dingtalk",
-  "feishu",
-  "webhook",
-];
-
-/**
- * Strip the signing secret from a channel before it leaves the server.
- * `hasSecret` is returned so the UI can indicate whether one is configured
- * (e.g. to show a "change secret" placeholder instead of an empty field).
- */
-function stripSecret(
-  channel: NotificationChannel
-): Omit<NotificationChannel, "secret"> & { hasSecret: boolean } {
-  const { secret, ...rest } = channel;
-  return { ...rest, hasSecret: Boolean(secret) };
-}
-
-function safeUrl(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
-  const trimmed = raw.trim();
-  if (trimmed.length === 0) return null;
-  try {
-    const parsed = new URL(trimmed);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:")
-      return null;
-    return trimmed;
-  } catch {
-    return null;
-  }
-}
+import { NotificationChannelType } from "@/lib/types";
+import {
+  VALID_CHANNEL_TYPES,
+  safeWebhookUrl,
+  sanitizeChannelForClient,
+  parseJsonBody,
+} from "@/lib/notifications/channel-validate";
 
 export async function GET() {
   try {
-    const channels = listChannels().map(stripSecret);
+    const channels = listChannels().map(sanitizeChannelForClient);
     const defaultLowBalanceThreshold = getDefaultLowBalanceThreshold();
     return NextResponse.json({ channels, defaultLowBalanceThreshold });
   } catch (error) {
@@ -60,7 +34,9 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const parsed = await parseJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.body;
 
     const name = typeof body.name === "string" ? body.name.trim() : "";
     if (!name) {
@@ -70,15 +46,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const type: NotificationChannelType = body.type;
-    if (!VALID_TYPES.includes(type)) {
+    const type = body.type as NotificationChannelType;
+    if (!VALID_CHANNEL_TYPES.includes(type)) {
       return NextResponse.json(
-        { error: `Invalid type. Must be one of: ${VALID_TYPES.join(", ")}` },
+        {
+          error: `Invalid type. Must be one of: ${VALID_CHANNEL_TYPES.join(", ")}`,
+        },
         { status: 400 }
       );
     }
 
-    const url = safeUrl(body.url);
+    const url = safeWebhookUrl(body.url);
     if (!url) {
       return NextResponse.json(
         { error: "A valid http(s) webhook URL is required" },
@@ -104,15 +82,11 @@ export async function POST(request: NextRequest) {
     const enabled = body.enabled === undefined ? true : Boolean(body.enabled);
 
     const channel = createChannel({ type, name, url, secret, enabled });
-    return NextResponse.json(stripSecret(channel), { status: 201 });
+    return NextResponse.json(sanitizeChannelForClient(channel), {
+      status: 201,
+    });
   } catch (error) {
     console.error("POST /api/notifications error:", error);
-    if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        { error: "Invalid JSON in request body" },
-        { status: 400 }
-      );
-    }
     return NextResponse.json(
       { error: "Failed to create channel" },
       { status: 500 }
@@ -127,31 +101,22 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
+    const parsed = await parseJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.body;
 
-    if (
-      typeof body.defaultLowBalanceThreshold !== "number" ||
-      !isFinite(body.defaultLowBalanceThreshold) ||
-      body.defaultLowBalanceThreshold < 0
-    ) {
+    const value = body.defaultLowBalanceThreshold;
+    if (typeof value !== "number" || !isFinite(value) || value < 0) {
       return NextResponse.json(
         { error: "defaultLowBalanceThreshold must be a non-negative number" },
         { status: 400 }
       );
     }
 
-    setDefaultLowBalanceThreshold(body.defaultLowBalanceThreshold);
-    return NextResponse.json({
-      defaultLowBalanceThreshold: body.defaultLowBalanceThreshold,
-    });
+    setDefaultLowBalanceThreshold(value);
+    return NextResponse.json({ defaultLowBalanceThreshold: value });
   } catch (error) {
     console.error("PUT /api/notifications error:", error);
-    if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        { error: "Invalid JSON in request body" },
-        { status: 400 }
-      );
-    }
     return NextResponse.json(
       { error: "Failed to update threshold" },
       { status: 500 }
