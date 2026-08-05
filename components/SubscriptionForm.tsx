@@ -53,6 +53,7 @@ const initialFormData: SubscriptionFormData = {
   notes: "",
   apiKey: "",
   balance: undefined,
+  lowBalanceThreshold: undefined,
   resetSchedules: [],
 };
 
@@ -90,6 +91,7 @@ export function SubscriptionForm({
         notes: subscription.notes || "",
         apiKey: "",
         balance: subscription.balance,
+        lowBalanceThreshold: subscription.lowBalanceThreshold,
         resetSchedules: subscription.resetSchedules || [],
       });
     } else {
@@ -99,7 +101,14 @@ export function SubscriptionForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    // Explicitly send null for cleared optional numeric fields so the API
+    // can distinguish "user cleared the field" from "field not provided",
+    // allowing updateSubscription to clear any previously stored value.
+    const payload = {
+      ...formData,
+      lowBalanceThreshold: formData.lowBalanceThreshold ?? null,
+    } as SubscriptionFormData & { lowBalanceThreshold: number | null };
+    onSubmit(payload as unknown as SubscriptionFormData);
     onOpenChange(false);
   };
 
@@ -315,23 +324,52 @@ export function SubscriptionForm({
               formData.provider !== "deepseek" &&
               formData.provider !== "moonshot" &&
               formData.provider !== "openrouter" && (
-                <div className="grid gap-2">
-                  <Label htmlFor="balance">余额 (¥)</Label>
-                  <Input
-                    id="balance"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.balance ?? ""}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "balance",
-                        e.target.value ? parseFloat(e.target.value) : 0
-                      )
-                    }
-                    placeholder="手动输入余额"
-                  />
-                </div>
+                <>
+                  <div className="grid gap-2">
+                    <Label htmlFor="balance">余额 (¥)</Label>
+                    <Input
+                      id="balance"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.balance ?? ""}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "balance",
+                          e.target.value ? parseFloat(e.target.value) : 0
+                        )
+                      }
+                      placeholder="手动输入余额"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="lowBalanceThreshold">低余额阈值 (¥)</Label>
+                    <Input
+                      id="lowBalanceThreshold"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.lowBalanceThreshold ?? ""}
+                      onChange={(e) => {
+                        if (!e.target.value) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            lowBalanceThreshold: undefined,
+                          }));
+                          return;
+                        }
+                        const parsed = parseFloat(e.target.value);
+                        if (!Number.isNaN(parsed) && parsed >= 0) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            lowBalanceThreshold: parsed,
+                          }));
+                        }
+                      }}
+                      placeholder="留空使用全局默认阈值"
+                    />
+                  </div>
+                </>
               )}
             {isRecurring && (
               <div className="grid grid-cols-2 gap-3">
