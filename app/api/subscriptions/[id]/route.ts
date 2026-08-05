@@ -44,6 +44,12 @@ export async function PUT(
   try {
     const body = await request.json();
 
+    // Normalize: explicit null means "clear the field" → undefined so
+    // updateSubscription's spread overwrites any previously stored value.
+    if (body.lowBalanceThreshold === null) {
+      body.lowBalanceThreshold = undefined;
+    }
+
     // Validate price if provided
     if (
       body.price !== undefined &&
@@ -51,6 +57,18 @@ export async function PUT(
     ) {
       return NextResponse.json(
         { error: "Price must be a non-negative number" },
+        { status: 400 }
+      );
+    }
+
+    // Validate lowBalanceThreshold if provided
+    if (
+      body.lowBalanceThreshold !== undefined &&
+      (typeof body.lowBalanceThreshold !== "number" ||
+        body.lowBalanceThreshold < 0)
+    ) {
+      return NextResponse.json(
+        { error: "lowBalanceThreshold must be a non-negative number" },
         { status: 400 }
       );
     }
