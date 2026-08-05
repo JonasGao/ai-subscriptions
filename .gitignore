@@ -37,3 +37,4 @@ next-env.d.ts
 # data files
 /data/
 .deepseek/
+.codegraph/
