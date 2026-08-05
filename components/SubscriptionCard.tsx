@@ -4,6 +4,12 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Subscription, defaultProviders, BalanceResult } from "@/lib/types";
 import { useNow } from "@/hooks/useNow";
 import {
@@ -13,6 +19,7 @@ import {
   formatNextResetTime,
   getScheduleTypeLabel,
   getStatusReason,
+  formatResetTimeTooltip,
 } from "@/lib/utils";
 import {
   Edit,
@@ -172,213 +179,227 @@ export function SubscriptionCard({
   };
 
   return (
-    <Card
-      className={`flex flex-col w-full ${expiringSoon ? "border-orange-500 border-2" : ""}`}
-    >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-lg font-medium">
-          {subscription.name}
-        </CardTitle>
-        <div className="flex items-center gap-2">
-          {statusReason.kind === "schedule-exhausted" &&
-            statusReason.scheduleIds.length > 0 && (
-              <span className="text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                额度用尽
-              </span>
-            )}
-          <Badge
-            variant={getStatusBadgeVariant(subscription.status)}
-            className={
-              canToggleStatus
-                ? "cursor-pointer hover:opacity-80 transition-opacity"
-                : ""
-            }
-            onClick={handleStatusToggle}
-          >
-            {getStatusLabel(subscription.status)}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-col flex-1">
-        <div className="space-y-2 flex-1">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">提供商</span>
-            <span className="text-sm font-medium">{providerName}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">分类</span>
-            <span className="text-sm font-medium">{subscription.category}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">类型</span>
-            <Badge variant="outline" className="text-xs">
-              {typeLabel}
+    <TooltipProvider>
+      <Card
+        className={`flex flex-col w-full ${expiringSoon ? "border-orange-500 border-2" : ""}`}
+      >
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-lg font-medium">
+            {subscription.name}
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            {statusReason.kind === "schedule-exhausted" &&
+              statusReason.scheduleIds.length > 0 && (
+                <span className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  额度用尽
+                </span>
+              )}
+            <Badge
+              variant={getStatusBadgeVariant(subscription.status)}
+              className={
+                canToggleStatus
+                  ? "cursor-pointer hover:opacity-80 transition-opacity"
+                  : ""
+              }
+              onClick={handleStatusToggle}
+            >
+              {getStatusLabel(subscription.status)}
             </Badge>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              {isRecurring ? "价格" : "充值金额"}
-            </span>
-            <span className="text-sm font-medium">{priceLabel}</span>
-          </div>
-          {isOneTime && (
+        </CardHeader>
+        <CardContent className="flex flex-col flex-1">
+          <div className="space-y-2 flex-1">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">余额</span>
-              <span className="text-sm font-medium text-green-600">
-                {isBalanceSupported
-                  ? balance
-                    ? `¥${balance.balanceInfos.reduce((s, i) => s + parseFloat(i.totalBalance || "0"), 0).toFixed(2)}`
+              <span className="text-sm text-muted-foreground">提供商</span>
+              <span className="text-sm font-medium">{providerName}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">分类</span>
+              <span className="text-sm font-medium">
+                {subscription.category}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">类型</span>
+              <Badge variant="outline" className="text-xs">
+                {typeLabel}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">
+                {isRecurring ? "价格" : "充值金额"}
+              </span>
+              <span className="text-sm font-medium">{priceLabel}</span>
+            </div>
+            {isOneTime && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">余额</span>
+                <span className="text-sm font-medium text-green-600">
+                  {isBalanceSupported
+                    ? balance
+                      ? `¥${balance.balanceInfos.reduce((s, i) => s + parseFloat(i.totalBalance || "0"), 0).toFixed(2)}`
+                      : subscription.balance != null
+                        ? `¥${subscription.balance.toFixed(2)}`
+                        : "-"
                     : subscription.balance != null
                       ? `¥${subscription.balance.toFixed(2)}`
-                      : "-"
-                  : subscription.balance != null
-                    ? `¥${subscription.balance.toFixed(2)}`
-                    : "-"}
-              </span>
-            </div>
-          )}
-          {isRecurring && subscription.renewalDate && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">续费日期</span>
-              <span
-                className={`text-sm font-medium ${expiringSoon ? "text-orange-500" : ""}`}
-              >
-                {formatDate(subscription.renewalDate)}
-                {expiringSoon && daysUntilRenewal !== null && (
-                  <span className="ml-1">({daysUntilRenewal}天后)</span>
-                )}
-              </span>
-            </div>
-          )}
-          {isBalanceSupported &&
-            balance &&
-            balance.balanceInfos.map((info) => (
-              <Fragment key={info.currency}>
-                {balance.provider === "moonshot" ? (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        可用余额
-                      </span>
-                      <span className="text-sm font-medium text-green-600">
-                        ¥{info.totalBalance}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        代金券
-                      </span>
-                      <span className="text-sm font-medium">
-                        ¥{info.grantedBalance}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        现金余额
-                      </span>
-                      <span className="text-sm font-medium">
-                        ¥{info.toppedUpBalance}
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      余额 ({info.currency})
-                    </span>
-                    <span className="text-sm font-medium text-green-600">
-                      ${info.totalBalance}
-                    </span>
-                  </div>
-                )}
-              </Fragment>
-            ))}
-          {balanceError && (
-            <div className="text-sm text-red-500">{balanceError}</div>
-          )}
-          {subscription.notes && (
-            <div className="pt-2">
-              <span className="text-sm text-muted-foreground">备注</span>
-              <p className="text-sm mt-1">{subscription.notes}</p>
-            </div>
-          )}
-          {subscription.resetSchedules &&
-            subscription.resetSchedules.length > 0 && (
-              <div className="pt-2">
-                <span className="text-sm text-muted-foreground">
-                  额度重置计划
+                      : "-"}
                 </span>
-                <div
-                  className="mt-1 grid gap-y-1 text-xs"
-                  style={{ gridTemplateColumns: "auto 3.5rem 1fr auto" }}
-                >
-                  {subscription.resetSchedules
-                    .filter((s) => s.enabled)
-                    .map((schedule) => (
-                      <div key={schedule.id} className="contents">
-                        <Clock className="h-3 w-3 text-muted-foreground self-center" />
-                        <span className="font-medium self-center">
-                          {getScheduleTypeLabel(schedule.type)}
-                        </span>
-                        <span className="text-muted-foreground self-center">
-                          {formatNextResetTime(schedule.nextResetTime)}
-                        </span>
-                        <Button
-                          variant={
-                            schedule.exhausted ? "destructive" : "outline"
-                          }
-                          size="sm"
-                          className="h-5 px-2 text-xs"
-                          onClick={() =>
-                            handleScheduleToggle(
-                              schedule.id,
-                              !schedule.exhausted
-                            )
-                          }
-                        >
-                          {schedule.exhausted ? "已用尽" : "可用"}
-                        </Button>
-                      </div>
-                    ))}
-                </div>
               </div>
             )}
-        </div>
-        <div className="flex gap-2 pt-4 mt-auto">
-          {isBalanceSupported && (
+            {isRecurring && subscription.renewalDate && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">续费日期</span>
+                <span
+                  className={`text-sm font-medium ${expiringSoon ? "text-orange-500" : ""}`}
+                >
+                  {formatDate(subscription.renewalDate)}
+                  {expiringSoon && daysUntilRenewal !== null && (
+                    <span className="ml-1">({daysUntilRenewal}天后)</span>
+                  )}
+                </span>
+              </div>
+            )}
+            {isBalanceSupported &&
+              balance &&
+              balance.balanceInfos.map((info) => (
+                <Fragment key={info.currency}>
+                  {balance.provider === "moonshot" ? (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          可用余额
+                        </span>
+                        <span className="text-sm font-medium text-green-600">
+                          ¥{info.totalBalance}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          代金券
+                        </span>
+                        <span className="text-sm font-medium">
+                          ¥{info.grantedBalance}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          现金余额
+                        </span>
+                        <span className="text-sm font-medium">
+                          ¥{info.toppedUpBalance}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        余额 ({info.currency})
+                      </span>
+                      <span className="text-sm font-medium text-green-600">
+                        ${info.totalBalance}
+                      </span>
+                    </div>
+                  )}
+                </Fragment>
+              ))}
+            {balanceError && (
+              <div className="text-sm text-red-500">{balanceError}</div>
+            )}
+            {subscription.notes && (
+              <div className="pt-2">
+                <span className="text-sm text-muted-foreground">备注</span>
+                <p className="text-sm mt-1">{subscription.notes}</p>
+              </div>
+            )}
+            {subscription.resetSchedules &&
+              subscription.resetSchedules.length > 0 && (
+                <div className="pt-2">
+                  <span className="text-sm text-muted-foreground">
+                    额度重置计划
+                  </span>
+                  <div
+                    className="mt-1 grid gap-y-1 text-xs"
+                    style={{ gridTemplateColumns: "auto 3.5rem 1fr auto" }}
+                  >
+                    {subscription.resetSchedules
+                      .filter((s) => s.enabled)
+                      .map((schedule) => (
+                        <div key={schedule.id} className="contents">
+                          <Clock className="h-3 w-3 text-muted-foreground self-center" />
+                          <span className="font-medium self-center">
+                            {getScheduleTypeLabel(schedule.type)}
+                          </span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="text-muted-foreground self-center">
+                                {formatNextResetTime(schedule.nextResetTime)}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              {formatResetTimeTooltip(
+                                schedule.nextResetTime,
+                                schedule.timezone
+                              )}
+                            </TooltipContent>
+                          </Tooltip>
+                          <Button
+                            variant={
+                              schedule.exhausted ? "destructive" : "outline"
+                            }
+                            size="sm"
+                            className="h-5 px-2 text-xs"
+                            onClick={() =>
+                              handleScheduleToggle(
+                                schedule.id,
+                                !schedule.exhausted
+                              )
+                            }
+                          >
+                            {schedule.exhausted ? "已用尽" : "可用"}
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+          </div>
+          <div className="flex gap-2 pt-4 mt-auto">
+            {isBalanceSupported && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleQueryBalance}
+                disabled={balanceLoading}
+              >
+                {balanceLoading ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Wallet className="h-4 w-4 mr-1" />
+                )}
+                额度
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
-              onClick={handleQueryBalance}
-              disabled={balanceLoading}
+              onClick={() => onEdit(subscription)}
             >
-              {balanceLoading ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <Wallet className="h-4 w-4 mr-1" />
-              )}
-              额度
+              <Edit className="h-4 w-4 mr-1" />
+              编辑
             </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEdit(subscription)}
-          >
-            <Edit className="h-4 w-4 mr-1" />
-            编辑
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => onDelete(subscription.id)}
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            删除
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onDelete(subscription.id)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              删除
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 }

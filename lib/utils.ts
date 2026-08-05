@@ -108,6 +108,71 @@ export function formatNextResetTime(isoString: string): string {
   }
 }
 
+const TIMEZONE_ABBR_MAP: Record<string, string> = {
+  "Asia/Shanghai": "上海时间",
+  "Asia/Hong_Kong": "香港时间",
+  "Asia/Tokyo": "东京时间",
+  "America/New_York": "纽约时间",
+  "America/Los_Angeles": "洛杉矶时间",
+  "Europe/London": "伦敦时间",
+  UTC: "UTC",
+};
+
+export function getTimezoneAbbr(timezone?: string): string {
+  if (!timezone) return "";
+  return TIMEZONE_ABBR_MAP[timezone] || timezone.split("/").pop() || timezone;
+}
+
+function getUtcOffset(date: Date, timezone: string): string {
+  try {
+    const parts = Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      timeZoneName: "longOffset",
+      hour12: false,
+    }).formatToParts(date);
+    const offsetPart = parts.find((p) => p.type === "timeZoneName");
+    if (!offsetPart) return "";
+    return offsetPart.value.replace("GMT", "UTC");
+  } catch {
+    return "";
+  }
+}
+
+export function formatResetTimeTooltip(
+  isoString: string,
+  timezone?: string
+): string {
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return isoString;
+
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  };
+
+  if (!timezone) {
+    return date.toLocaleString("zh-CN", options);
+  }
+
+  try {
+    const dateText = date.toLocaleString("zh-CN", {
+      ...options,
+      timeZone: timezone,
+    });
+    const suffix =
+      TIMEZONE_ABBR_MAP[timezone] ||
+      getUtcOffset(date, timezone) ||
+      getTimezoneAbbr(timezone);
+    return `${dateText} (${suffix})`;
+  } catch {
+    return date.toLocaleString("zh-CN", options);
+  }
+}
+
 export function getScheduleTypeLabel(type: string): string {
   switch (type) {
     case "hourly":

@@ -13,7 +13,11 @@ import {
 } from "@/components/ui/select";
 import { ResetSchedule, ResetScheduleType } from "@/lib/types";
 import { createResetSchedule } from "@/lib/reset-schedule";
-import { formatNextResetTime, getScheduleTypeLabel } from "@/lib/utils";
+import {
+  formatNextResetTime,
+  getScheduleTypeLabel,
+  getTimezoneAbbr,
+} from "@/lib/utils";
 import { useNow } from "@/hooks/useNow";
 import {
   extractScheduleFromOffset,
@@ -64,20 +68,6 @@ export function ResetScheduleConfig({
       return "UTC";
     }
   });
-
-  const getTimezoneAbbr = (timezone?: string): string => {
-    if (!timezone) return "";
-    const tzMap: Record<string, string> = {
-      "Asia/Shanghai": "上海时间",
-      "Asia/Hong_Kong": "香港时间",
-      "Asia/Tokyo": "东京时间",
-      "America/New_York": "纽约时间",
-      "America/Los_Angeles": "洛杉矶时间",
-      "Europe/London": "伦敦时间",
-      UTC: "UTC",
-    };
-    return tzMap[timezone] || timezone.split("/").pop() || timezone;
-  };
 
   const calculatePreview = useCallback(
     (
