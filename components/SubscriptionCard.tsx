@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Subscription, defaultProviders, BalanceResult } from "@/lib/types";
+import { Subscription, defaultProviders, BalanceResult, UsageResult } from "@/lib/types";
 import { useNow } from "@/hooks/useNow";
 import {
   formatDate,
@@ -83,6 +83,63 @@ function getTypeLabel(type: string): string {
   return type === "recurring" ? "周期性" : "一次性";
 }
 
+function formatUsageAmount(value: string): string {
+  const num = parseInt(value, 10);
+  return Number.isNaN(num) ? value : num.toLocaleString();
+}
+
+function getUsageUnitLabel(unit: string): string {
+  return unit === "UNIT_CURRENCY" ? "单位" : unit;
+}
+
+function getTimeUnitLabel(timeUnit: string): string {
+  switch (timeUnit) {
+    case "TIME_UNIT_SECOND":
+      return "秒";
+    case "TIME_UNIT_MINUTE":
+      return "分钟";
+    case "TIME_UNIT_HOUR":
+      return "小时";
+    case "TIME_UNIT_DAY":
+      return "天";
+    default:
+      return timeUnit;
+  }
+}
+
+function formatLimitWindowDuration(
+  duration: number,
+  timeUnit: string
+): string {
+  if (timeUnit === "TIME_UNIT_MINUTE" && duration % 60 === 0) {
+    return `${duration / 60} 小时`;
+  }
+  return `${duration} ${getTimeUnitLabel(timeUnit)}`;
+}
+
+function formatPriceFromCents(priceInCents: string): string {
+  const num = parseInt(priceInCents, 10);
+  return Number.isNaN(num) ? priceInCents : `¥${(num / 100).toFixed(2)}`;
+}
+
+function formatMembershipLevel(level: string): string {
+  const clean = level.startsWith("LEVEL_")
+    ? level.slice("LEVEL_".length)
+    : level;
+  switch (clean) {
+    case "BASIC":
+      return "基础版";
+    case "PLUS":
+      return "增强版";
+    case "PRO":
+      return "专业版";
+    case "MAX":
+      return "旗舰版";
+    default:
+      return clean;
+  }
+}
+
 export function SubscriptionCard({
   subscription,
   onEdit,
@@ -93,6 +150,7 @@ export function SubscriptionCard({
   // Re-render periodically so formatNextResetTime (which uses new Date()) updates
   useNow();
   const [balance, setBalance] = useState<BalanceResult | null>(null);
+  const [usage, setUsage] = useState<UsageResult | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceError, setBalanceError] = useState<string | null>(null);
   const isRecurring = subscription.subscriptionType === "recurring";
@@ -115,9 +173,13 @@ export function SubscriptionCard({
       : subscription.billingCycle === "yearly"
         ? `¥${subscription.price.toFixed(2)}/年`
         : `¥${subscription.price.toFixed(2)}/月`;
-  const isBalanceSupported = ["deepseek", "moonshot", "openrouter"].includes(
-    subscription.provider
+  const providerConfig = defaultProviders.find(
+    (p) => p.id === subscription.provider
   );
+  const canQuery =
+    subscription.subscriptionType === "one-time"
+      ? !!providerConfig?.balanceApiUrl
+      : !!providerConfig?.usageApiUrl;
   const isOneTime = subscription.subscriptionType === "one-time";
   const canToggleStatus =
     subscription.status === "active" || subscription.status === "paused";
@@ -127,6 +189,19 @@ export function SubscriptionCard({
     setBalanceLoading(true);
     setBalanceError(null);
     try {
+      if (subscription.subscriptionType === "recurring") {
+        const res = await fetch(`/api/subscriptions/${subscription.id}/usage`, {
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          setBalanceError(err.error || "查询失败");
+          return;
+        }
+        const data: UsageResult = await res.json();
+        setUsage(data);
+        return;
+      }
       const res = await fetch(`/api/subscriptions/${subscription.id}/balance`, {
         cache: "no-store",
       });
@@ -236,7 +311,7 @@ export function SubscriptionCard({
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">余额</span>
                 <span className="text-sm font-medium text-green-600">
-                  {isBalanceSupported
+                  {canQuery
                     ? balance
                       ? `¥${balance.balanceInfos.reduce((s, i) => s + parseFloat(i.totalBalance || "0"), 0).toFixed(2)}`
                       : subscription.balance != null
@@ -261,7 +336,7 @@ export function SubscriptionCard({
                 </span>
               </div>
             )}
-            {isBalanceSupported &&
+            {canQuery &&
               balance &&
               balance.balanceInfos.map((info) => (
                 <Fragment key={info.currency}>
@@ -304,6 +379,139 @@ export function SubscriptionCard({
                   )}
                 </Fragment>
               ))}
+            {usage && (
+              <>
+                {usage.usage && (
+                  <div className="pt-2">
+                    <span className="text-sm text-muted-foreground">周用量</span>
+                    <div className="mt-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">限额</span>
+                        <span className="text-sm font-medium">
+                          {usage.usage.limit}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">已用</span>
+                        <span className="text-sm font-medium">
+                          {usage.usage.used}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">剩余</span>
+                        <span className="text-sm font-medium text-green-600">
+                          {usage.usage.remaining}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          重置时间
+                        </span>
+                        <span className="text-sm font-medium">
+                          {formatDate(usage.usage.resetTime)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {usage.limits.length > 0 && (
+                  <div className="pt-2">
+                    <span className="text-sm text-muted-foreground">
+                      5小时频限
+                    </span>
+                    {usage.limits.map((limit, index) => (
+                      <div key={index} className="mt-1">
+                        <span className="text-xs text-muted-foreground">
+                          {formatLimitWindowDuration(
+                            limit.window.duration,
+                            limit.window.timeUnit
+                          )}
+                        </span>
+                        <div className="mt-1 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">
+                              限额
+                            </span>
+                            <span className="text-sm font-medium">
+                              {limit.detail.limit}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">
+                              已用
+                            </span>
+                            <span className="text-sm font-medium">
+                              {limit.detail.used}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">
+                              剩余
+                            </span>
+                            <span className="text-sm font-medium text-green-600">
+                              {limit.detail.remaining}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">
+                              重置时间
+                            </span>
+                            <span className="text-sm font-medium">
+                              {formatDate(limit.detail.resetTime)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {usage.boosterWallet && (
+                  <div className="pt-2">
+                    <span className="text-sm text-muted-foreground">加速包</span>
+                    <div className="mt-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          剩余额度
+                        </span>
+                        <span className="text-sm font-medium">
+                          {usage.boosterWallet.balance
+                            ? `${formatUsageAmount(usage.boosterWallet.balance.amountLeft)} ${getUsageUnitLabel(usage.boosterWallet.balance.unit)}`
+                            : "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          本月已用
+                        </span>
+                        <span className="text-sm font-medium">
+                          {usage.boosterWallet.monthlyUsed
+                            ? formatPriceFromCents(
+                                usage.boosterWallet.monthlyUsed.priceInCents
+                              )
+                            : "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {usage.parallel && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">并行上限</span>
+                    <span className="text-sm font-medium">
+                      {usage.parallel.limit}
+                    </span>
+                  </div>
+                )}
+                {usage.membership && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">会员等级</span>
+                    <span className="text-sm font-medium">
+                      {formatMembershipLevel(usage.membership.level)}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
             {balanceError && (
               <div className="text-sm text-red-500">{balanceError}</div>
             )}
@@ -366,7 +574,7 @@ export function SubscriptionCard({
               )}
           </div>
           <div className="flex gap-2 pt-4 mt-auto">
-            {isBalanceSupported && (
+            {canQuery && (
               <Button
                 variant="outline"
                 size="sm"

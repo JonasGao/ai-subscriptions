@@ -14,8 +14,8 @@ A subscription represents a user's access to an AI service. It tracks:
 
 **Types:**
 
-- **Recurring Subscription (周期性订阅)**: Regular billing cycle (monthly/yearly), quota resets periodically
-- **One-time Subscription (一次性订阅)**: Single payment, use until balance exhausted, no quota reset
+- **Recurring Subscription (周期性订阅)**: Regular billing cycle (monthly/yearly), quota resets periodically. May support live **Usage** queries from provider APIs.
+- **One-time Subscription (一次性订阅)**: Single payment, use until balance exhausted, no quota reset. May support live **Balance** queries from provider APIs.
 
 ### Subscription Type (订阅类型)
 
@@ -25,10 +25,12 @@ Determines the billing model and quota behavior:
   - Has `billingCycle` (monthly/yearly)
   - Has `startDate` and `renewalDate`
   - Can have **Quota Reset Schedules**
-  - Examples: OpenAI monthly subscription, Claude Pro yearly plan
+  - Can query **Usage** from provider API (if provider supports it)
+  - Examples: Kimi Code monthly plan, OpenAI monthly subscription, Claude Pro yearly plan
 
 - **One-time**: Single payment, consumption-based
   - Has `balance` field to track remaining credits
+  - Can query **Balance** from provider API (if provider supports it)
   - No quota reset concept
   - Examples: DeepSeek prepaid credits, OpenRouter pay-per-use
 
@@ -69,6 +71,24 @@ For one-time subscriptions, tracks remaining prepaid credits:
 - Decreases as user consumes the service
 - No automatic reset or renewal
 - User must manually recharge when exhausted
+- Can be queried live from provider APIs that support `balanceApiUrl`
+
+### Usage (用量)
+
+For recurring subscriptions, represents live quota consumption data queried from provider APIs:
+
+- Snapshot of current usage window (limit / used / remaining / reset time)
+- Provider-specific windows: e.g. 5-hour rolling rate limit, 7-day weekly quota
+- May include auxiliary data: booster wallet balance, monthly spending, parallel limit, membership tier
+- **Manual trigger only** — user clicks to refresh (not auto-polled)
+- **Frontend-only** — not persisted; each query fetches fresh data
+- Available only for providers that expose `usageApiUrl`
+
+**Difference from Reset Schedule:**
+
+- Usage is live data from provider APIs; Reset Schedule is manually configured local tracking
+- Usage shows actual consumption numbers; Reset Schedule only tracks reset timing
+- Usage may be replaced by Reset Schedule integration in the future
 
 ### Offset-Based Schedule Creation (基于偏移的计划创建)
 
@@ -150,6 +170,18 @@ When editing a subscription:
 - **Behavior**: Use until exhausted, then manually recharge
 - **No reset schedule needed**: No periodic quota renewal
 
+## Provider
+
+### Provider (提供商)
+
+An AI service provider. Defines identity and supported query capabilities:
+
+- `id`, `name`, `description`, `website` — identity
+- `balanceApiUrl?` — endpoint for live balance queries (one-time subscriptions)
+- `usageApiUrl?` — endpoint for live usage queries (recurring subscriptions)
+
+The presence of a Query URL indicates the provider supports that query type. A provider may support neither, one, or both. The unified "额度" button on subscription cards auto-selects the query type based on the subscription's type and the provider's configured URLs.
+
 ## Relationships
 
 ```
@@ -158,21 +190,28 @@ Subscription
 │   ├── billingCycle: Monthly | Yearly
 │   ├── startDate: Date
 │   ├── renewalDate: Date
-│   └── resetSchedules: QuotaResetSchedule[] (optional)
+│   ├── resetSchedules: QuotaResetSchedule[] (optional)
+│   └── usage (frontend-only, queried from Provider.usageApiUrl)
 │
 └── One-time
-    └── balance: number (remaining credits)
+    ├── balance: number (remaining credits)
+    └── balance (live, queried from Provider.balanceApiUrl)
+
+Provider
+├── balanceApiUrl?: string  → supports balance query for one-time subs
+└── usageApiUrl?: string    → supports usage query for recurring subs
 ```
 
 ## Glossary
 
-| Chinese      | English                | Definition                                           |
-| ------------ | ---------------------- | ---------------------------------------------------- |
-| 订阅         | Subscription           | User's access to an AI service                       |
-| 周期性订阅   | Recurring Subscription | Regular billing cycle, periodic quota reset          |
-| 一次性订阅   | One-time Subscription  | Single payment, use until exhausted                  |
-| 额度重置计划 | Quota Reset Schedule   | Tracks when quota/rate limits reset                  |
-| 计费周期     | Billing Cycle          | Payment frequency (monthly/yearly)                   |
-| 余额         | Balance                | Remaining prepaid credits for one-time subscriptions |
-| 提供商       | Provider               | AI service provider (OpenAI, Anthropic, etc.)        |
-| 分类         | Category               | Subscription grouping (AI助手, 图像生成, etc.)       |
+| Chinese      | English                | Definition                                                    |
+| ------------ | ---------------------- | ------------------------------------------------------------- |
+| 订阅         | Subscription           | User's access to an AI service                                |
+| 周期性订阅   | Recurring Subscription | Regular billing cycle, periodic quota reset                   |
+| 一次性订阅   | One-time Subscription  | Single payment, use until exhausted                           |
+| 额度重置计划 | Quota Reset Schedule   | Manually configured local tracking for quota reset timing     |
+| 计费周期     | Billing Cycle          | Payment frequency (monthly/yearly)                            |
+| 余额         | Balance                | Prepaid credits for one-time subscriptions, can be live-queried |
+| 用量         | Usage                  | Live quota consumption data from provider API for recurring subs |
+| 提供商       | Provider               | AI service provider with optional query endpoint configuration   |
+| 分类         | Category               | Subscription grouping (AI助手, 图像生成, etc.)                |

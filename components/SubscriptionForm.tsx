@@ -67,6 +67,13 @@ export function SubscriptionForm({
   const [formData, setFormData] =
     useState<SubscriptionFormData>(initialFormData);
   const [providers, setProviders] = useState<Provider[]>(defaultProviders);
+  const providerConfig = defaultProviders.find(
+    (p) => p.id === formData.provider
+  );
+  const hasQuerySupport = !!(
+    providerConfig?.balanceApiUrl || providerConfig?.usageApiUrl
+  );
+  const hasBalanceQuery = !!providerConfig?.balanceApiUrl;
 
   useEffect(() => {
     fetch("/api/providers")
@@ -208,8 +215,7 @@ export function SubscriptionForm({
                 />
               </div>
             )}
-            {formData.provider === "deepseek" ||
-            formData.provider === "openrouter" ? (
+            {hasQuerySupport ? (
               <div className="grid gap-2">
                 <Label htmlFor="apiKey">API Key</Label>
                 <Input
@@ -322,10 +328,7 @@ export function SubscriptionForm({
                 </div>
               )}
             </div>
-            {!isRecurring &&
-              formData.provider !== "deepseek" &&
-              formData.provider !== "moonshot" &&
-              formData.provider !== "openrouter" && (
+            {!isRecurring && !hasBalanceQuery && (
                 <div className="grid gap-2">
                   <Label htmlFor="balance">余额 (¥)</Label>
                   <Input

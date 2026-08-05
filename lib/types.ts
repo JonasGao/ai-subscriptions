@@ -65,6 +65,8 @@ export interface Provider {
   name: string;
   description?: string;
   website?: string;
+  balanceApiUrl?: string;
+  usageApiUrl?: string;
 }
 
 export const defaultProviders: Provider[] = [
@@ -103,12 +105,15 @@ export const defaultProviders: Provider[] = [
     name: "月之暗面",
     description: "Kimi 系列",
     website: "https://kimi.moonshot.cn",
+    balanceApiUrl: "https://api.moonshot.cn/v1/users/me/balance",
+    usageApiUrl: "https://api.kimi.com/coding/v1/usages",
   },
   {
     id: "deepseek",
     name: "DeepSeek",
     description: "DeepSeek 系列",
     website: "https://deepseek.com",
+    balanceApiUrl: "https://api.deepseek.com/user/balance",
   },
   {
     id: "zhipu",
@@ -121,12 +126,14 @@ export const defaultProviders: Provider[] = [
     name: "SiliconFlow",
     description: "模型托管平台",
     website: "https://siliconflow.cn",
+    balanceApiUrl: "https://api.siliconflow.cn/v1/user/info",
   },
   {
     id: "openrouter",
     name: "OpenRouter",
     description: "多模型统一 API",
     website: "https://openrouter.ai",
+    balanceApiUrl: "https://openrouter.ai/api/v1/credits",
   },
   {
     id: "minimax",
@@ -294,6 +301,41 @@ export interface BalanceResult {
   provider?: string;
   isAvailable: boolean;
   balanceInfos: BalanceInfo[];
+}
+
+export interface UsageWindow {
+  limit: string;
+  used: string;
+  remaining: string;
+  resetTime: string;
+}
+
+export interface UsageLimitWindow {
+  window: {
+    duration: number;
+    timeUnit: string;
+  };
+  detail: UsageWindow;
+}
+
+export interface UsageBoosterWallet {
+  balance: {
+    amount: string;
+    amountLeft: string;
+    unit: string;
+    type: string;
+  } | null;
+  monthlyUsed: { currency: string; priceInCents: string } | null;
+  status: string;
+}
+
+export interface UsageResult {
+  provider: string;
+  usage: UsageWindow | null;
+  limits: UsageLimitWindow[];
+  boosterWallet: UsageBoosterWallet | null;
+  parallel: { limit: string } | null;
+  membership: { level: string } | null;
 }
 
 // ============ Notification ============

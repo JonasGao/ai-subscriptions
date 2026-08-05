@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSubscriptionById } from '@/lib/db'
+import { getSubscriptionById, getProviders } from '@/lib/db'
 import { decryptApiKey } from '@/lib/encryption'
 
 export const dynamic = 'force-dynamic'
@@ -29,10 +29,11 @@ export async function GET(
       )
     }
 
-    const supportedProviders = ['deepseek', 'moonshot', 'siliconflow', 'openrouter']
-    if (!supportedProviders.includes(subscription.provider)) {
+    const providers = getProviders()
+    const providerConfig = providers.find(p => p.id === subscription.provider)
+    if (!providerConfig?.balanceApiUrl) {
       return NextResponse.json(
-        { error: `Balance query is only supported for ${supportedProviders.join(', ')} providers` },
+        { error: `Balance query not supported for ${subscription.provider}` },
         { status: 400 }
       )
     }
