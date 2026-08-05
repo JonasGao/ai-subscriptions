@@ -11,8 +11,13 @@ import { setNow, setFetchFn, resetSeams } from "@/lib/notifications/feishu-app";
 describe("translateFeishuError", () => {
   it("translates known error codes to human-readable messages", () => {
     const msg = translateFeishuError(99991663);
-    expect(msg).toContain("tenant_access_token");
+    expect(msg).toContain("app_access_token");
     expect(msg).toContain("无效");
+  });
+
+  it("translates tenant token errors", () => {
+    const msg = translateFeishuError(99991664);
+    expect(msg).toContain("tenant_access_token");
   });
 
   it("translates permission error code", () => {
@@ -21,14 +26,13 @@ describe("translateFeishuError", () => {
     expect(msg).toContain("飞书开放平台");
   });
 
-  it("translates chat list specific error codes", () => {
-    const msg = translateFeishuError(1254043);
+  it("translates 99991672 scope error with raw msg", () => {
+    const msg = translateFeishuError(
+      99991672,
+      "missing scope: im:chat:readonly"
+    );
+    expect(msg).toContain("权限不足");
     expect(msg).toContain("im:chat:readonly");
-  });
-
-  it("translates contact lookup error codes", () => {
-    const msg = translateFeishuError(1254003);
-    expect(msg).toContain("contact:user.id:readonly");
   });
 
   it("returns null for unknown error codes", () => {
@@ -147,7 +151,7 @@ describe("listFeishuChats", () => {
         text: () =>
           Promise.resolve(
             JSON.stringify({
-              code: 1254043,
+              code: 99991400,
               msg: "permission denied",
             })
           ),
@@ -155,7 +159,7 @@ describe("listFeishuChats", () => {
     setFetchFn(mockFetch as never);
 
     await expect(listFeishuChats("app-id", "app-secret")).rejects.toThrow(
-      /im:chat:readonly/
+      /权限不足/
     );
   });
 
@@ -183,7 +187,7 @@ describe("listFeishuChats", () => {
     setFetchFn(mockFetch as never);
 
     await expect(listFeishuChats("app-id", "app-secret")).rejects.toThrow(
-      /tenant_access_token/
+      /app_access_token/
     );
   });
 });
@@ -268,8 +272,8 @@ describe("lookupFeishuUserByPhone", () => {
         text: () =>
           Promise.resolve(
             JSON.stringify({
-              code: 1254003,
-              msg: "permission denied",
+              code: 99991672,
+              msg: "missing scope: contact:user.id:readonly",
             })
           ),
       });

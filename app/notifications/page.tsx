@@ -159,7 +159,9 @@ export default function NotificationsPage() {
   const [chatsResult, setChatsResult] = useState<{
     items: Array<{ chat_id: string; name: string }>;
     has_more: boolean;
+    page_token?: string;
   } | null>(null);
+  const [chatsLoadingMore, setChatsLoadingMore] = useState(false);
 
   // Phone lookup helper
   const [phoneInput, setPhoneInput] = useState("");
@@ -175,6 +177,10 @@ export default function NotificationsPage() {
   const [listenLoading, setListenLoading] = useState(false);
   const [listenError, setListenError] = useState<string | null>(null);
   const [listenActive, setListenActive] = useState(false);
+  /** Snapshot listenId from start response - used for poll/stop instead of form appId */
+  const [listenId, setListenId] = useState<string | null>(null);
+  /** TTL from server response (seconds) */
+  const [listenTtlSeconds, setListenTtlSeconds] = useState<number | null>(null);
   const [listenMessages, setListenMessages] = useState<
     Array<{
       open_id: string;
@@ -486,6 +492,7 @@ export default function NotificationsPage() {
     setChatsLoading(false);
     setChatsError(null);
     setChatsResult(null);
+    setChatsLoadingMore(false);
     setPhoneInput("");
     setPhoneLoading(false);
     setPhoneError(null);
@@ -493,6 +500,8 @@ export default function NotificationsPage() {
     setListenLoading(false);
     setListenError(null);
     setListenActive(false);
+    setListenId(null);
+    setListenTtlSeconds(null);
     setListenMessages([]);
     if (listenPollRef.current) {
       clearInterval(listenPollRef.current);
@@ -522,12 +531,12 @@ export default function NotificationsPage() {
       listenPollRef.current = null;
     }
     setListenActive(false);
-    // Best-effort stop on server
-    if (form.appId.trim()) {
+    // Best-effort stop on server using the snapshot listenId (not current form appId)
+    if (listenId) {
       try {
         await fetch(
-          `/api/notifications/feishu-app/listen?appId=${encodeURIComponent(
-            form.appId.trim()
+          `/api/notifications/feishu-app/listen?listenId=${encodeURIComponent(
+            listenId
           )}`,
           { method: "DELETE" }
         );
@@ -535,7 +544,8 @@ export default function NotificationsPage() {
         // Ignore errors
       }
     }
-  }, [form.appId]);
+    setListenId(null);
+  }, [listenId]);
 
   const handleFetchChats = useCallback(async () => {
     setHelperMode("chats");
@@ -557,6 +567,36 @@ export default function NotificationsPage() {
       setChatsLoading(false);
     }
   }, [buildHelperBody]);
+
+  const handleLoadMoreChats = useCallback(async () => {
+    if (!chatsResult?.has_more || !chatsResult?.page_token) return;
+    setChatsLoadingMore(true);
+    setChatsError(null);
+    try {
+      const res = await fetch("/api/notifications/feishu-app/chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          buildHelperBody({ page_token: chatsResult.page_token })
+        ),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      // Append new items to existing list
+      setChatsResult((prev) =>
+        prev
+          ? {
+              ...data,
+              items: [...prev.items, ...(data.items ?? [])],
+            }
+          : data
+      );
+    } catch (err) {
+      setChatsError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setChatsLoadingMore(false);
+    }
+  }, [buildHelperBody, chatsResult]);
 
   const handleSelectChat = useCallback(
     (chatId: string, chatName: string) => {
@@ -611,34 +651,55 @@ export default function NotificationsPage() {
     setListenLoading(true);
     setListenError(null);
     setListenMessages([]);
+    setListenId(null);
+    setListenTtlSeconds(null);
     try {
       const res = await fetch("/api/notifications/feishu-app/listen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildHelperBody({ ttl_ms: 120000 })),
+        body: JSON.stringify(buildHelperBody({})),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      setListenActive(true);
 
-      // Start polling every 2 seconds
-      const appId = form.appId.trim();
+      const serverListenId = data.listenId as string | undefined;
+      const serverTtlSeconds = data.ttlSeconds as number | undefined;
+      setListenActive(true);
+      if (serverListenId) setListenId(serverListenId);
+      if (serverTtlSeconds !== undefined) setListenTtlSeconds(serverTtlSeconds);
+
+      // Start polling using the snapshot listenId (not current form appId)
+      const idForPoll = serverListenId;
+      if (!idForPoll) return;
+
       listenPollRef.current = setInterval(async () => {
         try {
           const pollRes = await fetch(
-            `/api/notifications/feishu-app/listen?appId=${encodeURIComponent(
-              appId
+            `/api/notifications/feishu-app/listen?listenId=${encodeURIComponent(
+              idForPoll
             )}`
           );
-          if (!pollRes.ok) return;
-          const pollData = await pollRes.json();
-          if (pollData.status?.stopped) {
-            // Listener auto-stopped
+          // 404 = listener gone (tombstone expired or never existed) — stop polling
+          if (pollRes.status === 404) {
             if (listenPollRef.current) {
               clearInterval(listenPollRef.current);
               listenPollRef.current = null;
             }
             setListenActive(false);
+            setListenId(null);
+            return;
+          }
+          if (!pollRes.ok) return;
+          const pollData = await pollRes.json();
+          // Tombstone: stopped=true means listener auto-stopped (timeout/manual/error)
+          if (pollData.status?.stopped) {
+            if (listenPollRef.current) {
+              clearInterval(listenPollRef.current);
+              listenPollRef.current = null;
+            }
+            setListenActive(false);
+            setListenId(null);
+            // Still update messages one last time before stopping
           }
           const messages = pollData.messages ?? [];
           setListenMessages(
@@ -664,7 +725,7 @@ export default function NotificationsPage() {
     } finally {
       setListenLoading(false);
     }
-  }, [buildHelperBody, form.appId]);
+  }, [buildHelperBody]);
 
   const handleStopListen = useCallback(async () => {
     await stopListenerPolling();
@@ -1188,25 +1249,49 @@ export default function NotificationsPage() {
                                 机器人不在任何群中。请先将机器人添加到群聊。
                               </p>
                             ) : (
-                              <div className="max-h-48 overflow-y-auto rounded-md border border-border divide-y divide-border">
-                                {chatsResult.items.map((chat) => (
-                                  <button
-                                    key={chat.chat_id}
+                              <>
+                                <div className="max-h-48 overflow-y-auto rounded-md border border-border divide-y divide-border">
+                                  {chatsResult.items.map((chat) => (
+                                    <button
+                                      key={chat.chat_id}
+                                      type="button"
+                                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                                      onClick={() =>
+                                        handleSelectChat(
+                                          chat.chat_id,
+                                          chat.name
+                                        )
+                                      }
+                                    >
+                                      <div className="font-medium">
+                                        {chat.name || "(未命名群)"}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground font-mono">
+                                        {chat.chat_id}
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                                {chatsResult.has_more && (
+                                  <Button
                                     type="button"
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                                    onClick={() =>
-                                      handleSelectChat(chat.chat_id, chat.name)
-                                    }
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={chatsLoadingMore}
+                                    onClick={handleLoadMoreChats}
+                                    className="w-full"
                                   >
-                                    <div className="font-medium">
-                                      {chat.name || "(未命名群)"}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground font-mono">
-                                      {chat.chat_id}
-                                    </div>
-                                  </button>
-                                ))}
-                              </div>
+                                    {chatsLoadingMore ? (
+                                      <>
+                                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                                        加载中
+                                      </>
+                                    ) : (
+                                      "加载更多群..."
+                                    )}
+                                  </Button>
+                                )}
+                              </>
                             )}
                           </div>
                         )}
@@ -1294,8 +1379,11 @@ export default function NotificationsPage() {
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Loader2 className="h-3.5 w-3.5 animate-spin text-green-600 dark:text-green-400" />
                             <span>
-                              正在监听...请给机器人发送任意消息
-                              (2分钟后自动停止)
+                              正在监听...请给机器人发送任意消息(
+                              {listenTtlSeconds !== null
+                                ? `${Math.round(listenTtlSeconds / 60)}分钟`
+                                : "2分钟"}
+                              后自动停止)
                             </span>
                           </div>
                         )}

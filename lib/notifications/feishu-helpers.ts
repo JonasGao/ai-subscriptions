@@ -48,7 +48,8 @@ function parseScopeError(msg?: string): string {
     return "权限不足,请在飞书开放平台为应用开通相应权限";
   }
   // Try to extract scope names from msg (e.g., "missing scope: im:chat:readonly")
-  const scopeMatch = msg.match(/scope[s]?:\s*([a-zA-Z0-9_:,\s]+)/i);
+  // Scope names can contain letters, digits, colons, dots, underscores, commas, spaces
+  const scopeMatch = msg.match(/scope[s]?:\s*([a-zA-Z0-9_:.,\s]+)/i);
   if (scopeMatch) {
     return `权限不足,需要开通以下权限: ${scopeMatch[1].trim()}`;
   }

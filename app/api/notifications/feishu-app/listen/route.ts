@@ -17,9 +17,9 @@ import { parseJsonBody } from "@/lib/notifications/channel-validate";
  * Body:
  * - appId + appSecret (direct credentials)
  * - OR channelId (uses stored appSecret)
- * - Optional: ttl_ms (auto-stop timeout, default 120000)
+ * - Optional: ttl_seconds (auto-stop timeout, default 120)
  *
- * Returns: { appId, startedAt, messageCount, stopped }
+ * Returns: { appId, listenId, startedAt, messageCount, stopped, ttlSeconds }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -29,10 +29,11 @@ export async function POST(request: NextRequest) {
 
     const creds = resolveFeishuCredentials(body);
 
-    const ttl_ms = typeof body.ttl_ms === "number" ? body.ttl_ms : undefined;
+    const ttl_seconds =
+      typeof body.ttl_seconds === "number" ? body.ttl_seconds : undefined;
 
     const status = await startFeishuListener(creds.appId, creds.appSecret, {
-      ttlMs: ttl_ms,
+      ttlSeconds: ttl_seconds,
     });
 
     return NextResponse.json(status);
@@ -45,32 +46,37 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/notifications/feishu-app/listen?appId=xxx
+ * GET /api/notifications/feishu-app/listen?listenId=xxx
  *
  * Polls the listener status and retrieves received messages.
- *
- * Query params:
- * - appId (required)
+ * Accepts either appId or listenId (listenId takes precedence).
  *
  * Returns: { status: {...}, messages: [...] }
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const listenId = searchParams.get("listenId");
     const appId = searchParams.get("appId");
 
-    if (!appId) {
-      return NextResponse.json({ error: "缺少 appId 参数" }, { status: 400 });
+    const id = listenId ?? appId;
+    if (!id) {
+      return NextResponse.json(
+        { error: "缺少 listenId 或 appId 参数" },
+        { status: 400 }
+      );
     }
 
-    const status = getListenerStatus(appId);
+    const status = getListenerStatus(id);
     if (!status) {
+      // 404 treated as "no listener or tombstone expired" — frontend stops polling
       return NextResponse.json(
-        { error: `没有找到 appId=${appId} 的监听器` },
+        { error: `没有找到监听器(id=${id}),可能已停止或已过期` },
         { status: 404 }
       );
     }
 
-    const messages = getListenerMessages(appId);
+    const messages = getListenerMessages(id);
 
     return NextResponse.json({ status, messages });
   } catch (error) {
@@ -81,22 +87,30 @@ export async function GET(request: NextRequest) {
 }
 
 /**
+ * DELETE /api/notifications/feishu-app/listen?listenId=xxx
  * DELETE /api/notifications/feishu-app/listen?appId=xxx
  *
- * Stops the listener for the given appId.
+ * Stops the listener for the given listenId or appId.
+ * Prefers listenId (the snapshot from start response) over appId to avoid
+ * issues where the user has changed the form's appId after starting.
  *
  * Returns: { success: true } or { error: "..." }
  */
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const listenId = searchParams.get("listenId");
     const appId = searchParams.get("appId");
 
-    if (!appId) {
-      return NextResponse.json({ error: "缺少 appId 参数" }, { status: 400 });
+    const id = listenId ?? appId;
+    if (!id) {
+      return NextResponse.json(
+        { error: "缺少 listenId 或 appId 参数" },
+        { status: 400 }
+      );
     }
 
-    const stopped = await stopFeishuListener(appId);
+    const stopped = await stopFeishuListener(id);
 
     return NextResponse.json({ success: stopped });
   } catch (error) {
