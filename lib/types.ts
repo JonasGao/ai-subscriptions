@@ -200,7 +200,7 @@ export interface SubscriptionFormData {
   notes?: string;
   apiKey?: string;
   balance?: number;
-  lowBalanceThreshold?: number;
+  lowBalanceThreshold?: number | null;
   resetSchedules?: ResetSchedule[];
 }
 
