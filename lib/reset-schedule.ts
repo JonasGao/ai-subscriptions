@@ -65,13 +65,14 @@ export function calculateNextResetTime(
   schedule: Omit<
     ResetSchedule,
     "id" | "nextResetTime" | "createdAt" | "updatedAt"
-  >
+  >,
+  previousNextResetTime?: Date
 ): Date {
   const now = new Date();
 
   switch (schedule.type) {
     case "hourly":
-      return calculateNextHourlyReset(schedule, now);
+      return calculateNextHourlyReset(schedule, now, previousNextResetTime);
     case "weekly":
       return calculateNextWeeklyReset(schedule, now);
     case "monthly":
@@ -83,7 +84,8 @@ export function calculateNextResetTime(
 
 function calculateNextHourlyReset(
   schedule: { intervalHours?: number },
-  now: Date
+  now: Date,
+  previousNextResetTime?: Date
 ): Date {
   if (!schedule.intervalHours || schedule.intervalHours < 1) {
     throw new Error(
@@ -92,6 +94,22 @@ function calculateNextHourlyReset(
   }
 
   const intervalMs = schedule.intervalHours * 60 * 60 * 1000;
+
+  // When we have a previous anchor (i.e. a reset just fired), compute from
+  // that anchor rather than from `now`. This keeps the interval timeline
+  // stable instead of drifting forward by scheduler latency on every cycle.
+  if (previousNextResetTime) {
+    let nextReset = new Date(previousNextResetTime.getTime() + intervalMs);
+
+    // If the scheduler missed one or more cycles (e.g. the process was
+    // down), keep advancing until we land in the future.
+    while (nextReset <= now) {
+      nextReset = new Date(nextReset.getTime() + intervalMs);
+    }
+    return nextReset;
+  }
+
+  // Initial creation — no prior anchor, so use `now` as the baseline.
   const nextReset = new Date(now.getTime() + intervalMs);
   return nextReset;
 }
@@ -295,7 +313,8 @@ export function createResetSchedule(data: {
 export function updateResetScheduleNextTime(
   schedule: ResetSchedule
 ): ResetSchedule {
-  const nextResetTime = calculateNextResetTime(schedule);
+  const previousNextResetTime = new Date(schedule.nextResetTime);
+  const nextResetTime = calculateNextResetTime(schedule, previousNextResetTime);
   return {
     ...schedule,
     nextResetTime: nextResetTime.toISOString(),
