@@ -6,6 +6,7 @@ import {
   BillingCycle,
   Subscription,
 } from "@/lib/types";
+import { normalizeNullable, validateNonNegative } from "@/lib/validation";
 
 function stripApiKey(sub: Subscription) {
   const { apiKey, ...rest } = sub;
@@ -29,10 +30,8 @@ export async function POST(request: NextRequest) {
   try {
     const raw = await request.json();
 
-    // Normalize: explicit null means "clear the field" → treat as undefined
-    if (raw.lowBalanceThreshold === null) {
-      delete raw.lowBalanceThreshold;
-    }
+    // Normalize: explicit null means "clear the field" → treat as undefined.
+    normalizeNullable(raw, "lowBalanceThreshold");
 
     const body: SubscriptionFormData = raw;
 
@@ -50,15 +49,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (
-      body.lowBalanceThreshold !== undefined &&
-      (typeof body.lowBalanceThreshold !== "number" ||
-        body.lowBalanceThreshold < 0)
-    ) {
-      return NextResponse.json(
-        { error: "lowBalanceThreshold must be a non-negative number" },
-        { status: 400 }
-      );
+    const thresholdError = validateNonNegative(
+      body.lowBalanceThreshold,
+      "lowBalanceThreshold"
+    );
+    if (thresholdError) {
+      return NextResponse.json({ error: thresholdError }, { status: 400 });
     }
 
     const validTypes: SubscriptionType[] = ["recurring", "one-time"];
@@ -125,7 +121,11 @@ export async function POST(request: NextRequest) {
       notes: body.notes,
       apiKey: body.apiKey,
       balance: body.balance,
-      lowBalanceThreshold: body.lowBalanceThreshold,
+      // normalizeNullable above converts explicit null → undefined, so the
+      // stored value is always `number | undefined` (Subscription type
+      // doesn't admit null). The `?? undefined` narrows the TS type to
+      // match what we've established at runtime.
+      lowBalanceThreshold: body.lowBalanceThreshold ?? undefined,
       resetSchedules: body.resetSchedules,
     });
 

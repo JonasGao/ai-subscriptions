@@ -134,6 +134,16 @@ export function createSubscription(
     throw new Error("Balance must be a non-negative number");
   }
 
+  if (
+    subscriptionData.lowBalanceThreshold !== undefined &&
+    subscriptionData.lowBalanceThreshold !== null &&
+    (typeof subscriptionData.lowBalanceThreshold !== "number" ||
+      !Number.isFinite(subscriptionData.lowBalanceThreshold) ||
+      subscriptionData.lowBalanceThreshold < 0)
+  ) {
+    throw new Error("lowBalanceThreshold must be a non-negative finite number");
+  }
+
   const validTypes: SubscriptionType[] = ["recurring", "one-time"];
   if (
     subscriptionData.subscriptionType &&
@@ -201,6 +211,16 @@ export function updateSubscription(
     (typeof updates.balance !== "number" || updates.balance < 0)
   ) {
     throw new Error("Balance must be a non-negative number");
+  }
+
+  if (
+    updates.lowBalanceThreshold !== undefined &&
+    updates.lowBalanceThreshold !== null &&
+    (typeof updates.lowBalanceThreshold !== "number" ||
+      !Number.isFinite(updates.lowBalanceThreshold) ||
+      updates.lowBalanceThreshold < 0)
+  ) {
+    throw new Error("lowBalanceThreshold must be a non-negative finite number");
   }
 
   const validStatuses: SubscriptionStatus[] = ["active", "paused", "cancelled"];

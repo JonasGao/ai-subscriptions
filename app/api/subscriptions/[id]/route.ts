@@ -7,6 +7,7 @@ import {
   setStatusManually,
 } from "@/lib/db";
 import { SubscriptionStatus, Subscription } from "@/lib/types";
+import { normalizeNullable, validateNonNegative } from "@/lib/validation";
 
 function stripApiKey(sub: Subscription) {
   const { apiKey, ...rest } = sub;
@@ -46,9 +47,7 @@ export async function PUT(
 
     // Normalize: explicit null means "clear the field" → undefined so
     // updateSubscription's spread overwrites any previously stored value.
-    if (body.lowBalanceThreshold === null) {
-      body.lowBalanceThreshold = undefined;
-    }
+    normalizeNullable(body, "lowBalanceThreshold");
 
     // Validate price if provided
     if (
@@ -61,16 +60,12 @@ export async function PUT(
       );
     }
 
-    // Validate lowBalanceThreshold if provided
-    if (
-      body.lowBalanceThreshold !== undefined &&
-      (typeof body.lowBalanceThreshold !== "number" ||
-        body.lowBalanceThreshold < 0)
-    ) {
-      return NextResponse.json(
-        { error: "lowBalanceThreshold must be a non-negative number" },
-        { status: 400 }
-      );
+    const thresholdError = validateNonNegative(
+      body.lowBalanceThreshold,
+      "lowBalanceThreshold"
+    );
+    if (thresholdError) {
+      return NextResponse.json({ error: thresholdError }, { status: 400 });
     }
 
     // Validate status if provided
