@@ -11,7 +11,10 @@ import {
   httpSender,
   NotificationEvent,
 } from "@/lib/notifications/payload";
-import { sendFeishuAppMessage } from "@/lib/notifications/feishu-app";
+import {
+  sendFeishuAppMessage,
+  feishuAppCredentials,
+} from "@/lib/notifications/feishu-app";
 import { NotificationChannel, Subscription } from "@/lib/types";
 import {
   VALID_CHANNEL_TYPES,
@@ -52,22 +55,8 @@ function buildTestEvent(): NotificationEvent {
 async function sendTest(channel: NotificationChannel): Promise<void> {
   const event = buildTestEvent();
   if (channel.type === "feishu-app") {
-    if (
-      !channel.appId ||
-      !channel.appSecret ||
-      !channel.receiveId ||
-      !channel.receiveIdType
-    ) {
-      throw new Error(
-        "feishu-app channel is missing required fields (appId/appSecret/receiveId/receiveIdType)"
-      );
-    }
-    await sendFeishuAppMessage(event, {
-      appId: channel.appId,
-      appSecret: channel.appSecret,
-      receiveId: channel.receiveId,
-      receiveIdType: channel.receiveIdType,
-    });
+    const creds = feishuAppCredentials(channel);
+    await sendFeishuAppMessage(event, creds);
     return;
   }
   const prepared = prepareSend(channel, event);
@@ -214,6 +203,21 @@ export async function PUT(
 
     if (body.enabled !== undefined) {
       patch.enabled = Boolean(body.enabled);
+    }
+
+    // Feishu-app channels require a non-empty appSecret at all times.
+    // If this update would clear appSecret (explicitly set to null/empty)
+    // without providing a new value, reject the request.
+    const effectiveType = patch.type ?? existing.type;
+    if (effectiveType === "feishu-app") {
+      const effectiveAppSecret =
+        patch.appSecret !== undefined ? patch.appSecret : existing.appSecret;
+      if (!effectiveAppSecret) {
+        return NextResponse.json(
+          { error: "feishu-app channel requires a non-empty appSecret" },
+          { status: 400 }
+        );
+      }
     }
 
     const updated = updateChannel(params.id, patch);

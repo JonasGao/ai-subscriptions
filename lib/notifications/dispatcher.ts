@@ -10,7 +10,7 @@ import {
   prepareSend,
   httpSender,
 } from "./payload";
-import { sendFeishuAppMessage } from "./feishu-app";
+import { sendFeishuAppMessage, feishuAppCredentials } from "./feishu-app";
 import {
   readNotificationData,
   getBalanceTransitionState,
@@ -39,22 +39,8 @@ export type FeishuAppSender = (
  * module's sendFeishuAppMessage.
  */
 export const defaultFeishuAppSender: FeishuAppSender = (event, channel) => {
-  if (
-    !channel.appId ||
-    !channel.appSecret ||
-    !channel.receiveId ||
-    !channel.receiveIdType
-  ) {
-    throw new Error(
-      `feishu-app channel ${channel.id} is missing required fields (appId/appSecret/receiveId/receiveIdType)`
-    );
-  }
-  return sendFeishuAppMessage(event, {
-    appId: channel.appId,
-    appSecret: channel.appSecret,
-    receiveId: channel.receiveId,
-    receiveIdType: channel.receiveIdType,
-  });
+  const creds = feishuAppCredentials(channel);
+  return sendFeishuAppMessage(event, creds);
 };
 
 /**

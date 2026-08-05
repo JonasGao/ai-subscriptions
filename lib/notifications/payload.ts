@@ -176,6 +176,30 @@ export function buildDingtalkUrl(channel: NotificationChannel): string {
 // ============ Feishu (Lark) ============
 
 /**
+ * Feishu interactive card structure. Shared by both the webhook-based
+ * feishu channel (with signing) and the credential-based feishu-app channel.
+ */
+export interface FeishuCard {
+  header: {
+    title: { tag: "plain_text"; content: string };
+  };
+  elements: Array<{ tag: "markdown"; content: string }>;
+}
+
+/**
+ * Builds a Feishu interactive card from a title and markdown body.
+ * Shared by both feishu (webhook) and feishu-app (credential) channels.
+ */
+export function buildFeishuCard(title: string, body: string): FeishuCard {
+  return {
+    header: {
+      title: { tag: "plain_text", content: title },
+    },
+    elements: [{ tag: "markdown", content: body }],
+  };
+}
+
+/**
  * Feishu interactive-card payload. The card carries the same markdown
  * (title + field list) built for DingTalk, rendered through Feishu's native
  * `markdown` element so it gets proper formatting in the chat UI.
@@ -186,12 +210,7 @@ export function buildDingtalkUrl(channel: NotificationChannel): string {
  */
 export interface FeishuPayload {
   msg_type: "interactive";
-  card: {
-    header: {
-      title: { tag: "plain_text"; content: string };
-    };
-    elements: Array<{ tag: "markdown"; content: string }>;
-  };
+  card: FeishuCard;
   // Feishu signing fields; only present when the channel has a secret.
   timestamp?: string;
   sign?: string;
@@ -206,12 +225,7 @@ export function buildFeishuPayload(
 
   const payload: FeishuPayload = {
     msg_type: "interactive",
-    card: {
-      header: {
-        title: { tag: "plain_text", content: title },
-      },
-      elements: [{ tag: "markdown", content: body }],
-    },
+    card: buildFeishuCard(title, body),
   };
 
   if (channel.secret) {

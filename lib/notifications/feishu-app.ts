@@ -11,8 +11,9 @@
  * deterministic time and network calls. Production uses Date.now() and
  * global fetch.
  */
+import type { NotificationChannel } from "@/lib/types";
 import type { NotificationEvent } from "./payload";
-import { buildEventMarkdown } from "./payload";
+import { buildEventMarkdown, buildFeishuCard } from "./payload";
 
 // ============ Seams for testing ============
 
@@ -38,7 +39,7 @@ export function resetSeams(): void {
   now = () => Date.now();
   fetchFn = (url, init) => fetch(url, init);
   // Also clear the cache so tests start fresh.
-  cachedToken = null;
+  tokenCache.clear();
 }
 
 // ============ Token cache ============
@@ -53,7 +54,12 @@ interface CachedToken {
   expiresAtMs: number;
 }
 
-let cachedToken: CachedToken | null = null;
+/**
+ * Token cache keyed by appId. Multiple feishu-app channels with different
+ * credentials must not share a single cached token — using a Map prevents
+ * one channel's refresh from invalidating another's cached token.
+ */
+const tokenCache = new Map<string, CachedToken>();
 
 /**
  * Returns a valid tenant_access_token, refreshing from cache or fetching a
@@ -66,8 +72,9 @@ export async function getTenantToken(
   forceRefresh: boolean = false
 ): Promise<string> {
   const nowMs = now();
-  if (!forceRefresh && cachedToken && cachedToken.expiresAtMs > nowMs) {
-    return cachedToken.token;
+  const cached = tokenCache.get(appId);
+  if (!forceRefresh && cached && cached.expiresAtMs > nowMs) {
+    return cached.token;
   }
 
   const response = await fetchFn(TOKEN_URL, {
@@ -97,16 +104,24 @@ export async function getTenantToken(
   }
 
   const expireSeconds = data.expire ?? 7200;
-  cachedToken = {
+  const newToken: CachedToken = {
     token: data.tenant_access_token,
     expiresAtMs: nowMs + expireSeconds * 1000 - EXPIRY_BUFFER_MS,
   };
-  return cachedToken.token;
+  tokenCache.set(appId, newToken);
+  return newToken.token;
 }
 
-/** Clears the token cache. Exported for testing. */
-export function clearTokenCache(): void {
-  cachedToken = null;
+/**
+ * Clears cached tokens. When called with an appId, clears only that app's
+ * token; otherwise clears all cached tokens (useful for test cleanup).
+ */
+export function clearTokenCache(appId?: string): void {
+  if (appId) {
+    tokenCache.delete(appId);
+  } else {
+    tokenCache.clear();
+  }
 }
 
 // ============ Card payload ============
@@ -120,14 +135,50 @@ export function buildFeishuAppCard(event: NotificationEvent): string {
   // feishu-app has no signing secret → keyword mode off
   const includeKeyword = false;
   const { title, body } = buildEventMarkdown(event, includeKeyword);
+  return JSON.stringify(buildFeishuCard(title, body));
+}
 
-  const card = {
-    header: {
-      title: { tag: "plain_text", content: title },
-    },
-    elements: [{ tag: "markdown", content: body }],
+// ============ Credentials helper ============
+
+/**
+ * Validated feishu-app credentials. All fields are guaranteed non-empty.
+ */
+export interface FeishuAppCredentials {
+  appId: string;
+  appSecret: string;
+  receiveId: string;
+  receiveIdType: string;
+}
+
+/**
+ * Extracts and validates feishu-app credentials from a channel.
+ * Returns the credentials object if all required fields are present and non-empty.
+ * Throws an error if any required field is missing.
+ *
+ * Used by both dispatcher.ts and [id]/route.ts to avoid duplicating validation logic.
+ */
+export function feishuAppCredentials(
+  channel: NotificationChannel
+): FeishuAppCredentials {
+  if (channel.type !== "feishu-app") {
+    throw new Error(`Channel ${channel.id} is not a feishu-app channel`);
+  }
+  if (
+    !channel.appId ||
+    !channel.appSecret ||
+    !channel.receiveId ||
+    !channel.receiveIdType
+  ) {
+    throw new Error(
+      `feishu-app channel ${channel.id} is missing required fields (appId/appSecret/receiveId/receiveIdType)`
+    );
+  }
+  return {
+    appId: channel.appId,
+    appSecret: channel.appSecret,
+    receiveId: channel.receiveId,
+    receiveIdType: channel.receiveIdType,
   };
-  return JSON.stringify(card);
 }
 
 // ============ Send with retry ============
@@ -142,29 +193,23 @@ const SEND_URL_BASE = "https://open.feishu.cn/open-apis/im/v1/messages";
  */
 export async function sendFeishuAppMessage(
   event: NotificationEvent,
-  channel: {
-    appId: string;
-    appSecret: string;
-    receiveId: string;
-    receiveIdType: string;
-  }
+  creds: FeishuAppCredentials
 ): Promise<void> {
   const content = buildFeishuAppCard(event);
-  await sendWithRetry(channel, content, /* retryCount */ 0);
+  await sendWithRetry(creds, content, /* forceRefresh */ false);
 }
 
 async function sendWithRetry(
-  channel: {
-    appId: string;
-    appSecret: string;
-    receiveId: string;
-    receiveIdType: string;
-  },
+  creds: FeishuAppCredentials,
   content: string,
-  retryCount: number
+  forceRefresh: boolean
 ): Promise<void> {
-  const token = await getTenantToken(channel.appId, channel.appSecret);
-  const url = `${SEND_URL_BASE}?receive_id_type=${channel.receiveIdType}`;
+  const token = await getTenantToken(
+    creds.appId,
+    creds.appSecret,
+    forceRefresh
+  );
+  const url = `${SEND_URL_BASE}?receive_id_type=${creds.receiveIdType}`;
 
   const response = await fetchFn(url, {
     method: "POST",
@@ -173,7 +218,7 @@ async function sendWithRetry(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      receive_id: channel.receiveId,
+      receive_id: creds.receiveId,
       msg_type: "interactive",
       content,
     }),
@@ -189,10 +234,9 @@ async function sendWithRetry(
 
   const tokenInvalid = response.status === 401 || bodyJson?.code === 99991663;
 
-  if (tokenInvalid && retryCount === 0) {
+  if (tokenInvalid && !forceRefresh) {
     // Force-refresh the token and retry once.
-    clearTokenCache();
-    await sendWithRetry(channel, content, 1);
+    await sendWithRetry(creds, content, /* forceRefresh */ true);
     return;
   }
 

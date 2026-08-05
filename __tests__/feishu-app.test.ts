@@ -197,6 +197,152 @@ describe("getTenantToken", () => {
       /HTTP 500/
     );
   });
+
+  it("caches tokens per appId - different apps have separate caches", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            code: 0,
+            tenant_access_token: "token-app1",
+            expire: 7200,
+          }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            code: 0,
+            tenant_access_token: "token-app2",
+            expire: 7200,
+          }),
+      });
+    setFetchFn(mockFetch as never);
+    setNow(() => 1000000);
+
+    // First app
+    const token1 = await getTenantToken("app-1", "secret-1");
+    expect(token1).toBe("token-app1");
+
+    // Second app - should fetch new token, not reuse first app's cache
+    const token2 = await getTenantToken("app-2", "secret-2");
+    expect(token2).toBe("token-app2");
+
+    // First app again - should use cache, not fetch again
+    const token1Again = await getTenantToken("app-1", "secret-1");
+    expect(token1Again).toBe("token-app1");
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("clearTokenCache(appId) clears only that app's cache", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            code: 0,
+            tenant_access_token: "token-app1-v1",
+            expire: 7200,
+          }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            code: 0,
+            tenant_access_token: "token-app2-v1",
+            expire: 7200,
+          }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            code: 0,
+            tenant_access_token: "token-app1-v2",
+            expire: 7200,
+          }),
+      });
+    setFetchFn(mockFetch as never);
+    setNow(() => 1000000);
+
+    await getTenantToken("app-1", "secret-1");
+    await getTenantToken("app-2", "secret-2");
+
+    // Clear only app-1's cache
+    clearTokenCache("app-1");
+
+    // app-1 should fetch new token
+    const token1New = await getTenantToken("app-1", "secret-1");
+    expect(token1New).toBe("token-app1-v2");
+
+    // app-2 should still use cached token
+    const token2Again = await getTenantToken("app-2", "secret-2");
+    expect(token2Again).toBe("token-app2-v1");
+
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+  });
+
+  it("clearTokenCache() without args clears all caches", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            code: 0,
+            tenant_access_token: "token-app1-v1",
+            expire: 7200,
+          }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            code: 0,
+            tenant_access_token: "token-app2-v1",
+            expire: 7200,
+          }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            code: 0,
+            tenant_access_token: "token-app1-v2",
+            expire: 7200,
+          }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            code: 0,
+            tenant_access_token: "token-app2-v2",
+            expire: 7200,
+          }),
+      });
+    setFetchFn(mockFetch as never);
+    setNow(() => 1000000);
+
+    await getTenantToken("app-1", "secret-1");
+    await getTenantToken("app-2", "secret-2");
+
+    // Clear all caches
+    clearTokenCache();
+
+    // Both apps should fetch new tokens
+    const token1New = await getTenantToken("app-1", "secret-1");
+    const token2New = await getTenantToken("app-2", "secret-2");
+    expect(token1New).toBe("token-app1-v2");
+    expect(token2New).toBe("token-app2-v2");
+
+    expect(mockFetch).toHaveBeenCalledTimes(4);
+  });
 });
 
 // ============ Card payload ============
@@ -513,5 +659,71 @@ describe("dispatchEvent with feishu-app", () => {
     expect(httpSender).toHaveBeenCalledTimes(2); // webhook + dingtalk
     expect(feishuAppSender).toHaveBeenCalledTimes(1);
     expect(feishuAppCalls[0].channelName).toBe("Feishu App");
+  });
+});
+
+// ============ Credentials helper ============
+
+describe("feishuAppCredentials", () => {
+  it("extracts credentials from a valid feishu-app channel", async () => {
+    const { feishuAppCredentials } =
+      await import("@/lib/notifications/feishu-app");
+    const channel: NotificationChannel = {
+      id: "ch-1",
+      type: "feishu-app",
+      name: "Test",
+      appId: "app-id",
+      appSecret: "app-secret",
+      receiveId: "ou_xxx",
+      receiveIdType: "open_id",
+      enabled: true,
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-01T00:00:00Z",
+    };
+
+    const creds = feishuAppCredentials(channel);
+    expect(creds).toEqual({
+      appId: "app-id",
+      appSecret: "app-secret",
+      receiveId: "ou_xxx",
+      receiveIdType: "open_id",
+    });
+  });
+
+  it("throws when channel is not feishu-app type", async () => {
+    const { feishuAppCredentials } =
+      await import("@/lib/notifications/feishu-app");
+    const channel: NotificationChannel = {
+      id: "ch-1",
+      type: "webhook",
+      name: "Test",
+      url: "https://example.com",
+      enabled: true,
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-01T00:00:00Z",
+    };
+
+    expect(() => feishuAppCredentials(channel)).toThrow(
+      /not a feishu-app channel/
+    );
+  });
+
+  it("throws when required fields are missing", async () => {
+    const { feishuAppCredentials } =
+      await import("@/lib/notifications/feishu-app");
+    const channel: NotificationChannel = {
+      id: "ch-1",
+      type: "feishu-app",
+      name: "Test",
+      appId: "app-id",
+      // missing appSecret, receiveId, receiveIdType
+      enabled: true,
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-01T00:00:00Z",
+    };
+
+    expect(() => feishuAppCredentials(channel)).toThrow(
+      /missing required fields/
+    );
   });
 });
