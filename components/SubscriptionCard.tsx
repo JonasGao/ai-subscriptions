@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Subscription, defaultProviders, BalanceResult } from "@/lib/types";
+import { useNow } from "@/hooks/useNow";
 import {
   formatDate,
   isExpiringSoon,
@@ -82,6 +83,8 @@ export function SubscriptionCard({
   onStatusChange,
   onScheduleToggle,
 }: SubscriptionCardProps) {
+  // Re-render periodically so formatNextResetTime (which uses new Date()) updates
+  useNow();
   const [balance, setBalance] = useState<BalanceResult | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceError, setBalanceError] = useState<string | null>(null);

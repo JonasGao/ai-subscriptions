@@ -14,6 +14,7 @@ import {
 import { ResetSchedule, ResetScheduleType } from "@/lib/types";
 import { createResetSchedule } from "@/lib/reset-schedule";
 import { formatNextResetTime, getScheduleTypeLabel } from "@/lib/utils";
+import { useNow } from "@/hooks/useNow";
 import {
   extractScheduleFromOffset,
   parseDurationString,
@@ -37,6 +38,8 @@ export function ResetScheduleConfig({
   schedules,
   onChange,
 }: ResetScheduleConfigProps) {
+  // Re-render periodically so formatNextResetTime (which uses new Date()) updates
+  useNow();
   const [showAddForm, setShowAddForm] = useState(false);
   const [scheduleType, setScheduleType] = useState<ResetScheduleType>("hourly");
   const [inputMethod, setInputMethod] = useState<InputMethod>("offset");
