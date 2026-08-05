@@ -16,6 +16,8 @@ import { NotificationChannel, Subscription } from "@/lib/types";
 import {
   VALID_CHANNEL_TYPES,
   safeWebhookUrl,
+  safeNonEmptyString,
+  safeReceiveIdType,
   sanitizeChannelForClient,
   parseJsonBody,
 } from "@/lib/notifications/channel-validate";
@@ -73,11 +75,14 @@ async function sendTest(channel: NotificationChannel): Promise<void> {
 }
 
 /**
- * PUT updates a channel's mutable fields: name, type, url, secret, enabled.
+ * PUT updates a channel's mutable fields.
  *
- * Special case for `secret`:
- *  - omitted → leave existing secret untouched
- *  - null or empty string → clear the secret
+ * Webhook channels: name, type, url, secret, enabled.
+ * Feishu-app channels: name, type, appId, appSecret, receiveId, receiveIdType, enabled.
+ *
+ * Special case for `secret` / `appSecret`:
+ *  - omitted → leave existing value untouched
+ *  - null or empty string → clear
  *  - non-empty string → replace
  */
 export async function PUT(
@@ -97,7 +102,15 @@ export async function PUT(
     const patch: Partial<
       Pick<
         import("@/lib/types").NotificationChannel,
-        "name" | "type" | "url" | "secret" | "enabled"
+        | "name"
+        | "type"
+        | "url"
+        | "secret"
+        | "appId"
+        | "appSecret"
+        | "receiveId"
+        | "receiveIdType"
+        | "enabled"
       >
     > = {};
 
@@ -127,6 +140,7 @@ export async function PUT(
       patch.type = body.type as import("@/lib/types").NotificationChannelType;
     }
 
+    // Webhook fields
     if (body.url !== undefined) {
       const url = safeWebhookUrl(body.url);
       if (!url) {
@@ -149,6 +163,53 @@ export async function PUT(
       } else {
         patch.secret = body.secret;
       }
+    }
+
+    // Feishu-app fields
+    if (body.appId !== undefined) {
+      const appId = safeNonEmptyString(body.appId);
+      if (!appId) {
+        return NextResponse.json(
+          { error: "appId cannot be empty" },
+          { status: 400 }
+        );
+      }
+      patch.appId = appId;
+    }
+
+    if (body.appSecret !== undefined) {
+      if (body.appSecret === null || body.appSecret === "") {
+        patch.appSecret = undefined;
+      } else if (typeof body.appSecret !== "string") {
+        return NextResponse.json(
+          { error: "appSecret must be a string" },
+          { status: 400 }
+        );
+      } else {
+        patch.appSecret = body.appSecret;
+      }
+    }
+
+    if (body.receiveId !== undefined) {
+      const receiveId = safeNonEmptyString(body.receiveId);
+      if (!receiveId) {
+        return NextResponse.json(
+          { error: "receiveId cannot be empty" },
+          { status: 400 }
+        );
+      }
+      patch.receiveId = receiveId;
+    }
+
+    if (body.receiveIdType !== undefined) {
+      const receiveIdType = safeReceiveIdType(body.receiveIdType);
+      if (!receiveIdType) {
+        return NextResponse.json(
+          { error: "receiveIdType must be 'open_id' or 'chat_id'" },
+          { status: 400 }
+        );
+      }
+      patch.receiveIdType = receiveIdType;
     }
 
     if (body.enabled !== undefined) {
