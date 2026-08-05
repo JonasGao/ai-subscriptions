@@ -134,7 +134,7 @@ export async function listFeishuChats(
     throwFeishuError(code, msg, "获取群列表失败");
   }
 
-  if (bodyJson && bodyJson.code !== 0) {
+  if (bodyJson?.code !== undefined && bodyJson.code !== 0) {
     throwFeishuError(bodyJson.code, bodyJson.msg, "获取群列表失败");
   }
 
@@ -212,7 +212,7 @@ export async function lookupFeishuUserByPhone(
     throwFeishuError(code, msg, "手机号反查失败");
   }
 
-  if (bodyJson && bodyJson.code !== 0) {
+  if (bodyJson?.code !== undefined && bodyJson.code !== 0) {
     throwFeishuError(bodyJson.code, bodyJson.msg, "手机号反查失败");
   }
 

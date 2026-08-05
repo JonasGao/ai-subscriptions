@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -13,6 +13,9 @@ import {
   CheckCircle2,
   XCircle,
   Power,
+  Users,
+  Phone,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,6 +149,42 @@ export default function NotificationsPage() {
   const [thresholdSaving, setThresholdSaving] = useState(false);
   const [thresholdDirty, setThresholdDirty] = useState(false);
 
+  // ---------- Feishu helper states ----------
+  type HelperMode = "none" | "chats" | "phone" | "listen";
+  const [helperMode, setHelperMode] = useState<HelperMode>("none");
+
+  // Chat list helper
+  const [chatsLoading, setChatsLoading] = useState(false);
+  const [chatsError, setChatsError] = useState<string | null>(null);
+  const [chatsResult, setChatsResult] = useState<{
+    items: Array<{ chat_id: string; name: string }>;
+    has_more: boolean;
+  } | null>(null);
+
+  // Phone lookup helper
+  const [phoneInput, setPhoneInput] = useState("");
+  const [phoneLoading, setPhoneLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [phoneResult, setPhoneResult] = useState<Array<{
+    open_id: string;
+    mobile?: string;
+    name?: string;
+  }> | null>(null);
+
+  // Listen helper
+  const [listenLoading, setListenLoading] = useState(false);
+  const [listenError, setListenError] = useState<string | null>(null);
+  const [listenActive, setListenActive] = useState(false);
+  const [listenMessages, setListenMessages] = useState<
+    Array<{
+      open_id: string;
+      name?: string;
+      message_id: string;
+      receivedAt: string;
+    }>
+  >([]);
+  const listenPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const load = useCallback(async () => {
     try {
       const res = await fetch("/api/notifications");
@@ -171,6 +210,7 @@ export default function NotificationsPage() {
     setEditingId(null);
     setForm(EMPTY_FORM);
     setFormError(null);
+    resetHelpers();
     setDialogOpen(true);
   };
 
@@ -190,6 +230,7 @@ export default function NotificationsPage() {
       clearAppSecret: false,
     });
     setFormError(null);
+    resetHelpers();
     setDialogOpen(true);
   };
 
@@ -410,6 +451,232 @@ export default function NotificationsPage() {
   const editingChannel = useMemo(
     () => config?.channels.find((c) => c.id === editingId) ?? null,
     [config, editingId]
+  );
+
+  // ---------- Feishu helpers ----------
+
+  /** Whether we have credentials available (either direct or via hasSecret). */
+  const hasCredentials = useMemo(() => {
+    if (form.type !== "feishu-app") return false;
+    if (form.appId.trim() && form.appSecret.trim()) return true;
+    // Editing mode: hasSecret means we can use stored appSecret
+    if (editingId && editingChannel?.hasAppSecret && form.appId.trim())
+      return true;
+    return false;
+  }, [form.appId, form.appSecret, form.type, editingId, editingChannel]);
+
+  /** Builds the body for helper API calls (direct creds or channelId). */
+  const buildHelperBody = useCallback(
+    (extra: Record<string, unknown>): Record<string, unknown> => {
+      const body: Record<string, unknown> = { ...extra };
+      if (form.appId.trim()) body.appId = form.appId.trim();
+      if (form.appSecret.trim()) {
+        body.appSecret = form.appSecret.trim();
+      } else if (editingId && editingChannel?.hasAppSecret) {
+        body.channelId = editingId;
+      }
+      return body;
+    },
+    [form.appId, form.appSecret, editingId, editingChannel]
+  );
+
+  /** Resets all helper states when dialog opens/closes. */
+  const resetHelpers = useCallback(() => {
+    setHelperMode("none");
+    setChatsLoading(false);
+    setChatsError(null);
+    setChatsResult(null);
+    setPhoneInput("");
+    setPhoneLoading(false);
+    setPhoneError(null);
+    setPhoneResult(null);
+    setListenLoading(false);
+    setListenError(null);
+    setListenActive(false);
+    setListenMessages([]);
+    if (listenPollRef.current) {
+      clearInterval(listenPollRef.current);
+      listenPollRef.current = null;
+    }
+  }, []);
+
+  // Stop listener polling when dialog closes or helper mode changes
+  useEffect(() => {
+    if (!dialogOpen) {
+      resetHelpers();
+    }
+  }, [dialogOpen, resetHelpers]);
+
+  // Stop listener on unmount
+  useEffect(() => {
+    return () => {
+      if (listenPollRef.current) {
+        clearInterval(listenPollRef.current);
+      }
+    };
+  }, []);
+
+  const stopListenerPolling = useCallback(async () => {
+    if (listenPollRef.current) {
+      clearInterval(listenPollRef.current);
+      listenPollRef.current = null;
+    }
+    setListenActive(false);
+    // Best-effort stop on server
+    if (form.appId.trim()) {
+      try {
+        await fetch(
+          `/api/notifications/feishu-app/listen?appId=${encodeURIComponent(
+            form.appId.trim()
+          )}`,
+          { method: "DELETE" }
+        );
+      } catch {
+        // Ignore errors
+      }
+    }
+  }, [form.appId]);
+
+  const handleFetchChats = useCallback(async () => {
+    setHelperMode("chats");
+    setChatsLoading(true);
+    setChatsError(null);
+    setChatsResult(null);
+    try {
+      const res = await fetch("/api/notifications/feishu-app/chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildHelperBody({})),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setChatsResult(data);
+    } catch (err) {
+      setChatsError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setChatsLoading(false);
+    }
+  }, [buildHelperBody]);
+
+  const handleSelectChat = useCallback(
+    (chatId: string, chatName: string) => {
+      setForm({ ...form, receiveId: chatId, receiveIdType: "chat_id" });
+      setHelperMode("none");
+    },
+    [form, setForm]
+  );
+
+  const handleLookupPhone = useCallback(async () => {
+    const phone = phoneInput.trim();
+    if (!phone) {
+      setPhoneError("请输入手机号");
+      return;
+    }
+    setHelperMode("phone");
+    setPhoneLoading(true);
+    setPhoneError(null);
+    setPhoneResult(null);
+    try {
+      const res = await fetch("/api/notifications/feishu-app/lookup-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildHelperBody({ mobiles: [phone] })),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      const userList = (data.user_list ?? []).map(
+        (u: { user_id?: { open_id?: string }; mobile?: string }) => ({
+          open_id: u.user_id?.open_id ?? "",
+          mobile: u.mobile,
+        })
+      );
+      setPhoneResult(userList);
+    } catch (err) {
+      setPhoneError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setPhoneLoading(false);
+    }
+  }, [phoneInput, buildHelperBody]);
+
+  const handleSelectPhoneUser = useCallback(
+    (openId: string) => {
+      setForm({ ...form, receiveId: openId, receiveIdType: "open_id" });
+      setHelperMode("none");
+    },
+    [form, setForm]
+  );
+
+  const handleStartListen = useCallback(async () => {
+    setHelperMode("listen");
+    setListenLoading(true);
+    setListenError(null);
+    setListenMessages([]);
+    try {
+      const res = await fetch("/api/notifications/feishu-app/listen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildHelperBody({ ttl_ms: 120000 })),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setListenActive(true);
+
+      // Start polling every 2 seconds
+      const appId = form.appId.trim();
+      listenPollRef.current = setInterval(async () => {
+        try {
+          const pollRes = await fetch(
+            `/api/notifications/feishu-app/listen?appId=${encodeURIComponent(
+              appId
+            )}`
+          );
+          if (!pollRes.ok) return;
+          const pollData = await pollRes.json();
+          if (pollData.status?.stopped) {
+            // Listener auto-stopped
+            if (listenPollRef.current) {
+              clearInterval(listenPollRef.current);
+              listenPollRef.current = null;
+            }
+            setListenActive(false);
+          }
+          const messages = pollData.messages ?? [];
+          setListenMessages(
+            messages.map(
+              (m: {
+                sender?: { open_id?: string; name?: string };
+                message?: { message_id?: string };
+                receivedAt?: string;
+              }) => ({
+                open_id: m.sender?.open_id ?? "",
+                name: m.sender?.name,
+                message_id: m.message?.message_id ?? "",
+                receivedAt: m.receivedAt ?? "",
+              })
+            )
+          );
+        } catch {
+          // Ignore poll errors
+        }
+      }, 2000);
+    } catch (err) {
+      setListenError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setListenLoading(false);
+    }
+  }, [buildHelperBody, form.appId]);
+
+  const handleStopListen = useCallback(async () => {
+    await stopListenerPolling();
+  }, [stopListenerPolling]);
+
+  const handleSelectListenUser = useCallback(
+    (openId: string) => {
+      setForm({ ...form, receiveId: openId, receiveIdType: "open_id" });
+      stopListenerPolling();
+      setHelperMode("none");
+    },
+    [form, setForm, stopListenerPolling]
   );
 
   // ---------- Render ----------
@@ -794,6 +1061,281 @@ export default function NotificationsPage() {
                       }
                     />
                   </div>
+
+                  {/* ============ Feishu helper section ============ */}
+                  <div className="rounded-md border border-dashed border-muted-foreground/30 p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <span>辅助获取 Receive ID</span>
+                      {!hasCredentials && (
+                        <span className="text-xs text-amber-600 dark:text-amber-400">
+                          (请先填写 App ID 和 App Secret)
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={!hasCredentials || chatsLoading}
+                        onClick={handleFetchChats}
+                        title={
+                          hasCredentials
+                            ? "列出机器人所在的群,选择后填入 chat_id"
+                            : "请先填写 App ID 和 App Secret"
+                        }
+                      >
+                        {chatsLoading ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                            加载中
+                          </>
+                        ) : (
+                          <>
+                            <Users className="h-3.5 w-3.5 mr-1" />
+                            从群列表选择
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={!hasCredentials}
+                        onClick={() => {
+                          setHelperMode("phone");
+                          setPhoneResult(null);
+                          setPhoneError(null);
+                        }}
+                        title={
+                          hasCredentials
+                            ? "输入手机号查询 open_id"
+                            : "请先填写 App ID 和 App Secret"
+                        }
+                      >
+                        <Phone className="h-3.5 w-3.5 mr-1" />
+                        手机号查询
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={!hasCredentials || listenLoading}
+                        onClick={
+                          listenActive ? handleStopListen : handleStartListen
+                        }
+                        title={
+                          hasCredentials
+                            ? listenActive
+                              ? "停止监听"
+                              : "建立长连接,通过接收消息获取 open_id"
+                            : "请先填写 App ID 和 App Secret"
+                        }
+                      >
+                        {listenLoading ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                            连接中
+                          </>
+                        ) : listenActive ? (
+                          <>
+                            <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                            停止监听
+                          </>
+                        ) : (
+                          <>
+                            <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                            通过消息获取
+                          </>
+                        )}
+                      </Button>
+                      {helperMode !== "none" && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (listenActive) {
+                              stopListenerPolling();
+                            }
+                            setHelperMode("none");
+                          }}
+                        >
+                          关闭
+                        </Button>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      所需权限:im:chat:readonly(群列表)、contact:user.id:
+                      readonly(手机号反查)、im:message(长连接监听)。
+                      请在飞书开放平台为应用开通相应权限。
+                    </p>
+
+                    {/* Chat list results */}
+                    {helperMode === "chats" && (
+                      <div className="space-y-2">
+                        {chatsError && (
+                          <div className="text-sm text-destructive flex items-center gap-1.5">
+                            <XCircle className="h-3.5 w-3.5" />
+                            {chatsError}
+                          </div>
+                        )}
+                        {chatsResult && (
+                          <div className="space-y-1">
+                            {chatsResult.items.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">
+                                机器人不在任何群中。请先将机器人添加到群聊。
+                              </p>
+                            ) : (
+                              <div className="max-h-48 overflow-y-auto rounded-md border border-border divide-y divide-border">
+                                {chatsResult.items.map((chat) => (
+                                  <button
+                                    key={chat.chat_id}
+                                    type="button"
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                                    onClick={() =>
+                                      handleSelectChat(chat.chat_id, chat.name)
+                                    }
+                                  >
+                                    <div className="font-medium">
+                                      {chat.name || "(未命名群)"}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground font-mono">
+                                      {chat.chat_id}
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Phone lookup */}
+                    {helperMode === "phone" && (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="+8613800138000"
+                            value={phoneInput}
+                            onChange={(e) => setPhoneInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleLookupPhone();
+                              }
+                            }}
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={phoneLoading}
+                            onClick={handleLookupPhone}
+                          >
+                            {phoneLoading ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              "查询"
+                            )}
+                          </Button>
+                        </div>
+                        {phoneError && (
+                          <div className="text-sm text-destructive flex items-center gap-1.5">
+                            <XCircle className="h-3.5 w-3.5" />
+                            {phoneError}
+                          </div>
+                        )}
+                        {phoneResult && (
+                          <div className="space-y-1">
+                            {phoneResult.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">
+                                未找到匹配的用户。请检查手机号是否正确,并确保已开通
+                                contact:user.id:readonly 权限。
+                              </p>
+                            ) : (
+                              <div className="rounded-md border border-border divide-y divide-border">
+                                {phoneResult.map((user) => (
+                                  <button
+                                    key={user.open_id}
+                                    type="button"
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                                    onClick={() =>
+                                      handleSelectPhoneUser(user.open_id)
+                                    }
+                                  >
+                                    <div className="font-medium">
+                                      {user.name || user.mobile || "未知用户"}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground font-mono">
+                                      open_id: {user.open_id}
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Listen results */}
+                    {helperMode === "listen" && (
+                      <div className="space-y-2">
+                        {listenError && (
+                          <div className="text-sm text-destructive flex items-center gap-1.5">
+                            <XCircle className="h-3.5 w-3.5" />
+                            {listenError}
+                          </div>
+                        )}
+                        {listenActive && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-green-600 dark:text-green-400" />
+                            <span>
+                              正在监听...请给机器人发送任意消息
+                              (2分钟后自动停止)
+                            </span>
+                          </div>
+                        )}
+                        {listenMessages.length > 0 && (
+                          <div className="max-h-48 overflow-y-auto rounded-md border border-border divide-y divide-border">
+                            {listenMessages.map((msg, idx) => (
+                              <button
+                                key={`${msg.message_id}-${idx}`}
+                                type="button"
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                                onClick={() =>
+                                  handleSelectListenUser(msg.open_id)
+                                }
+                              >
+                                <div className="font-medium">
+                                  {msg.name || "未知用户"}
+                                </div>
+                                <div className="text-xs text-muted-foreground font-mono">
+                                  open_id: {msg.open_id}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(msg.receivedAt).toLocaleTimeString(
+                                    "zh-CN"
+                                  )}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {!listenActive &&
+                          listenMessages.length === 0 &&
+                          !listenError && (
+                            <p className="text-sm text-muted-foreground">
+                              监听已停止。点击「通过消息获取」重新启动。
+                            </p>
+                          )}
+                      </div>
+                    )}
+                  </div>
+                  {/* ============ End feishu helper section ============ */}
                 </>
               ) : (
                 <>

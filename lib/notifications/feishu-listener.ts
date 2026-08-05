@@ -96,7 +96,8 @@ export function setListenerNow(fn: () => Date): void {
  * Resets the listener module to clean state. For test cleanup.
  */
 export function resetListeners(): void {
-  for (const [appId] of listeners) {
+  const appIds = Array.from(listeners.keys());
+  for (const appId of appIds) {
     try {
       stopFeishuListener(appId);
     } catch {
@@ -141,8 +142,8 @@ export async function startFeishuListener(
   // Set up event dispatcher
   const eventDispatcher = new lark.EventDispatcher({}).register({
     "im.message.receive_v1": async (data) => {
-      const msg = data.event?.message;
-      const sender = data.event?.sender;
+      const msg = data.message;
+      const sender = data.sender;
       if (!msg || !sender) return;
 
       const received: ReceivedMessage = {
@@ -150,7 +151,7 @@ export async function startFeishuListener(
           open_id: sender.sender_id?.open_id ?? "",
           user_id: sender.sender_id?.user_id,
           union_id: sender.sender_id?.union_id,
-          name: sender.sender_id?.name,
+          name: (sender.sender_id as { name?: string })?.name,
         },
         message: {
           message_id: msg.message_id ?? "",
