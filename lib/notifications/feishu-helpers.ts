@@ -12,44 +12,53 @@ import { getTenantToken, fetchFn } from "./feishu-app";
 
 // ============ Error translation ============
 
+// TODO(issue #9): 权限清单集中化 - 将 scope 名称与错误码统一收敛到一处配置
 /**
- * Maps Feishu error codes to human-readable messages with required scopes.
- * Returns null if the error code is not recognized (caller should fall back to msg).
+ * Maps Feishu error codes to human-readable messages.
+ * Only includes codes verified against official Feishu documentation
+ * (https://open.feishu.cn/document/server-docs/getting-started/server-error-codes).
+ *
+ * For unknown codes, falls back to the raw msg from the API response.
  */
 export function translateFeishuError(
   code: number,
   msg?: string
 ): string | null {
   const errorMap: Record<number, string> = {
-    // Auth errors
-    99991663: " tenant_access_token 无效或已过期,请检查 App ID 和 App Secret",
-    99991664: "tenant_access_token 已过期,请刷新",
-    99991665: "tenant_access_token 无效",
-    99991668: "app_access_token 无效",
+    // Token errors (official: 99991660-99991668 series)
+    99991663: "app_access_token 无效或已过期,请检查 App ID 和 App Secret",
+    99991664: "tenant_access_token 无效或已过期,请重新获取",
+    99991665: "tenant_access_token 格式错误或权限不足",
+    99991668: "tenant_access_token 已过期,请刷新",
 
-    // Permission errors
+    // Permission errors (official)
     99991400: "权限不足,请在飞书开放平台为应用开通相应权限",
-
-    // Chat list specific
-    1254043: "获取群列表失败:需要开通权限 im:chat:readonly 或 im:chat",
-    1254045: "机器人不在任何群中,请先将机器人添加到群聊",
-
-    // Contact specific
-    1254003: "手机号反查失败:需要开通权限 contact:user.id:readonly",
-    1254004: "手机号格式不正确,请使用国际区号格式(如 +8613800138000)",
-    1254005: "未找到匹配的用户,请检查手机号是否正确",
-
-    // General API errors
-    1254000: "API 调用失败,请检查请求参数",
-    1254001: "API 调用频率超限,请稍后重试",
+    99991672: parseScopeError(msg), // 动态解析 msg 中的权限名列表
   };
 
   return errorMap[code] ?? null;
 }
 
 /**
+ * Parses scope error messages to extract missing permission names.
+ * Feishu's 99991672 msg often contains the missing scope names.
+ */
+function parseScopeError(msg?: string): string {
+  if (!msg) {
+    return "权限不足,请在飞书开放平台为应用开通相应权限";
+  }
+  // Try to extract scope names from msg (e.g., "missing scope: im:chat:readonly")
+  const scopeMatch = msg.match(/scope[s]?:\s*([a-zA-Z0-9_:,\s]+)/i);
+  if (scopeMatch) {
+    return `权限不足,需要开通以下权限: ${scopeMatch[1].trim()}`;
+  }
+  return `权限不足: ${msg}`;
+}
+
+/**
  * Throws a human-readable error for a Feishu API failure.
  * Combines the translated message (if available) with the original msg.
+ * Falls back to guiding the user to check the raw msg for unknown codes.
  */
 export function throwFeishuError(
   code: number,
@@ -58,10 +67,55 @@ export function throwFeishuError(
 ): never {
   const translated = translateFeishuError(code, msg);
   const prefix = context ? `${context}: ` : "";
-  const fullMsg = translated
-    ? `${prefix}${translated}${msg ? ` (原始错误: ${msg})` : ""}`
-    : `${prefix}飞书 API 错误: code=${code}${msg ? `, msg=${msg}` : ""}`;
+  let fullMsg: string;
+  if (translated) {
+    fullMsg = `${prefix}${translated}`;
+    // For non-scope errors, append raw msg if different from translation
+    if (code !== 99991672 && msg && !translated.includes(msg)) {
+      fullMsg += ` (详情: ${msg})`;
+    }
+  } else {
+    // Unknown code: guide user to check raw msg
+    fullMsg = msg
+      ? `${prefix}飞书 API 错误(code=${code}): ${msg}。请在飞书开放平台文档中查阅此错误码。`
+      : `${prefix}飞书 API 错误: code=${code}。请在飞书开放平台文档中查阅此错误码。`;
+  }
   throw new Error(fullMsg);
+}
+
+// ============ Shared request helper ============
+
+/**
+ * Parses a Feishu API response body, extracting the standard {code, msg, data} envelope.
+ * Throws a translated error if the response indicates failure.
+ */
+async function parseFeishuResponse<T>(
+  response: Response,
+  context: string
+): Promise<T> {
+  const bodyText = await response.text().catch(() => "");
+  let bodyJson: {
+    code?: number;
+    msg?: string;
+    data?: T;
+  } | null = null;
+  try {
+    bodyJson = bodyText ? JSON.parse(bodyText) : null;
+  } catch {
+    bodyJson = null;
+  }
+
+  if (!response.ok) {
+    const code = bodyJson?.code ?? 0;
+    const msg = bodyJson?.msg ?? `HTTP ${response.status}`;
+    throwFeishuError(code, msg, context);
+  }
+
+  if (bodyJson?.code !== undefined && bodyJson.code !== 0) {
+    throwFeishuError(bodyJson.code, bodyJson.msg, context);
+  }
+
+  return bodyJson?.data as T;
 }
 
 // ============ Chat list ============
@@ -112,36 +166,16 @@ export async function listFeishuChats(
     },
   });
 
-  const bodyText = await response.text().catch(() => "");
-  let bodyJson: {
-    code?: number;
-    msg?: string;
-    data?: {
-      items?: FeishuChat[];
-      has_more?: boolean;
-      page_token?: string;
-    };
-  } | null = null;
-  try {
-    bodyJson = bodyText ? JSON.parse(bodyText) : null;
-  } catch {
-    bodyJson = null;
-  }
-
-  if (!response.ok) {
-    const code = bodyJson?.code ?? 0;
-    const msg = bodyJson?.msg ?? `HTTP ${response.status}`;
-    throwFeishuError(code, msg, "获取群列表失败");
-  }
-
-  if (bodyJson?.code !== undefined && bodyJson.code !== 0) {
-    throwFeishuError(bodyJson.code, bodyJson.msg, "获取群列表失败");
-  }
+  const data = await parseFeishuResponse<{
+    items?: FeishuChat[];
+    has_more?: boolean;
+    page_token?: string;
+  }>(response, "获取群列表失败");
 
   return {
-    items: bodyJson?.data?.items ?? [],
-    has_more: bodyJson?.data?.has_more ?? false,
-    page_token: bodyJson?.data?.page_token,
+    items: data?.items ?? [],
+    has_more: data?.has_more ?? false,
+    page_token: data?.page_token,
   };
 }
 
@@ -192,31 +226,11 @@ export async function lookupFeishuUserByPhone(
     body: JSON.stringify({ mobiles }),
   });
 
-  const bodyText = await response.text().catch(() => "");
-  let bodyJson: {
-    code?: number;
-    msg?: string;
-    data?: {
-      user_list?: FeishuUser[];
-    };
-  } | null = null;
-  try {
-    bodyJson = bodyText ? JSON.parse(bodyText) : null;
-  } catch {
-    bodyJson = null;
-  }
-
-  if (!response.ok) {
-    const code = bodyJson?.code ?? 0;
-    const msg = bodyJson?.msg ?? `HTTP ${response.status}`;
-    throwFeishuError(code, msg, "手机号反查失败");
-  }
-
-  if (bodyJson?.code !== undefined && bodyJson.code !== 0) {
-    throwFeishuError(bodyJson.code, bodyJson.msg, "手机号反查失败");
-  }
+  const data = await parseFeishuResponse<{
+    user_list?: FeishuUser[];
+  }>(response, "手机号反查失败");
 
   return {
-    user_list: bodyJson?.data?.user_list ?? [],
+    user_list: data?.user_list ?? [],
   };
 }
