@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { v4 as uuidv4 } from "uuid";
 import {
   NotificationChannel,
   NotificationData,
@@ -78,5 +79,104 @@ export function setBalanceTransitionState(
 ): void {
   const data = readNotificationData();
   data.balanceTransitionStates[subscriptionId] = state;
+  writeNotificationData(data);
+}
+
+// ============ Channel CRUD ============
+
+/**
+ * Creates a new notification channel. The caller is responsible for
+ * validating the input (url/type/name) before calling.
+ */
+export function createChannel(
+  input: Omit<
+    NotificationChannel,
+    "id" | "createdAt" | "updatedAt" | "enabled" | "lastSendResult"
+  > & {
+    enabled?: boolean;
+  }
+): NotificationChannel {
+  const data = readNotificationData();
+  const now = new Date().toISOString();
+  const channel: NotificationChannel = {
+    id: uuidv4(),
+    type: input.type,
+    name: input.name,
+    url: input.url,
+    secret: input.secret,
+    enabled: input.enabled ?? true,
+    createdAt: now,
+    updatedAt: now,
+  };
+  data.channels.push(channel);
+  writeNotificationData(data);
+  return channel;
+}
+
+/**
+ * Returns the channel with the given id, or null if not found.
+ */
+export function getChannelById(id: string): NotificationChannel | null {
+  const data = readNotificationData();
+  return data.channels.find((c) => c.id === id) ?? null;
+}
+
+/**
+ * Updates a channel's mutable fields. Unknown keys in `patch` are ignored.
+ * `updatedAt` is refreshed. Returns the updated channel, or null if the
+ * channel does not exist.
+ */
+export function updateChannel(
+  id: string,
+  patch: Partial<
+    Pick<NotificationChannel, "type" | "name" | "url" | "secret" | "enabled">
+  >
+): NotificationChannel | null {
+  const data = readNotificationData();
+  const idx = data.channels.findIndex((c) => c.id === id);
+  if (idx === -1) return null;
+  const existing = data.channels[idx];
+  const updated: NotificationChannel = {
+    ...existing,
+    ...patch,
+    updatedAt: new Date().toISOString(),
+  };
+  data.channels[idx] = updated;
+  writeNotificationData(data);
+  return updated;
+}
+
+/**
+ * Deletes a channel by id. Returns true if a channel was removed, false if
+ * no channel with that id existed.
+ */
+export function deleteChannel(id: string): boolean {
+  const data = readNotificationData();
+  const before = data.channels.length;
+  data.channels = data.channels.filter((c) => c.id !== id);
+  if (data.channels.length === before) return false;
+  writeNotificationData(data);
+  return true;
+}
+
+/**
+ * Toggles a channel's enabled state. Returns the updated channel, or null
+ * if not found.
+ */
+export function toggleChannelEnabled(id: string): NotificationChannel | null {
+  const channel = getChannelById(id);
+  if (!channel) return null;
+  return updateChannel(id, { enabled: !channel.enabled });
+}
+
+// ============ Global default threshold ============
+
+export function getDefaultLowBalanceThreshold(): number {
+  return readNotificationData().defaultLowBalanceThreshold;
+}
+
+export function setDefaultLowBalanceThreshold(value: number): void {
+  const data = readNotificationData();
+  data.defaultLowBalanceThreshold = value;
   writeNotificationData(data);
 }
