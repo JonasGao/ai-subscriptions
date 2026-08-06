@@ -1,28 +1,9 @@
 import { UsageResult, UsageWindow, UsageLimitWindow } from "@/lib/types";
 import { signVolcengineRequest } from "@/lib/volcengine-signer";
+import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
 
 const USAGE_URL = "https://open.volcengineapi.com/open/GetAFPUsage";
 const TEST_URL = "https://open.volcengineapi.com/open/ListSubscribeTrade";
-const TIMEOUT = 10000;
-
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit,
-  timeoutMs: number
-): Promise<Response> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, {
-      ...options,
-      cache: "no-store",
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
 function periodToUsageWindow(period: {
   Used: number;
   Total: number;
@@ -71,7 +52,7 @@ export async function fetchAgentPlanUsage(
   const response = await fetchWithTimeout(
     USAGE_URL,
     { method: "POST", headers, body },
-    TIMEOUT
+    DEFAULT_TIMEOUT
   );
 
   if (!response.ok) {
@@ -138,7 +119,7 @@ export async function testAgentPlanConnection(
     const response = await fetchWithTimeout(
       TEST_URL,
       { method: "POST", headers, body },
-      TIMEOUT
+      DEFAULT_TIMEOUT
     );
 
     if (!response.ok) {

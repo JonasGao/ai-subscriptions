@@ -1,24 +1,5 @@
 import { BalanceResult } from "@/lib/types";
-
-const TIMEOUT = 10000;
-
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit,
-  timeoutMs: number
-): Promise<Response> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, {
-      ...options,
-      cache: "no-store",
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
-}
+import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
 
 export async function fetchSiliconFlowBalance(
   apiKey: string
@@ -26,7 +7,7 @@ export async function fetchSiliconFlowBalance(
   const response = await fetchWithTimeout(
     "https://api.siliconflow.cn/v1/user/info",
     { headers: { Authorization: `Bearer ${apiKey}` } },
-    TIMEOUT
+    DEFAULT_TIMEOUT
   );
 
   if (!response.ok) {
@@ -72,7 +53,7 @@ export async function testSiliconFlowConnection(
     const response = await fetchWithTimeout(
       "https://api.siliconflow.cn/v1/user/info",
       { headers: { Authorization: `Bearer ${apiKey}` } },
-      TIMEOUT
+      DEFAULT_TIMEOUT
     );
     if (!response.ok)
       return { ok: false, message: `API 返回 ${response.status}` };

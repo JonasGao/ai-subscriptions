@@ -4,26 +4,7 @@ import {
   UsageLimitWindow,
   BalanceResult,
 } from "@/lib/types";
-
-const TIMEOUT = 10000;
-
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit,
-  timeoutMs: number
-): Promise<Response> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, {
-      ...options,
-      cache: "no-store",
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
-}
+import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
 
 function normalizeUsageWindow(raw: unknown): UsageWindow | null {
   if (!raw || typeof raw !== "object") return null;
@@ -59,7 +40,7 @@ export async function fetchMoonshotUsage(
         Accept: "application/json",
       },
     },
-    TIMEOUT
+    DEFAULT_TIMEOUT
   );
 
   if (!response.ok) {
@@ -167,7 +148,7 @@ export async function testMoonshotConnection(
     const response = await fetchWithTimeout(
       "https://api.moonshot.cn/v1/users/me/balance",
       { headers: { Authorization: `Bearer ${apiKey}` } },
-      TIMEOUT
+      DEFAULT_TIMEOUT
     );
     if (response.ok) return { ok: true, message: "连接成功" };
     return { ok: false, message: `API 返回 ${response.status}` };
@@ -182,7 +163,7 @@ export async function fetchMoonshotBalance(
   const response = await fetchWithTimeout(
     "https://api.moonshot.cn/v1/users/me/balance",
     { headers: { Authorization: `Bearer ${apiKey}` } },
-    TIMEOUT
+    DEFAULT_TIMEOUT
   );
 
   if (!response.ok) {
