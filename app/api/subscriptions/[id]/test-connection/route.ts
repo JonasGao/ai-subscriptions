@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSubscriptionById, getProviders } from "@/lib/db";
+import { getSubscriptionById } from "@/lib/db";
 import { usageHandlers, balanceHandlers } from "@/lib/providers";
 
 export const dynamic = "force-dynamic";
@@ -31,11 +31,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    const providers = getProviders();
-    const providerConfig = providers.find(
-      (p) => p.id === subscription.provider
-    );
 
     // Try usage handler first, then balance handler
     const usageHandler = usageHandlers[subscription.provider];
