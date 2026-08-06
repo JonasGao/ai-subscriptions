@@ -2,8 +2,10 @@ import { UsageResult, UsageWindow, UsageLimitWindow } from "@/lib/types";
 import { signVolcengineRequest } from "@/lib/volcengine-signer";
 import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
 
-const USAGE_URL = "https://open.volcengineapi.com/open/GetCodingPlanUsage";
-const TEST_URL = "https://open.volcengineapi.com/open/ListSubscribeTrade";
+const USAGE_URL =
+  "https://open.volcengineapi.com/?Action=GetCodingPlanUsage&Version=2024-01-01";
+const TEST_URL =
+  "https://open.volcengineapi.com/?Action=ListSubscribeTrade&Version=2024-01-01";
 function percentToUsageWindow(
   percent: number,
   resetTimestampSeconds: number
