@@ -15,9 +15,10 @@ function periodToUsageWindow(period: {
     used: String(period.Used),
     limit: String(period.Quota),
     remaining: String(period.Quota - period.Used),
-    // ResetTime is epoch ms; formatNextResetTime parses an ISO string,
-    // a bare ms string yields Invalid Date
-    resetTime: new Date(period.ResetTime).toISOString(),
+    // ResetTime is epoch ms; -1 means not provided by API
+    // formatNextResetTime parses an ISO string
+    resetTime:
+      period.ResetTime > 0 ? new Date(period.ResetTime).toISOString() : null,
   };
 }
 

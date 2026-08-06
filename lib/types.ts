@@ -327,7 +327,7 @@ export interface UsageWindow {
   limit: string;
   used: string;
   remaining: string;
-  resetTime: string;
+  resetTime: string | null;
 }
 
 export interface UsageBoosterWallet {
