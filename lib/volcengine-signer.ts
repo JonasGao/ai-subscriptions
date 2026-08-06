@@ -56,14 +56,16 @@ export function signVolcengineRequest(opts: {
 
   const hashedPayload = sha256Hex(body);
 
-  // Headers to sign — official docs mandate this exact order:
-  // content-type;host;x-content-sha256;x-date
-  const headersToSign: Array<[string, string]> = [
-    ["content-type", "application/json"],
-    ["host", host],
-    ["x-content-sha256", hashedPayload],
-    ["x-date", xDate],
-  ];
+  // Headers to sign — mirrors official SDK (@volcengine/openapi Signer):
+  // content-type is in the unsignable list, kDatePrefix is "", and
+  // signed headers are sorted alphabetically.
+  const headersToSign: Array<[string, string]> = (
+    [
+      ["host", host],
+      ["x-content-sha256", hashedPayload],
+      ["x-date", xDate],
+    ] as Array<[string, string]>
+  ).sort((a, b) => (a[0] < b[0] ? -1 : 1));
 
   const canonicalHeaders =
     headersToSign.map(([k, v]) => `${k}:${v}`).join("\n") + "\n";
@@ -87,8 +89,8 @@ export function signVolcengineRequest(opts: {
     sha256Hex(canonicalRequest),
   ].join("\n");
 
-  // Step 3: Signing Key
-  const dateKey = hmacSHA256("HMAC" + sk, dateStamp);
+  // Step 3: Signing Key — official SDK uses empty kDatePrefix
+  const dateKey = hmacSHA256(sk, dateStamp);
   const regionKey = hmacSHA256(dateKey, region);
   const serviceKey = hmacSHA256(regionKey, service);
   const signingKey = hmacSHA256(serviceKey, "request");

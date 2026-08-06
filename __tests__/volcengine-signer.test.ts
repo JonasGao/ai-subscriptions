@@ -40,9 +40,7 @@ describe("signVolcengineRequest", () => {
     expect(auth).toMatch(/^HMAC-SHA256 Credential=/);
     expect(auth).toContain("AKIAIOSFODNN7EXAMPLE");
     expect(auth).toContain("/20260601/cn-beijing/ark/request");
-    expect(auth).toContain(
-      "SignedHeaders=content-type;host;x-content-sha256;x-date"
-    );
+    expect(auth).toContain("SignedHeaders=host;x-content-sha256;x-date");
     expect(auth).toContain("Signature=");
   });
 
