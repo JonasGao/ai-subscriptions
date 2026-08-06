@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fetchAgentPlanUsage } from "@/lib/providers/fangzhou-agentplan";
 import { fetchCodingPlanUsage } from "@/lib/providers/fangzhou-codingplan";
+import { fetchMoonshotUsage } from "@/lib/providers/moonshot";
 
 describe("fangzhou-agentplan", () => {
   beforeEach(() => {
@@ -48,26 +49,32 @@ describe("fangzhou-agentplan", () => {
 
     expect(result.provider).toBe("fangzhou-agentplan");
 
-    // weekly → usage
-    expect(result.usage).not.toBeNull();
-    expect(result.usage!.used).toBe("12500");
-    expect(result.usage!.limit).toBe("50000");
-    expect(result.usage!.remaining).toBe("37500");
-    expect(result.usage!.resetTime).toBe(new Date(1717625200000).toISOString());
-
-    // 5h → limits[0], monthly → limits[1]
-    expect(result.limits).toHaveLength(2);
-    expect(result.limits[0].window.duration).toBe(5);
-    expect(result.limits[0].window.timeUnit).toBe("TIME_UNIT_HOUR");
-    expect(result.limits[0].detail.used).toBe("250");
-    expect(result.limits[0].detail.limit).toBe("1000");
-    expect(result.limits[0].detail.resetTime).toBe(
+    // AFPFiveHour → fiveHour
+    expect(result.fiveHour).not.toBeNull();
+    expect(result.fiveHour!.used).toBe("250");
+    expect(result.fiveHour!.limit).toBe("1000");
+    expect(result.fiveHour!.remaining).toBe("750");
+    expect(result.fiveHour!.resetTime).toBe(
       new Date(1717049200000).toISOString()
     );
 
-    expect(result.limits[1].window.duration).toBe(30);
-    expect(result.limits[1].window.timeUnit).toBe("TIME_UNIT_DAY");
-    expect(result.limits[1].detail.used).toBe("50000");
+    // AFPWeekly → weekly
+    expect(result.weekly).not.toBeNull();
+    expect(result.weekly!.used).toBe("12500");
+    expect(result.weekly!.limit).toBe("50000");
+    expect(result.weekly!.remaining).toBe("37500");
+    expect(result.weekly!.resetTime).toBe(
+      new Date(1717625200000).toISOString()
+    );
+
+    // AFPMonthly → monthly
+    expect(result.monthly).not.toBeNull();
+    expect(result.monthly!.used).toBe("50000");
+    expect(result.monthly!.limit).toBe("200000");
+    expect(result.monthly!.remaining).toBe("150000");
+    expect(result.monthly!.resetTime).toBe(
+      new Date(1719615600000).toISOString()
+    );
 
     expect(result.boosterWallet).toBeNull();
     expect(result.parallel).toBeNull();
@@ -126,31 +133,30 @@ describe("fangzhou-codingplan", () => {
 
     expect(result.provider).toBe("fangzhou-codingplan");
 
-    // weekly → usage (percent → used, limit=100)
-    expect(result.usage).not.toBeNull();
-    expect(result.usage!.used).toBe("45");
-    expect(result.usage!.limit).toBe("100");
-    expect(result.usage!.remaining).toBe("55");
-    // ResetTimestamp is in seconds → converted to ISO string
-    expect(result.usage!.resetTime).toBe(
-      new Date(1717625200 * 1000).toISOString()
-    );
-
-    // session → limits[0] (24h), monthly → limits[1] (30d)
-    expect(result.limits).toHaveLength(2);
-    expect(result.limits[0].window.duration).toBe(24);
-    expect(result.limits[0].window.timeUnit).toBe("TIME_UNIT_HOUR");
-    expect(result.limits[0].detail.used).toBe("30");
-    expect(result.limits[0].detail.limit).toBe("100");
-    expect(result.limits[0].detail.remaining).toBe("70");
-    // session ResetTimestamp also converted to ISO string
-    expect(result.limits[0].detail.resetTime).toBe(
+    // session → fiveHour (percent → used, limit=100)
+    expect(result.fiveHour).not.toBeNull();
+    expect(result.fiveHour!.used).toBe("30");
+    expect(result.fiveHour!.limit).toBe("100");
+    expect(result.fiveHour!.remaining).toBe("70");
+    // session ResetTimestamp is in seconds → converted to ISO string
+    expect(result.fiveHour!.resetTime).toBe(
       new Date(1717049200 * 1000).toISOString()
     );
 
-    expect(result.limits[1].window.duration).toBe(30);
-    expect(result.limits[1].window.timeUnit).toBe("TIME_UNIT_DAY");
-    expect(result.limits[1].detail.used).toBe("60");
+    // weekly → weekly
+    expect(result.weekly).not.toBeNull();
+    expect(result.weekly!.used).toBe("45");
+    expect(result.weekly!.limit).toBe("100");
+    expect(result.weekly!.remaining).toBe("55");
+    expect(result.weekly!.resetTime).toBe(
+      new Date(1717625200 * 1000).toISOString()
+    );
+
+    // monthly → monthly
+    expect(result.monthly).not.toBeNull();
+    expect(result.monthly!.used).toBe("60");
+    expect(result.monthly!.limit).toBe("100");
+    expect(result.monthly!.remaining).toBe("40");
   });
 
   it("throws when QuotaUsage is empty", async () => {
@@ -163,5 +169,101 @@ describe("fangzhou-codingplan", () => {
     await expect(
       fetchCodingPlanUsage({ ak: "test-ak", sk: "test-sk" })
     ).rejects.toThrow("Account not subscribed");
+  });
+});
+
+describe("moonshot", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("maps usage → weekly and the 5h (300min) limit → fiveHour", async () => {
+    const mockResponse = {
+      usage: {
+        limit: "1024",
+        used: "100",
+        remaining: "924",
+        resetTime: "2026-03-04T04:01:38Z",
+      },
+      limits: [
+        {
+          window: { duration: 300, timeUnit: "TIME_UNIT_MINUTE" },
+          detail: {
+            limit: "200",
+            used: "7",
+            remaining: "193",
+            resetTime: "2026-03-03T11:16:04Z",
+          },
+        },
+      ],
+      user: {
+        userId: "u1",
+        region: "REGION_OVERSEA",
+        membership: { level: "LEVEL_BASIC" },
+        businessId: "",
+      },
+    };
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+      text: async () => JSON.stringify(mockResponse),
+    } as Response);
+
+    const result = await fetchMoonshotUsage(
+      "test-key",
+      "https://api.kimi.com/coding/v1/usages"
+    );
+
+    expect(result.provider).toBe("moonshot");
+    expect(result.weekly).not.toBeNull();
+    expect(result.weekly!.used).toBe("100");
+    expect(result.weekly!.limit).toBe("1024");
+    expect(result.weekly!.remaining).toBe("924");
+
+    expect(result.fiveHour).not.toBeNull();
+    expect(result.fiveHour!.used).toBe("7");
+    expect(result.fiveHour!.limit).toBe("200");
+    expect(result.fiveHour!.remaining).toBe("193");
+
+    expect(result.monthly).toBeNull();
+    expect(result.membership?.level).toBe("LEVEL_BASIC");
+  });
+
+  it("ignores limits that are not 5-hour or monthly windows", async () => {
+    const mockResponse = {
+      usage: {
+        limit: "1024",
+        used: "100",
+        remaining: "924",
+        resetTime: "2026-03-04T04:01:38Z",
+      },
+      limits: [
+        {
+          window: { duration: 60, timeUnit: "TIME_UNIT_MINUTE" },
+          detail: {
+            limit: "200",
+            used: "7",
+            remaining: "193",
+            resetTime: "2026-03-03T11:16:04Z",
+          },
+        },
+      ],
+    };
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+      text: async () => JSON.stringify(mockResponse),
+    } as Response);
+
+    const result = await fetchMoonshotUsage(
+      "test-key",
+      "https://api.kimi.com/coding/v1/usages"
+    );
+
+    expect(result.fiveHour).toBeNull();
+    expect(result.monthly).toBeNull();
+    expect(result.weekly).not.toBeNull();
   });
 });

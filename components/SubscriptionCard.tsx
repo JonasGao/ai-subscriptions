@@ -102,28 +102,6 @@ function getUsageUnitLabel(unit: string): string {
   return unit === "UNIT_CURRENCY" ? "单位" : unit;
 }
 
-function getTimeUnitLabel(timeUnit: string): string {
-  switch (timeUnit) {
-    case "TIME_UNIT_SECOND":
-      return "秒";
-    case "TIME_UNIT_MINUTE":
-      return "分钟";
-    case "TIME_UNIT_HOUR":
-      return "小时";
-    case "TIME_UNIT_DAY":
-      return "天";
-    default:
-      return timeUnit;
-  }
-}
-
-function formatLimitWindowDuration(duration: number, timeUnit: string): string {
-  if (timeUnit === "TIME_UNIT_MINUTE" && duration % 60 === 0) {
-    return `${duration / 60} 小时`;
-  }
-  return `${duration} ${getTimeUnitLabel(timeUnit)}`;
-}
-
 function formatPriceFromCents(priceInCents: string): string {
   const num = parseInt(priceInCents, 10);
   return Number.isNaN(num) ? priceInCents : `¥${(num / 100).toFixed(2)}`;
@@ -195,6 +173,18 @@ function UsageProgressBar({ window }: { window: UsageWindow }) {
           </Tooltip>
         </div>
       )}
+    </div>
+  );
+}
+
+function UsageBlock({ label, window }: { label: string; window: UsageWindow }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <UsageAmountText window={window} />
+      </div>
+      <UsageProgressBar window={window} />
     </div>
   );
 }
@@ -444,41 +434,18 @@ export function SubscriptionCard({
                 </Fragment>
               ))}
             {usage && (
-              <>
-                {usage.usage && (
-                  <div className="pt-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        周用量
-                      </span>
-                      <UsageAmountText window={usage.usage} />
-                    </div>
-                    <UsageProgressBar window={usage.usage} />
-                  </div>
+              <div className="pt-2 space-y-2">
+                {usage.fiveHour && (
+                  <UsageBlock label="5小时" window={usage.fiveHour} />
                 )}
-                {usage.limits.length > 0 && (
-                  <div className="pt-2">
-                    <span className="text-sm text-muted-foreground">
-                      5小时频限
-                    </span>
-                    {usage.limits.map((limit, index) => (
-                      <div key={index} className="mt-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">
-                            {formatLimitWindowDuration(
-                              limit.window.duration,
-                              limit.window.timeUnit
-                            )}
-                          </span>
-                          <UsageAmountText window={limit.detail} />
-                        </div>
-                        <UsageProgressBar window={limit.detail} />
-                      </div>
-                    ))}
-                  </div>
+                {usage.weekly && (
+                  <UsageBlock label="周" window={usage.weekly} />
+                )}
+                {usage.monthly && (
+                  <UsageBlock label="月" window={usage.monthly} />
                 )}
                 {usage.boosterWallet && (
-                  <div className="pt-2">
+                  <div>
                     <span className="text-sm text-muted-foreground">
                       加速包
                     </span>
@@ -528,7 +495,7 @@ export function SubscriptionCard({
                     </span>
                   </div>
                 )}
-              </>
+              </div>
             )}
             {balanceError && (
               <div className="text-sm text-red-500">{balanceError}</div>

@@ -332,14 +332,6 @@ export interface UsageWindow {
   resetTime: string;
 }
 
-export interface UsageLimitWindow {
-  window: {
-    duration: number;
-    timeUnit: string;
-  };
-  detail: UsageWindow;
-}
-
 export interface UsageBoosterWallet {
   balance: {
     amount: string;
@@ -353,8 +345,12 @@ export interface UsageBoosterWallet {
 
 export interface UsageResult {
   provider: string;
-  usage: UsageWindow | null;
-  limits: UsageLimitWindow[];
+  /** 5-hour rolling window (e.g. AgentPlan AFPFiveHour, Kimi limits[0] 300min) */
+  fiveHour: UsageWindow | null;
+  /** Weekly quota (e.g. AgentPlan AFPWeekly, Kimi usage) */
+  weekly: UsageWindow | null;
+  /** Monthly quota (e.g. AgentPlan AFPMonthly) */
+  monthly: UsageWindow | null;
   boosterWallet: UsageBoosterWallet | null;
   parallel: { limit: string } | null;
   membership: { level: string } | null;

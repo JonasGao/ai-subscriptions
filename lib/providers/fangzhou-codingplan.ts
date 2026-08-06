@@ -1,4 +1,4 @@
-import { UsageResult, UsageWindow, UsageLimitWindow } from "@/lib/types";
+import { UsageResult, UsageWindow } from "@/lib/types";
 import { signVolcengineRequest } from "@/lib/volcengine-signer";
 import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
 
@@ -17,18 +17,6 @@ function percentToUsageWindow(
     // ResetTimestamp is epoch seconds; convert to ISO for the frontend
     // (formatNextResetTime parses an ISO string, not a bare ms number)
     resetTime: new Date(resetTimestampSeconds * 1000).toISOString(),
-  };
-}
-
-function percentToLimitWindow(
-  percent: number,
-  resetTimestampSeconds: number,
-  duration: number,
-  timeUnit: string
-): UsageLimitWindow {
-  return {
-    window: { duration, timeUnit },
-    detail: percentToUsageWindow(percent, resetTimestampSeconds),
   };
 }
 
@@ -80,38 +68,18 @@ export async function fetchCodingPlanUsage(
   const weekly = quotas.find((q) => q.Label === "weekly");
   const monthly = quotas.find((q) => q.Label === "monthly");
 
-  // weekly maps to usage (primary usage display)
-  const usage = weekly
-    ? percentToUsageWindow(weekly.Percent, weekly.ResetTimestamp)
-    : null;
-
-  const limits: UsageLimitWindow[] = [];
-  if (session) {
-    // session → 24-hour limit
-    limits.push(
-      percentToLimitWindow(
-        session.Percent,
-        session.ResetTimestamp,
-        24,
-        "TIME_UNIT_HOUR"
-      )
-    );
-  }
-  if (monthly) {
-    limits.push(
-      percentToLimitWindow(
-        monthly.Percent,
-        monthly.ResetTimestamp,
-        30,
-        "TIME_UNIT_DAY"
-      )
-    );
-  }
-
   return {
     provider: "fangzhou-codingplan",
-    usage,
-    limits,
+    // session is the short rolling window → fiveHour slot
+    fiveHour: session
+      ? percentToUsageWindow(session.Percent, session.ResetTimestamp)
+      : null,
+    weekly: weekly
+      ? percentToUsageWindow(weekly.Percent, weekly.ResetTimestamp)
+      : null,
+    monthly: monthly
+      ? percentToUsageWindow(monthly.Percent, monthly.ResetTimestamp)
+      : null,
     boosterWallet: null,
     parallel: null,
     membership: null,

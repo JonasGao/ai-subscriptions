@@ -1,10 +1,20 @@
-import {
-  UsageResult,
-  UsageWindow,
-  UsageLimitWindow,
-  BalanceResult,
-} from "@/lib/types";
+import { UsageResult, UsageWindow, BalanceResult } from "@/lib/types";
 import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
+
+function windowHours(duration: number, timeUnit: string): number {
+  switch (timeUnit) {
+    case "TIME_UNIT_SECOND":
+      return duration / 3600;
+    case "TIME_UNIT_MINUTE":
+      return duration / 60;
+    case "TIME_UNIT_HOUR":
+      return duration;
+    case "TIME_UNIT_DAY":
+      return duration * 24;
+    default:
+      return -1;
+  }
+}
 
 function normalizeUsageWindow(raw: unknown): UsageWindow | null {
   if (!raw || typeof raw !== "object") return null;
@@ -51,27 +61,31 @@ export async function fetchMoonshotUsage(
 
   const data = await response.json();
 
-  const usage = normalizeUsageWindow(data?.usage);
+  // Top-level usage is the weekly quota (7-day window)
+  const weekly = normalizeUsageWindow(data?.usage);
 
-  const limits: UsageLimitWindow[] = Array.isArray(data?.limits)
-    ? (data.limits as unknown[])
-        .map((item) => {
-          const record = item as Record<string, unknown>;
-          const windowRaw = record.window;
-          const detail = normalizeUsageWindow(record.detail);
-          if (!windowRaw || typeof windowRaw !== "object" || !detail)
-            return null;
-          const windowRecord = windowRaw as Record<string, unknown>;
-          return {
-            window: {
-              duration: Number(windowRecord.duration) || 0,
-              timeUnit: String(windowRecord.timeUnit ?? ""),
-            },
-            detail,
-          };
-        })
-        .filter((item): item is UsageLimitWindow => item !== null)
-    : [];
+  // limits[] are windowed quotas keyed by their duration; pick the
+  // 5-hour rolling window and the 30-day monthly window, ignore the rest
+  const rawLimits: unknown[] = Array.isArray(data?.limits) ? data.limits : [];
+  const pickLimitWindow = (hours: number): UsageWindow | null => {
+    for (const item of rawLimits) {
+      const record = item as Record<string, unknown>;
+      const windowRaw = record.window;
+      if (!windowRaw || typeof windowRaw !== "object") continue;
+      const windowRecord = windowRaw as Record<string, unknown>;
+      if (
+        windowHours(
+          Number(windowRecord.duration) || 0,
+          String(windowRecord.timeUnit ?? "")
+        ) === hours
+      ) {
+        return normalizeUsageWindow(record.detail);
+      }
+    }
+    return null;
+  };
+  const fiveHour = pickLimitWindow(5);
+  const monthly = pickLimitWindow(24 * 30);
 
   const boosterWalletRaw = data?.boosterWallet;
   const boosterWallet =
@@ -123,7 +137,8 @@ export async function fetchMoonshotUsage(
         }
       : null;
 
-  const membershipRaw = data?.membership;
+  // Real API nests membership under user; fall back to top-level
+  const membershipRaw = data?.user?.membership ?? data?.membership;
   const membership =
     membershipRaw && typeof membershipRaw === "object"
       ? {
@@ -133,8 +148,9 @@ export async function fetchMoonshotUsage(
 
   return {
     provider: "moonshot",
-    usage,
-    limits,
+    fiveHour,
+    weekly,
+    monthly,
     boosterWallet,
     parallel,
     membership,

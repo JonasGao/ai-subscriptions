@@ -1,4 +1,4 @@
-import { UsageResult, UsageWindow, UsageLimitWindow } from "@/lib/types";
+import { UsageResult, UsageWindow } from "@/lib/types";
 import { signVolcengineRequest } from "@/lib/volcengine-signer";
 import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
 
@@ -18,22 +18,6 @@ function periodToUsageWindow(period: {
     // ResetTime is epoch ms; formatNextResetTime parses an ISO string,
     // a bare ms string yields Invalid Date
     resetTime: new Date(period.ResetTime).toISOString(),
-  };
-}
-
-function periodToLimitWindow(
-  period: { Used: number; Quota: number; ResetTime: number },
-  duration: number,
-  timeUnit: string
-): UsageLimitWindow {
-  return {
-    window: { duration, timeUnit },
-    detail: {
-      used: String(period.Used),
-      limit: String(period.Quota),
-      remaining: String(period.Quota - period.Used),
-      resetTime: new Date(period.ResetTime).toISOString(),
-    },
   };
 }
 
@@ -81,20 +65,11 @@ export async function fetchAgentPlanUsage(
     throw new Error("Account not subscribed to AgentPlan");
   }
 
-  const usage = periodToUsageWindow(afpWeekly);
-
-  const limits: UsageLimitWindow[] = [];
-  if (afpFiveHour) {
-    limits.push(periodToLimitWindow(afpFiveHour, 5, "TIME_UNIT_HOUR"));
-  }
-  if (afpMonthly) {
-    limits.push(periodToLimitWindow(afpMonthly, 30, "TIME_UNIT_DAY"));
-  }
-
   return {
     provider: "fangzhou-agentplan",
-    usage,
-    limits,
+    fiveHour: afpFiveHour ? periodToUsageWindow(afpFiveHour) : null,
+    weekly: periodToUsageWindow(afpWeekly),
+    monthly: afpMonthly ? periodToUsageWindow(afpMonthly) : null,
     boosterWallet: null,
     parallel: null,
     membership: null,
