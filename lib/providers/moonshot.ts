@@ -20,9 +20,13 @@ function normalizeUsageWindow(raw: unknown): UsageWindow | null {
   if (!raw || typeof raw !== "object") return null;
   const record = raw as Record<string, unknown>;
   const limit = record.limit;
-  const used = record.used;
   const remaining = record.remaining;
   const resetTime = record.resetTime ?? record.reset_time;
+  // Some APIs (e.g., Kimi limits[]) omit 'used'; derive from limit - remaining
+  let used = record.used;
+  if (used === undefined && limit !== undefined && remaining !== undefined) {
+    used = String(Number(limit) - Number(remaining));
+  }
   if (
     limit === undefined ||
     used === undefined ||
