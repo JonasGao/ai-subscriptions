@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { toggleScheduleExhausted } from "@/lib/db";
 import { Subscription } from "@/lib/types";
 
-function stripApiKey(sub: Subscription) {
-  const { apiKey, ...rest } = sub;
-  return rest;
+function stripCredentials(sub: Subscription) {
+  const { credentials, ...rest } = sub;
+  return { ...rest, hasCredentials: !!credentials };
 }
 
 export async function POST(
@@ -35,7 +35,7 @@ export async function POST(
       );
     }
 
-    return NextResponse.json(stripApiKey(updatedSubscription));
+    return NextResponse.json(stripCredentials(updatedSubscription));
   } catch (error) {
     console.error(
       "POST /api/subscriptions/[id]/schedules/[scheduleId]/toggle error:",

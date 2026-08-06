@@ -43,6 +43,7 @@ export default function Home() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingSubscription, setEditingSubscription] =
     useState<Subscription | null>(null);
+  const [forceExpandCredentials, setForceExpandCredentials] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const toolTabRef = useRef<ToolTabRef>(null);
@@ -351,10 +352,14 @@ export default function Home() {
 
         <SubscriptionForm
           open={formOpen}
-          onOpenChange={setFormOpen}
+          onOpenChange={(open) => {
+            setFormOpen(open);
+            if (!open) setForceExpandCredentials(false);
+          }}
           subscription={editingSubscription}
           categories={categories}
           onSubmit={handleFormSubmit}
+          forceExpandCredentials={forceExpandCredentials}
         />
       </div>
     </div>

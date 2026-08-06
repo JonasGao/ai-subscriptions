@@ -15,7 +15,7 @@ import {
 import { Provider } from "./types";
 import { v4 as uuidv4 } from "uuid";
 import { ensureDataDir, atomicWriteFile, dataDir } from "./file-ops";
-import { encryptApiKey, decryptApiKey } from "./encryption";
+import { encryptApiKey, decryptApiKey, encryptCredentials } from "./encryption";
 import {
   createResetSchedule,
   updateResetScheduleNextTime,
@@ -52,9 +52,19 @@ export function readData(): SubscriptionData {
     }));
 
     let needsWrite = false;
+
+    // Migrate apiKey → credentials
     data.subscriptions.forEach((sub) => {
-      if (sub.apiKey && !sub.apiKey.includes(":")) {
-        sub.apiKey = encryptApiKey(sub.apiKey);
+      const legacy = sub as unknown as Record<string, unknown>;
+      const legacyApiKey = legacy.apiKey as string | undefined;
+      if (legacyApiKey && !sub.credentials) {
+        let plainKey = legacyApiKey;
+        if (plainKey.includes(":")) {
+          plainKey = decryptApiKey(plainKey);
+        }
+        const credObj: Record<string, string> = { apiKey: plainKey };
+        sub.credentials = encryptCredentials(credObj);
+        delete legacy.apiKey;
         needsWrite = true;
       }
     });
@@ -178,8 +188,10 @@ export function createSubscription(
     updatedAt: now,
   };
 
-  if (newSubscription.apiKey) {
-    newSubscription.apiKey = encryptApiKey(newSubscription.apiKey);
+  if (newSubscription.credentials) {
+    newSubscription.credentials = encryptCredentials(
+      JSON.parse(newSubscription.credentials)
+    );
   }
 
   data.subscriptions.push(newSubscription);
@@ -244,8 +256,8 @@ export function updateSubscription(
     throw new Error("Invalid billingCycle value");
   }
 
-  if (updates.apiKey) {
-    updates.apiKey = encryptApiKey(updates.apiKey);
+  if (updates.credentials && typeof updates.credentials === "string") {
+    updates.credentials = encryptCredentials(JSON.parse(updates.credentials));
   }
 
   const data = readData();

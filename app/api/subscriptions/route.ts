@@ -8,14 +8,14 @@ import {
 } from "@/lib/types";
 import { normalizeNullable, validateNonNegative } from "@/lib/validation";
 
-function stripApiKey(sub: Subscription) {
-  const { apiKey, ...rest } = sub;
-  return rest;
+function stripCredentials(sub: Subscription) {
+  const { credentials, ...rest } = sub;
+  return { ...rest, hasCredentials: !!credentials };
 }
 
 export async function GET() {
   try {
-    const subscriptions = getSubscriptions().map(stripApiKey);
+    const subscriptions = getSubscriptions().map(stripCredentials);
     return NextResponse.json(subscriptions);
   } catch (error) {
     console.error("GET /api/subscriptions error:", error);
@@ -119,7 +119,9 @@ export async function POST(request: NextRequest) {
       renewalDate: body.renewalDate,
       status: body.status || "active",
       notes: body.notes,
-      apiKey: body.apiKey,
+      credentials: body.credentials
+        ? JSON.stringify(body.credentials)
+        : undefined,
       balance: body.balance,
       // normalizeNullable above converts explicit null → undefined, so the
       // stored value is always `number | undefined` (Subscription type
@@ -129,7 +131,9 @@ export async function POST(request: NextRequest) {
       resetSchedules: body.resetSchedules,
     });
 
-    return NextResponse.json(stripApiKey(newSubscription), { status: 201 });
+    return NextResponse.json(stripCredentials(newSubscription), {
+      status: 201,
+    });
   } catch (error) {
     console.error("POST /api/subscriptions error:", error);
     if (error instanceof SyntaxError) {

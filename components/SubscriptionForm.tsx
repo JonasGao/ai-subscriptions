@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -28,8 +28,16 @@ import {
   Provider,
   defaultProviders,
   ResetSchedule,
+  CredentialField,
 } from "@/lib/types";
 import { ResetScheduleConfig } from "@/components/ResetScheduleConfig";
+import {
+  Loader2,
+  CheckCircle,
+  XCircle,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 
 interface SubscriptionFormProps {
   open: boolean;
@@ -37,6 +45,8 @@ interface SubscriptionFormProps {
   subscription?: Subscription | null;
   categories: string[];
   onSubmit: (data: SubscriptionFormData) => void;
+  /** When true, auto-expand credentials section */
+  forceExpandCredentials?: boolean;
 }
 
 const initialFormData: SubscriptionFormData = {
@@ -51,7 +61,7 @@ const initialFormData: SubscriptionFormData = {
   renewalDate: "",
   status: "active",
   notes: "",
-  apiKey: "",
+  credentials: {},
   balance: undefined,
   lowBalanceThreshold: undefined,
   resetSchedules: [],
@@ -63,6 +73,7 @@ export function SubscriptionForm({
   subscription,
   categories,
   onSubmit,
+  forceExpandCredentials,
 }: SubscriptionFormProps) {
   const [formData, setFormData] =
     useState<SubscriptionFormData>(initialFormData);
@@ -74,6 +85,15 @@ export function SubscriptionForm({
     providerConfig?.balanceApiUrl || providerConfig?.usageApiUrl
   );
   const hasBalanceQuery = !!providerConfig?.balanceApiUrl;
+  const credentialFields = providerConfig?.credentialFields || [];
+
+  const [credentialsOpen, setCredentialsOpen] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    ok: boolean;
+    message: string;
+  } | null>(null);
+  const firstCredentialRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/providers")
@@ -96,23 +116,36 @@ export function SubscriptionForm({
         renewalDate: subscription.renewalDate || "",
         status: subscription.status,
         notes: subscription.notes || "",
-        apiKey: "",
+        credentials: {},
         balance: subscription.balance,
         lowBalanceThreshold: subscription.lowBalanceThreshold,
         resetSchedules: subscription.resetSchedules || [],
       });
+      // Auto-expand if editing without credentials or forced
+      const hasExistingCreds =
+        subscription.credentials && subscription.credentials !== "";
+      if (forceExpandCredentials || !hasExistingCreds) {
+        setCredentialsOpen(true);
+      } else {
+        setCredentialsOpen(false);
+      }
+      setTestResult(null);
     } else {
       setFormData(initialFormData);
+      setCredentialsOpen(false);
+      setTestResult(null);
     }
-  }, [subscription, open]);
+  }, [subscription, open, forceExpandCredentials]);
+
+  // Focus first credential input when section expands
+  useEffect(() => {
+    if (credentialsOpen && firstCredentialRef.current) {
+      firstCredentialRef.current.focus();
+    }
+  }, [credentialsOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Explicitly send null for a cleared threshold so the API can
-    // distinguish "user cleared the field" from "field not provided",
-    // allowing updateSubscription to clear any previously stored value.
-    // SubscriptionFormData declares lowBalanceThreshold as `number | null`
-    // so this payload type-checks without casts.
     const payload: SubscriptionFormData = {
       ...formData,
       lowBalanceThreshold: formData.lowBalanceThreshold ?? null,
@@ -131,6 +164,42 @@ export function SubscriptionForm({
     }));
   };
 
+  const handleCredentialChange = (key: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      credentials: {
+        ...prev.credentials,
+        [key]: value,
+      },
+    }));
+    setTestResult(null);
+  };
+
+  const handleTestConnection = async () => {
+    if (!subscription) return;
+    setTestLoading(true);
+    setTestResult(null);
+    try {
+      const res = await fetch(
+        `/api/subscriptions/${subscription.id}/test-connection`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ credentials: formData.credentials }),
+        }
+      );
+      const data = await res.json();
+      setTestResult({
+        ok: data.ok ?? false,
+        message: data.message || (data.error ?? "未知错误"),
+      });
+    } catch {
+      setTestResult({ ok: false, message: "网络请求失败" });
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
   const showCustomProvider = formData.provider === "other";
   const isRecurring = formData.subscriptionType === "recurring";
   const billingCycle = formData.billingCycle || "monthly";
@@ -140,6 +209,8 @@ export function SubscriptionForm({
       ? "价格 (¥/年)"
       : "价格 (¥/月)"
     : "充值金额 (¥)";
+
+  const hasExistingCredentials = !!subscription?.credentials;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -215,22 +286,6 @@ export function SubscriptionForm({
                 />
               </div>
             )}
-            {hasQuerySupport ? (
-              <div className="grid gap-2">
-                <Label htmlFor="apiKey">API Key</Label>
-                <Input
-                  id="apiKey"
-                  type="password"
-                  value={formData.apiKey || ""}
-                  onChange={(e) => handleInputChange("apiKey", e.target.value)}
-                  placeholder={
-                    subscription
-                      ? "已配置，留空保持不变"
-                      : `输入 ${providers.find((p) => p.id === formData.provider)?.name || formData.provider} API Key`
-                  }
-                />
-              </div>
-            ) : null}
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-2">
                 <Label htmlFor="subscriptionType">订阅类型 *</Label>
@@ -329,24 +384,24 @@ export function SubscriptionForm({
               )}
             </div>
             {!isRecurring && !hasBalanceQuery && (
-                <div className="grid gap-2">
-                  <Label htmlFor="balance">余额 (¥)</Label>
-                  <Input
-                    id="balance"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.balance ?? ""}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "balance",
-                        e.target.value ? parseFloat(e.target.value) : 0
-                      )
-                    }
-                    placeholder="手动输入余额"
-                  />
-                </div>
-              )}
+              <div className="grid gap-2">
+                <Label htmlFor="balance">余额 (¥)</Label>
+                <Input
+                  id="balance"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.balance ?? ""}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "balance",
+                      e.target.value ? parseFloat(e.target.value) : 0
+                    )
+                  }
+                  placeholder="手动输入余额"
+                />
+              </div>
+            )}
             {!isRecurring && (
               <div className="grid gap-2">
                 <Label htmlFor="lowBalanceThreshold">低余额阈值 (¥)</Label>
@@ -415,6 +470,82 @@ export function SubscriptionForm({
                     }))
                   }
                 />
+              </div>
+            )}
+            {hasQuerySupport && credentialFields.length > 0 && (
+              <div className="grid gap-2">
+                <button
+                  type="button"
+                  className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setCredentialsOpen(!credentialsOpen)}
+                >
+                  {credentialsOpen ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                  认证凭据
+                  {hasExistingCredentials && (
+                    <span className="text-xs text-green-600 ml-1">已配置</span>
+                  )}
+                </button>
+                {credentialsOpen && (
+                  <div className="grid gap-2 pl-5 border-l-2 border-muted">
+                    {credentialFields.map(
+                      (field: CredentialField, idx: number) => (
+                        <div key={field.key} className="grid gap-1">
+                          <Label htmlFor={`cred-${field.key}`}>
+                            {field.label}
+                          </Label>
+                          <Input
+                            id={`cred-${field.key}`}
+                            ref={idx === 0 ? firstCredentialRef : undefined}
+                            type={
+                              field.type === "password" ? "password" : "text"
+                            }
+                            value={formData.credentials?.[field.key] || ""}
+                            onChange={(e) =>
+                              handleCredentialChange(field.key, e.target.value)
+                            }
+                            placeholder={
+                              hasExistingCredentials
+                                ? "已配置，留空保持不变"
+                                : `输入 ${field.label}`
+                            }
+                          />
+                        </div>
+                      )
+                    )}
+                    {subscription && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleTestConnection}
+                          disabled={testLoading}
+                        >
+                          {testLoading ? (
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          ) : null}
+                          测试连接
+                        </Button>
+                        {testResult && (
+                          <span
+                            className={`text-xs flex items-center gap-1 ${testResult.ok ? "text-green-600" : "text-red-500"}`}
+                          >
+                            {testResult.ok ? (
+                              <CheckCircle className="h-3 w-3" />
+                            ) : (
+                              <XCircle className="h-3 w-3" />
+                            )}
+                            {testResult.message}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
             <div className="grid gap-2">

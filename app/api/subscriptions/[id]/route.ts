@@ -9,9 +9,9 @@ import {
 import { SubscriptionStatus, Subscription } from "@/lib/types";
 import { normalizeNullable, validateNonNegative } from "@/lib/validation";
 
-function stripApiKey(sub: Subscription) {
-  const { apiKey, ...rest } = sub;
-  return rest;
+function stripCredentials(sub: Subscription) {
+  const { credentials, ...rest } = sub;
+  return { ...rest, hasCredentials: !!credentials };
 }
 
 export async function GET(
@@ -28,7 +28,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(stripApiKey(subscription));
+    return NextResponse.json(stripCredentials(subscription));
   } catch (error) {
     console.error("GET /api/subscriptions/[id] error:", error);
     return NextResponse.json(
@@ -81,8 +81,8 @@ export async function PUT(
       );
     }
 
-    if (!body.apiKey) {
-      delete body.apiKey;
+    if (!body.credentials || Object.keys(body.credentials).length === 0) {
+      delete body.credentials;
     }
 
     const updatedSubscription = updateSubscription(params.id, body);
@@ -106,7 +106,7 @@ export async function PUT(
       }
     }
 
-    return NextResponse.json(stripApiKey(finalSubscription));
+    return NextResponse.json(stripCredentials(finalSubscription));
   } catch (error) {
     console.error("PUT /api/subscriptions/[id] error:", error);
     if (error instanceof SyntaxError) {

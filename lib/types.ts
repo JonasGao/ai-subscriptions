@@ -28,7 +28,8 @@ export interface Subscription {
   renewalDate?: string;
   status: "active" | "paused" | "cancelled";
   notes?: string;
-  apiKey?: string;
+  credentials?: string;
+  hasCredentials?: boolean;
   balance?: number;
   lowBalanceThreshold?: number;
   resetSchedules?: ResetSchedule[];
@@ -60,6 +61,12 @@ export const defaultCategories: string[] = [
   "其他",
 ];
 
+export interface CredentialField {
+  key: string;
+  label: string;
+  type: "text" | "password";
+}
+
 export interface Provider {
   id: string;
   name: string;
@@ -67,6 +74,7 @@ export interface Provider {
   website?: string;
   balanceApiUrl?: string;
   usageApiUrl?: string;
+  credentialFields?: CredentialField[];
 }
 
 export const defaultProviders: Provider[] = [
@@ -107,6 +115,7 @@ export const defaultProviders: Provider[] = [
     website: "https://kimi.moonshot.cn",
     balanceApiUrl: "https://api.moonshot.cn/v1/users/me/balance",
     usageApiUrl: "https://api.kimi.com/coding/v1/usages",
+    credentialFields: [{ key: "apiKey", label: "API Key", type: "password" }],
   },
   {
     id: "deepseek",
@@ -114,6 +123,7 @@ export const defaultProviders: Provider[] = [
     description: "DeepSeek 系列",
     website: "https://deepseek.com",
     balanceApiUrl: "https://api.deepseek.com/user/balance",
+    credentialFields: [{ key: "apiKey", label: "API Key", type: "password" }],
   },
   {
     id: "zhipu",
@@ -127,6 +137,7 @@ export const defaultProviders: Provider[] = [
     description: "模型托管平台",
     website: "https://siliconflow.cn",
     balanceApiUrl: "https://api.siliconflow.cn/v1/user/info",
+    credentialFields: [{ key: "apiKey", label: "API Key", type: "password" }],
   },
   {
     id: "openrouter",
@@ -134,6 +145,7 @@ export const defaultProviders: Provider[] = [
     description: "多模型统一 API",
     website: "https://openrouter.ai",
     balanceApiUrl: "https://openrouter.ai/api/v1/credits",
+    credentialFields: [{ key: "apiKey", label: "API Key", type: "password" }],
   },
   {
     id: "minimax",
@@ -152,12 +164,22 @@ export const defaultProviders: Provider[] = [
     name: "火山方舟 CodingPlan",
     description: "火山方舟 CodingPlan 模型服务",
     website: "https://www.volcengine.com/product/ark",
+    usageApiUrl: "https://open.volcengineapi.com/open/GetCodingPlanUsage",
+    credentialFields: [
+      { key: "ak", label: "Access Key", type: "text" },
+      { key: "sk", label: "Secret Key", type: "password" },
+    ],
   },
   {
     id: "fangzhou-agentplan",
     name: "火山方舟 AgentPlan",
     description: "火山方舟 AgentPlan 模型服务",
     website: "https://www.volcengine.com/product/ark",
+    usageApiUrl: "https://open.volcengineapi.com/open/GetAFPUsage",
+    credentialFields: [
+      { key: "ak", label: "Access Key", type: "text" },
+      { key: "sk", label: "Secret Key", type: "password" },
+    ],
   },
   {
     id: "baidu",
@@ -205,7 +227,7 @@ export interface SubscriptionFormData {
   renewalDate?: string;
   status: SubscriptionStatus;
   notes?: string;
-  apiKey?: string;
+  credentials?: Record<string, string>;
   balance?: number;
   lowBalanceThreshold?: number | null;
   resetSchedules?: ResetSchedule[];

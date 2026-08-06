@@ -245,6 +245,11 @@ export function SubscriptionCard({
   const statusReason = getStatusReason(subscription);
 
   const handleQueryBalance = async () => {
+    // If credentials are not configured, open the edit dialog
+    if (!subscription.hasCredentials) {
+      onEdit(subscription);
+      return;
+    }
     setBalanceLoading(true);
     setBalanceError(null);
     try {
