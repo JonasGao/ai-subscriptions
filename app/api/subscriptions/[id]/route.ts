@@ -79,6 +79,8 @@ export async function PUT(
 
     if (!body.credentials || Object.keys(body.credentials).length === 0) {
       delete body.credentials;
+    } else {
+      body.credentials = JSON.stringify(body.credentials);
     }
 
     const updatedSubscription = updateSubscription(params.id, body);
