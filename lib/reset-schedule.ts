@@ -1,6 +1,20 @@
 import { ResetSchedule, ResetScheduleType } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
+const SCHEDULE_TYPE_ORDER: Record<ResetScheduleType, number> = {
+  fiveHour: 0,
+  weekly: 1,
+  monthly: 2,
+};
+
+export function sortResetSchedules(
+  schedules: ResetSchedule[]
+): ResetSchedule[] {
+  return [...schedules].sort(
+    (a, b) => SCHEDULE_TYPE_ORDER[a.type] - SCHEDULE_TYPE_ORDER[b.type]
+  );
+}
+
 export function validateResetSchedule(schedule: Partial<ResetSchedule>): void {
   if (!schedule.type) {
     throw new Error("Schedule type is required");

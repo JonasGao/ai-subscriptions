@@ -30,6 +30,7 @@ import {
   getProgressTier,
   type ProgressTier,
 } from "@/lib/utils";
+import { sortResetSchedules } from "@/lib/reset-schedule";
 import {
   Edit,
   Trash2,
@@ -516,7 +517,7 @@ export function SubscriptionCard({
                     className="mt-1 grid gap-y-1 text-xs"
                     style={{ gridTemplateColumns: "auto 3.5rem 1fr auto" }}
                   >
-                    {subscription.resetSchedules
+                    {sortResetSchedules(subscription.resetSchedules)
                       .filter((s) => s.enabled)
                       .map((schedule) => (
                         <div key={schedule.id} className="contents">

@@ -22,6 +22,7 @@ import { useNow } from "@/hooks/useNow";
 import {
   extractScheduleFromOffset,
   parseDurationString,
+  sortResetSchedules,
 } from "@/lib/reset-schedule";
 import { Plus, Trash2, Clock, Globe } from "lucide-react";
 
@@ -423,7 +424,7 @@ export function ResetScheduleConfig({
 
       {schedules.length > 0 && (
         <div className="space-y-2">
-          {schedules.map((schedule) => (
+          {sortResetSchedules(schedules).map((schedule) => (
             <div
               key={schedule.id}
               className="flex items-center justify-between p-2 border rounded-md"
