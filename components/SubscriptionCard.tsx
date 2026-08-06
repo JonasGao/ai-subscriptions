@@ -159,9 +159,9 @@ function UsageProgressBar({ window }: { window: UsageWindow }) {
           />
         </div>
       )}
-      {window.resetTime && (
-        <div className="flex items-center gap-1">
-          <Clock className="h-3 w-3 text-muted-foreground" />
+      <div className="flex items-center gap-1">
+        <Clock className="h-3 w-3 text-muted-foreground" />
+        {window.resetTime ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="cursor-default text-xs text-muted-foreground">
@@ -172,8 +172,10 @@ function UsageProgressBar({ window }: { window: UsageWindow }) {
               {formatResetTimeTooltip(window.resetTime)}
             </TooltipContent>
           </Tooltip>
-        </div>
-      )}
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </div>
     </div>
   );
 }
