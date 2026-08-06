@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { toggleScheduleExhausted } from "@/lib/db";
-import { Subscription } from "@/lib/types";
-
-function stripCredentials(sub: Subscription) {
-  const { credentials, ...rest } = sub;
-  return { ...rest, hasCredentials: !!credentials };
-}
+import { stripCredentials } from "@/lib/api-utils";
 
 export async function POST(
   request: NextRequest,

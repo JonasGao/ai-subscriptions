@@ -4,14 +4,9 @@ import {
   SubscriptionFormData,
   SubscriptionType,
   BillingCycle,
-  Subscription,
 } from "@/lib/types";
 import { normalizeNullable, validateNonNegative } from "@/lib/validation";
-
-function stripCredentials(sub: Subscription) {
-  const { credentials, ...rest } = sub;
-  return { ...rest, hasCredentials: !!credentials };
-}
+import { stripCredentials } from "@/lib/api-utils";
 
 export async function GET() {
   try {
