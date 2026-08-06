@@ -122,8 +122,7 @@ export function SubscriptionForm({
         resetSchedules: subscription.resetSchedules || [],
       });
       // Auto-expand if editing without credentials or forced
-      const hasExistingCreds =
-        subscription.credentials && subscription.credentials !== "";
+      const hasExistingCreds = subscription.hasCredentials === true;
       if (forceExpandCredentials || !hasExistingCreds) {
         setCredentialsOpen(true);
       } else {
@@ -176,18 +175,23 @@ export function SubscriptionForm({
   };
 
   const handleTestConnection = async () => {
-    if (!subscription) return;
+    if (
+      !formData.provider ||
+      !formData.credentials ||
+      Object.keys(formData.credentials).length === 0
+    )
+      return;
     setTestLoading(true);
     setTestResult(null);
     try {
-      const res = await fetch(
-        `/api/subscriptions/${subscription.id}/test-connection`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ credentials: formData.credentials }),
-        }
-      );
+      const res = await fetch("/api/test-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: formData.provider,
+          credentials: formData.credentials,
+        }),
+      });
       const data = await res.json();
       setTestResult({
         ok: data.ok ?? false,
@@ -210,7 +214,7 @@ export function SubscriptionForm({
       : "价格 (¥/月)"
     : "充值金额 (¥)";
 
-  const hasExistingCredentials = !!subscription?.credentials;
+  const hasExistingCredentials = subscription?.hasCredentials === true;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -516,34 +520,32 @@ export function SubscriptionForm({
                         </div>
                       )
                     )}
-                    {subscription && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleTestConnection}
-                          disabled={testLoading}
+                    <div className="flex items-center gap-2 mt-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleTestConnection}
+                        disabled={testLoading}
+                      >
+                        {testLoading ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : null}
+                        测试连接
+                      </Button>
+                      {testResult && (
+                        <span
+                          className={`text-xs flex items-center gap-1 ${testResult.ok ? "text-green-600" : "text-red-500"}`}
                         >
-                          {testLoading ? (
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          ) : null}
-                          测试连接
-                        </Button>
-                        {testResult && (
-                          <span
-                            className={`text-xs flex items-center gap-1 ${testResult.ok ? "text-green-600" : "text-red-500"}`}
-                          >
-                            {testResult.ok ? (
-                              <CheckCircle className="h-3 w-3" />
-                            ) : (
-                              <XCircle className="h-3 w-3" />
-                            )}
-                            {testResult.message}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                          {testResult.ok ? (
+                            <CheckCircle className="h-3 w-3" />
+                          ) : (
+                            <XCircle className="h-3 w-3" />
+                          )}
+                          {testResult.message}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
