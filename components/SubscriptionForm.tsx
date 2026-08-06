@@ -45,8 +45,6 @@ interface SubscriptionFormProps {
   subscription?: Subscription | null;
   categories: string[];
   onSubmit: (data: SubscriptionFormData) => void;
-  /** When true, auto-expand credentials section */
-  forceExpandCredentials?: boolean;
 }
 
 const initialFormData: SubscriptionFormData = {
@@ -73,7 +71,6 @@ export function SubscriptionForm({
   subscription,
   categories,
   onSubmit,
-  forceExpandCredentials,
 }: SubscriptionFormProps) {
   const [formData, setFormData] =
     useState<SubscriptionFormData>(initialFormData);
@@ -121,9 +118,9 @@ export function SubscriptionForm({
         lowBalanceThreshold: subscription.lowBalanceThreshold,
         resetSchedules: subscription.resetSchedules || [],
       });
-      // Auto-expand if editing without credentials or forced
+      // Auto-expand if editing without credentials
       const hasExistingCreds = subscription.hasCredentials === true;
-      if (forceExpandCredentials || !hasExistingCreds) {
+      if (!hasExistingCreds) {
         setCredentialsOpen(true);
       } else {
         setCredentialsOpen(false);
@@ -134,7 +131,7 @@ export function SubscriptionForm({
       setCredentialsOpen(false);
       setTestResult(null);
     }
-  }, [subscription, open, forceExpandCredentials]);
+  }, [subscription, open]);
 
   // Focus first credential input when section expands
   useEffect(() => {
