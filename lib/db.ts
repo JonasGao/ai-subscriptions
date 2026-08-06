@@ -349,7 +349,6 @@ export function addResetSchedule(
   scheduleData: {
     type: ResetScheduleType;
     enabled?: boolean;
-    intervalHours?: number;
     timeOfDay?: string;
     dayOfWeek?: number;
     dayOfMonth?: number;
@@ -404,7 +403,6 @@ export function updateResetSchedule(
 
   if (
     updates.type ||
-    updates.intervalHours ||
     updates.timeOfDay ||
     updates.dayOfWeek ||
     updates.dayOfMonth
@@ -473,9 +471,18 @@ export function processResetTick(): ResetTickTrigger[] {
       if (now >= nextReset) {
         const wasExhausted = schedule.exhausted;
         schedule.exhausted = false;
-        const nextSchedule = updateResetScheduleNextTime(schedule);
-        schedule.nextResetTime = nextSchedule.nextResetTime;
-        schedule.updatedAt = nowIso;
+        try {
+          const nextSchedule = updateResetScheduleNextTime(schedule);
+          schedule.nextResetTime = nextSchedule.nextResetTime;
+          schedule.updatedAt = nowIso;
+        } catch (error) {
+          console.warn(
+            "Failed to update reset time for schedule:",
+            schedule.id,
+            error
+          );
+          return;
+        }
         subAnyFired = true;
         anyFired = true;
         // Only notify when the schedule was genuinely exhausted and the

@@ -175,8 +175,8 @@ export function formatResetTimeTooltip(
 
 export function getScheduleTypeLabel(type: string): string {
   switch (type) {
-    case "hourly":
-      return "每N小时";
+    case "fiveHour":
+      return "每5小时";
     case "daily":
       return "每日";
     case "weekly":

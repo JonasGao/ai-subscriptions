@@ -1,10 +1,9 @@
-export type ResetScheduleType = "hourly" | "weekly" | "monthly";
+export type ResetScheduleType = "fiveHour" | "weekly" | "monthly";
 
 export interface ResetSchedule {
   id: string;
   enabled: boolean;
   type: ResetScheduleType;
-  intervalHours?: number;
   timeOfDay?: string;
   timezone?: string;
   dayOfWeek?: number;
@@ -236,7 +235,6 @@ export interface SubscriptionFormData {
 export interface ResetScheduleFormData {
   type: ResetScheduleType;
   enabled: boolean;
-  intervalHours?: number;
   timeOfDay?: string;
   dayOfWeek?: number;
   dayOfMonth?: number;

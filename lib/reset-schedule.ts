@@ -6,9 +6,9 @@ export function validateResetSchedule(schedule: Partial<ResetSchedule>): void {
     throw new Error("Schedule type is required");
   }
 
-  if (!["hourly", "weekly", "monthly"].includes(schedule.type)) {
+  if (!["fiveHour", "weekly", "monthly"].includes(schedule.type)) {
     throw new Error(
-      `Invalid schedule type '${schedule.type}'. Supported types: hourly, weekly, monthly`
+      `Invalid schedule type '${schedule.type}'. Supported types: fiveHour, weekly, monthly`
     );
   }
 
@@ -71,8 +71,8 @@ export function calculateNextResetTime(
   const now = new Date();
 
   switch (schedule.type) {
-    case "hourly":
-      return calculateNextHourlyReset(schedule, now, previousNextResetTime);
+    case "fiveHour":
+      return calculateNextFiveHourReset(schedule, now, previousNextResetTime);
     case "weekly":
       return calculateNextWeeklyReset(schedule, now);
     case "monthly":
@@ -82,18 +82,12 @@ export function calculateNextResetTime(
   }
 }
 
-function calculateNextHourlyReset(
-  schedule: { intervalHours?: number },
+function calculateNextFiveHourReset(
+  _schedule: unknown,
   now: Date,
   previousNextResetTime?: Date
 ): Date {
-  if (!schedule.intervalHours || schedule.intervalHours < 1) {
-    throw new Error(
-      "intervalHours must be a positive number for hourly schedule"
-    );
-  }
-
-  const intervalMs = schedule.intervalHours * 60 * 60 * 1000;
+  const intervalMs = 5 * 60 * 60 * 1000;
 
   // When we have a previous anchor (i.e. a reset just fired), compute from
   // that anchor rather than from `now`. This keeps the interval timeline
@@ -277,7 +271,6 @@ function getDaysInMonth(year: number, month: number): number {
 export function createResetSchedule(data: {
   type: ResetScheduleType;
   enabled?: boolean;
-  intervalHours?: number;
   timeOfDay?: string;
   timezone?: string;
   dayOfWeek?: number;
@@ -291,7 +284,6 @@ export function createResetSchedule(data: {
   > = {
     type: data.type,
     enabled: data.enabled ?? true,
-    intervalHours: data.intervalHours,
     timeOfDay: data.timeOfDay,
     timezone: data.timezone,
     dayOfWeek: data.dayOfWeek,

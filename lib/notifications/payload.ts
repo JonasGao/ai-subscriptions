@@ -84,8 +84,8 @@ export function buildLowBalanceMarkdown(
  */
 export function formatScheduleType(type: ResetScheduleType): string {
   switch (type) {
-    case "hourly":
-      return "每小时";
+    case "fiveHour":
+      return "每5小时";
     case "weekly":
       return "每周";
     case "monthly":

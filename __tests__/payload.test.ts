@@ -203,8 +203,8 @@ describe("prepareSend", () => {
 });
 
 describe("formatScheduleType", () => {
-  it("maps hourly/weekly/monthly to Chinese labels", () => {
-    expect(formatScheduleType("hourly")).toBe("每小时");
+  it("maps fiveHour/weekly/monthly to Chinese labels", () => {
+    expect(formatScheduleType("fiveHour")).toBe("每5小时");
     expect(formatScheduleType("weekly")).toBe("每周");
     expect(formatScheduleType("monthly")).toBe("每月");
   });

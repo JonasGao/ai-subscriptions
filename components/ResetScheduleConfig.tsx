@@ -45,10 +45,10 @@ export function ResetScheduleConfig({
   // Re-render periodically so formatNextResetTime (which uses new Date()) updates
   useNow();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [scheduleType, setScheduleType] = useState<ResetScheduleType>("hourly");
+  const [scheduleType, setScheduleType] =
+    useState<ResetScheduleType>("fiveHour");
   const [inputMethod, setInputMethod] = useState<InputMethod>("offset");
 
-  const [intervalHours, setIntervalHours] = useState<string>("1");
   const [offsetDuration, setOffsetDuration] = useState<string>("");
   const [nextResetTimeInput, setNextResetTimeInput] = useState<string>("");
   const [dayOfWeek, setDayOfWeek] = useState<string>("1");
@@ -56,7 +56,6 @@ export function ResetScheduleConfig({
   const [timeOfDay, setTimeOfDay] = useState<string>("00:00");
 
   const [offsetError, setOffsetError] = useState<string>("");
-  const [intervalError, setIntervalError] = useState<string>("");
 
   const [preview, setPreview] = useState<string>("");
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -113,7 +112,7 @@ export function ResetScheduleConfig({
 
         const tzAbbr = getTimezoneAbbr(timezone);
 
-        if (type === "hourly") {
+        if (type === "fiveHour") {
           const days = parsed.days;
           const hours = parsed.hours;
           const minutes = parsed.minutes;
@@ -190,20 +189,13 @@ export function ResetScheduleConfig({
 
   const handleAddSchedule = () => {
     setOffsetError("");
-    setIntervalError("");
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     try {
       let schedule: ResetSchedule;
 
-      if (scheduleType === "hourly") {
-        const interval = parseInt(intervalHours);
-        if (isNaN(interval) || interval < 1) {
-          setIntervalError("间隔必须至少为 1 小时");
-          return;
-        }
-
+      if (scheduleType === "fiveHour") {
         if (inputMethod === "offset") {
           if (!offsetDuration.trim()) {
             setOffsetError("请输入持续时间");
@@ -227,9 +219,8 @@ export function ResetScheduleConfig({
           const nextReset = new Date(now.getTime() + totalMinutes * 60 * 1000);
 
           schedule = createResetSchedule({
-            type: "hourly",
+            type: "fiveHour",
             enabled: true,
-            intervalHours: interval,
             timezone,
           });
 
@@ -247,9 +238,8 @@ export function ResetScheduleConfig({
           }
 
           schedule = createResetSchedule({
-            type: "hourly",
+            type: "fiveHour",
             enabled: true,
-            intervalHours: interval,
             timezone,
           });
 
@@ -355,16 +345,14 @@ export function ResetScheduleConfig({
   };
 
   const resetForm = () => {
-    setScheduleType("hourly");
+    setScheduleType("fiveHour");
     setInputMethod("offset");
-    setIntervalHours("1");
     setOffsetDuration("");
     setNextResetTimeInput("");
     setDayOfWeek("1");
     setDayOfMonth("1");
     setTimeOfDay("00:00");
     setOffsetError("");
-    setIntervalError("");
     setPreview("");
   };
 
@@ -416,7 +404,6 @@ export function ResetScheduleConfig({
 
     setInputMethod(newMethod);
     setOffsetError("");
-    setIntervalError("");
   };
 
   return (
@@ -451,19 +438,18 @@ export function ResetScheduleConfig({
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">
-                      {schedule.type === "hourly" &&
-                        `每${schedule.intervalHours}小时`}
+                      {schedule.type === "fiveHour" && `每5小时`}
                       {schedule.type === "weekly" &&
                         `每${getDayOfWeekLabel(schedule.dayOfWeek ?? 0)}`}
                       {schedule.type === "monthly" &&
                         `每${schedule.dayOfMonth}日`}
                     </span>
-                    {schedule.type !== "hourly" && schedule.timeOfDay && (
+                    {schedule.type !== "fiveHour" && schedule.timeOfDay && (
                       <span className="text-xs text-muted-foreground">
                         {schedule.timeOfDay}
                       </span>
                     )}
-                    {schedule.timezone && schedule.type !== "hourly" && (
+                    {schedule.timezone && schedule.type !== "fiveHour" && (
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <Globe className="h-3 w-3" />
                         {getTimezoneAbbr(schedule.timezone)}
@@ -501,14 +487,13 @@ export function ResetScheduleConfig({
                 onValueChange={(value) => {
                   setScheduleType(value as ResetScheduleType);
                   setOffsetError("");
-                  setIntervalError("");
                 }}
               >
                 <SelectTrigger className="h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="hourly">每小时</SelectItem>
+                  <SelectItem value="fiveHour">每5小时</SelectItem>
                   <SelectItem value="weekly">每周</SelectItem>
                   <SelectItem value="monthly">每月</SelectItem>
                 </SelectContent>
@@ -533,26 +518,6 @@ export function ResetScheduleConfig({
               </Select>
             </div>
           </div>
-
-          {scheduleType === "hourly" && (
-            <div className="space-y-2">
-              <Label className="text-xs">间隔（小时）</Label>
-              <Input
-                type="number"
-                min="1"
-                step="1"
-                value={intervalHours}
-                onChange={(e) => {
-                  setIntervalHours(e.target.value);
-                  setIntervalError("");
-                }}
-                className="h-8"
-              />
-              {intervalError && (
-                <div className="text-xs text-red-500">{intervalError}</div>
-              )}
-            </div>
-          )}
 
           {scheduleType === "weekly" && inputMethod === "direct" && (
             <div className="grid grid-cols-2 gap-3">
@@ -636,7 +601,7 @@ export function ResetScheduleConfig({
             </div>
           )}
 
-          {inputMethod === "direct" && scheduleType === "hourly" && (
+          {inputMethod === "direct" && scheduleType === "fiveHour" && (
             <div className="space-y-2">
               <Label className="text-xs">下次重置时间</Label>
               <Input
