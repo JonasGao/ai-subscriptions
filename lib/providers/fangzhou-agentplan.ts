@@ -8,20 +8,19 @@ const TEST_URL =
   "https://open.volcengineapi.com/?Action=ListSubscribeTrade&Version=2024-01-01";
 function periodToUsageWindow(period: {
   Used: number;
-  Total: number;
-  Percent: number;
-  ResetTimestamp: number;
+  Quota: number;
+  ResetTime: number;
 }): UsageWindow {
   return {
     used: String(period.Used),
-    limit: String(period.Total),
-    remaining: String(period.Total - period.Used),
-    resetTime: String(period.ResetTimestamp),
+    limit: String(period.Quota),
+    remaining: String(period.Quota - period.Used),
+    resetTime: String(period.ResetTime),
   };
 }
 
 function periodToLimitWindow(
-  period: { Used: number; Total: number; ResetTimestamp: number },
+  period: { Used: number; Quota: number; ResetTime: number },
   duration: number,
   timeUnit: string
 ): UsageLimitWindow {
@@ -29,9 +28,9 @@ function periodToLimitWindow(
     window: { duration, timeUnit },
     detail: {
       used: String(period.Used),
-      limit: String(period.Total),
-      remaining: String(period.Total - period.Used),
-      resetTime: String(period.ResetTimestamp),
+      limit: String(period.Quota),
+      remaining: String(period.Quota - period.Used),
+      resetTime: String(period.ResetTime),
     },
   };
 }
@@ -66,30 +65,28 @@ export async function fetchAgentPlanUsage(
   const data = await response.json();
   const result = data?.Result;
 
-  if (!result || !Array.isArray(result.Periods)) {
+  // Actual API returns a flat object, not the Periods[] array the doc
+  // describes: Result.{AFPFiveHour, AFPWeekly, AFPMonthly, AFPDaily}
+  // each with Quota/Used/SubscribeTime/ResetTime. AFPDaily is ignored.
+  const afpFiveHour = result?.AFPFiveHour as
+    { Used: number; Quota: number; ResetTime: number } | undefined;
+  const afpWeekly = result?.AFPWeekly as
+    { Used: number; Quota: number; ResetTime: number } | undefined;
+  const afpMonthly = result?.AFPMonthly as
+    { Used: number; Quota: number; ResetTime: number } | undefined;
+
+  if (!afpWeekly) {
     throw new Error("Account not subscribed to AgentPlan");
   }
 
-  const periods = result.Periods as Array<{
-    Label: string;
-    Used: number;
-    Total: number;
-    Percent: number;
-    ResetTimestamp: number;
-  }>;
-
-  const period5h = periods.find((p) => p.Label === "5h");
-  const periodWeekly = periods.find((p) => p.Label === "weekly");
-  const periodMonthly = periods.find((p) => p.Label === "monthly");
-
-  const usage = periodWeekly ? periodToUsageWindow(periodWeekly) : null;
+  const usage = periodToUsageWindow(afpWeekly);
 
   const limits: UsageLimitWindow[] = [];
-  if (period5h) {
-    limits.push(periodToLimitWindow(period5h, 5, "TIME_UNIT_HOUR"));
+  if (afpFiveHour) {
+    limits.push(periodToLimitWindow(afpFiveHour, 5, "TIME_UNIT_HOUR"));
   }
-  if (periodMonthly) {
-    limits.push(periodToLimitWindow(periodMonthly, 30, "TIME_UNIT_DAY"));
+  if (afpMonthly) {
+    limits.push(periodToLimitWindow(afpMonthly, 30, "TIME_UNIT_DAY"));
   }
 
   return {

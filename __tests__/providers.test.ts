@@ -7,32 +7,34 @@ describe("fangzhou-agentplan", () => {
     vi.restoreAllMocks();
   });
 
-  it("maps AgentPlan Periods to UsageResult", async () => {
+  it("maps AgentPlan flat Result object to UsageResult", async () => {
     const mockResponse = {
       Result: {
-        Periods: [
-          {
-            Label: "5h",
-            Used: 250,
-            Total: 1000,
-            Percent: 25,
-            ResetTimestamp: 1717049200000,
-          },
-          {
-            Label: "weekly",
-            Used: 12500,
-            Total: 50000,
-            Percent: 25,
-            ResetTimestamp: 1717625200000,
-          },
-          {
-            Label: "monthly",
-            Used: 50000,
-            Total: 200000,
-            Percent: 25,
-            ResetTimestamp: 1719615600000,
-          },
-        ],
+        PlanType: "medium",
+        AFPFiveHour: {
+          Quota: 1000,
+          Used: 250,
+          SubscribeTime: 1717049200000,
+          ResetTime: 1717049200000,
+        },
+        AFPWeekly: {
+          Quota: 50000,
+          Used: 12500,
+          SubscribeTime: 1717625200000,
+          ResetTime: 1717625200000,
+        },
+        AFPMonthly: {
+          Quota: 200000,
+          Used: 50000,
+          SubscribeTime: 1719615600000,
+          ResetTime: 1719615600000,
+        },
+        AFPDaily: {
+          Quota: 50000,
+          Used: 1683,
+          SubscribeTime: 1717000000000,
+          ResetTime: 1717000000000,
+        },
       },
     };
 
