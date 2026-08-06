@@ -20,6 +20,10 @@ describe("signVolcengineRequest", () => {
     expect(headers).toHaveProperty("Content-Type", "application/json");
     expect(headers).toHaveProperty("Host", "open.volcengineapi.com");
     expect(headers).toHaveProperty("X-Date", "20260601T080000Z");
+    expect(headers).toHaveProperty(
+      "X-Content-Sha256",
+      "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    );
     expect(headers).toHaveProperty("Authorization");
   });
 
@@ -36,7 +40,9 @@ describe("signVolcengineRequest", () => {
     expect(auth).toMatch(/^HMAC-SHA256 Credential=/);
     expect(auth).toContain("AKIAIOSFODNN7EXAMPLE");
     expect(auth).toContain("/20260601/cn-beijing/ark/request");
-    expect(auth).toContain("SignedHeaders=content-type;host;x-date");
+    expect(auth).toContain(
+      "SignedHeaders=content-type;host;x-content-sha256;x-date"
+    );
     expect(auth).toContain("Signature=");
   });
 

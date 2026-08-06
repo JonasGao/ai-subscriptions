@@ -54,19 +54,20 @@ export function signVolcengineRequest(opts: {
   const dateStamp = formatDate(now);
   const credentialScope = `${dateStamp}/${region}/${service}/request`;
 
-  // Headers to sign (must be lowercase, sorted)
-  const headersToSign: Record<string, string> = {
-    "content-type": "application/json",
-    host,
-    "x-date": xDate,
-  };
-
-  const sortedHeaderKeys = Object.keys(headersToSign).sort();
-  const canonicalHeaders =
-    sortedHeaderKeys.map((k) => `${k}:${headersToSign[k]}`).join("\n") + "\n";
-  const signedHeaders = sortedHeaderKeys.join(";");
-
   const hashedPayload = sha256Hex(body);
+
+  // Headers to sign — official docs mandate this exact order:
+  // content-type;host;x-content-sha256;x-date
+  const headersToSign: Array<[string, string]> = [
+    ["content-type", "application/json"],
+    ["host", host],
+    ["x-content-sha256", hashedPayload],
+    ["x-date", xDate],
+  ];
+
+  const canonicalHeaders =
+    headersToSign.map(([k, v]) => `${k}:${v}`).join("\n") + "\n";
+  const signedHeaders = headersToSign.map(([k]) => k).join(";");
 
   // Step 1: Canonical Request
   const canonicalRequest = [
@@ -103,6 +104,7 @@ export function signVolcengineRequest(opts: {
   return {
     "Content-Type": "application/json",
     Host: host,
+    "X-Content-Sha256": hashedPayload,
     "X-Date": xDate,
     Authorization: authorization,
   };
