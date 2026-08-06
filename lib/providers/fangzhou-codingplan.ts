@@ -14,7 +14,9 @@ function percentToUsageWindow(
     used: String(percent),
     limit: "100",
     remaining: String(100 - percent),
-    resetTime: String(resetTimestampSeconds * 1000),
+    // ResetTimestamp is epoch seconds; convert to ISO for the frontend
+    // (formatNextResetTime parses an ISO string, not a bare ms number)
+    resetTime: new Date(resetTimestampSeconds * 1000).toISOString(),
   };
 }
 

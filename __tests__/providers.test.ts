@@ -53,7 +53,7 @@ describe("fangzhou-agentplan", () => {
     expect(result.usage!.used).toBe("12500");
     expect(result.usage!.limit).toBe("50000");
     expect(result.usage!.remaining).toBe("37500");
-    expect(result.usage!.resetTime).toBe("1717625200000");
+    expect(result.usage!.resetTime).toBe(new Date(1717625200000).toISOString());
 
     // 5h → limits[0], monthly → limits[1]
     expect(result.limits).toHaveLength(2);
@@ -61,6 +61,9 @@ describe("fangzhou-agentplan", () => {
     expect(result.limits[0].window.timeUnit).toBe("TIME_UNIT_HOUR");
     expect(result.limits[0].detail.used).toBe("250");
     expect(result.limits[0].detail.limit).toBe("1000");
+    expect(result.limits[0].detail.resetTime).toBe(
+      new Date(1717049200000).toISOString()
+    );
 
     expect(result.limits[1].window.duration).toBe(30);
     expect(result.limits[1].window.timeUnit).toBe("TIME_UNIT_DAY");
@@ -128,8 +131,10 @@ describe("fangzhou-codingplan", () => {
     expect(result.usage!.used).toBe("45");
     expect(result.usage!.limit).toBe("100");
     expect(result.usage!.remaining).toBe("55");
-    // ResetTimestamp is in seconds → converted to ms
-    expect(result.usage!.resetTime).toBe("1717625200000");
+    // ResetTimestamp is in seconds → converted to ISO string
+    expect(result.usage!.resetTime).toBe(
+      new Date(1717625200 * 1000).toISOString()
+    );
 
     // session → limits[0] (24h), monthly → limits[1] (30d)
     expect(result.limits).toHaveLength(2);
@@ -138,8 +143,10 @@ describe("fangzhou-codingplan", () => {
     expect(result.limits[0].detail.used).toBe("30");
     expect(result.limits[0].detail.limit).toBe("100");
     expect(result.limits[0].detail.remaining).toBe("70");
-    // session ResetTimestamp also converted from seconds to ms
-    expect(result.limits[0].detail.resetTime).toBe("1717049200000");
+    // session ResetTimestamp also converted to ISO string
+    expect(result.limits[0].detail.resetTime).toBe(
+      new Date(1717049200 * 1000).toISOString()
+    );
 
     expect(result.limits[1].window.duration).toBe(30);
     expect(result.limits[1].window.timeUnit).toBe("TIME_UNIT_DAY");

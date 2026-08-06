@@ -15,7 +15,9 @@ function periodToUsageWindow(period: {
     used: String(period.Used),
     limit: String(period.Quota),
     remaining: String(period.Quota - period.Used),
-    resetTime: String(period.ResetTime),
+    // ResetTime is epoch ms; formatNextResetTime parses an ISO string,
+    // a bare ms string yields Invalid Date
+    resetTime: new Date(period.ResetTime).toISOString(),
   };
 }
 
@@ -30,7 +32,7 @@ function periodToLimitWindow(
       used: String(period.Used),
       limit: String(period.Quota),
       remaining: String(period.Quota - period.Used),
-      resetTime: String(period.ResetTime),
+      resetTime: new Date(period.ResetTime).toISOString(),
     },
   };
 }
