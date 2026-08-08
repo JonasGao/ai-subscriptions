@@ -20,13 +20,16 @@ function normalizeUsageWindow(raw: unknown): UsageWindow | null {
   if (!raw || typeof raw !== "object") return null;
   const record = raw as Record<string, unknown>;
   const limit = record.limit;
-  const remaining = record.remaining;
-  const resetTime = record.resetTime ?? record.reset_time;
-  // Some APIs (e.g., Kimi limits[]) omit 'used'; derive from limit - remaining
+  // proto3 JSON omits zero-valued fields — derive whichever side is missing
   let used = record.used;
+  let remaining = record.remaining;
   if (used === undefined && limit !== undefined && remaining !== undefined) {
     used = String(Number(limit) - Number(remaining));
   }
+  if (remaining === undefined && limit !== undefined && used !== undefined) {
+    remaining = String(Number(limit) - Number(used));
+  }
+  const resetTime = record.resetTime ?? record.reset_time;
   if (
     limit === undefined ||
     used === undefined ||

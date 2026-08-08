@@ -266,4 +266,76 @@ describe("moonshot", () => {
     expect(result.monthly).toBeNull();
     expect(result.weekly).not.toBeNull();
   });
+
+  it("derives remaining when omitted (quota fully used)", async () => {
+    const mockResponse = {
+      usage: {
+        limit: "1024",
+        used: "100",
+        remaining: "924",
+        resetTime: "2026-03-04T04:01:38Z",
+      },
+      limits: [
+        {
+          window: { duration: 300, timeUnit: "TIME_UNIT_MINUTE" },
+          detail: {
+            limit: "200",
+            used: "200",
+            // remaining omitted — proto3 zero-value omission
+            resetTime: "2026-03-03T11:16:04Z",
+          },
+        },
+      ],
+    };
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+      text: async () => JSON.stringify(mockResponse),
+    } as Response);
+
+    const result = await fetchMoonshotUsage(
+      "test-key",
+      "https://api.kimi.com/coding/v1/usages"
+    );
+
+    expect(result.fiveHour).not.toBeNull();
+    expect(result.fiveHour!.limit).toBe("200");
+    expect(result.fiveHour!.used).toBe("200");
+    expect(result.fiveHour!.remaining).toBe("0");
+  });
+
+  it("returns null when both used and remaining are missing", async () => {
+    const mockResponse = {
+      usage: {
+        limit: "1024",
+        used: "100",
+        remaining: "924",
+        resetTime: "2026-03-04T04:01:38Z",
+      },
+      limits: [
+        {
+          window: { duration: 300, timeUnit: "TIME_UNIT_MINUTE" },
+          detail: {
+            limit: "200",
+            // both used and remaining omitted
+            resetTime: "2026-03-03T11:16:04Z",
+          },
+        },
+      ],
+    };
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+      text: async () => JSON.stringify(mockResponse),
+    } as Response);
+
+    const result = await fetchMoonshotUsage(
+      "test-key",
+      "https://api.kimi.com/coding/v1/usages"
+    );
+
+    expect(result.fiveHour).toBeNull();
+  });
 });
