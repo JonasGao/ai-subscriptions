@@ -6,8 +6,9 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { provider, credentials } = body as {
+    const { provider, planId, credentials } = body as {
       provider: string;
+      planId?: string;
       credentials: Record<string, string>;
     };
 
@@ -29,7 +30,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const usageHandler = usageHandlers[provider];
+    const usageKey = planId ? `${provider}:${planId}` : provider;
+    const usageHandler = usageHandlers[usageKey];
     const balanceHandler = balanceHandlers[provider];
 
     if (usageHandler) {

@@ -1,4 +1,9 @@
-import { UsageResult, BalanceResult } from "@/lib/types";
+import {
+  UsageResult,
+  BalanceResult,
+  Provider,
+  Subscription,
+} from "@/lib/types";
 import {
   fetchMoonshotUsage,
   fetchMoonshotBalance,
@@ -34,16 +39,16 @@ export interface BalanceHandler {
 }
 
 export const usageHandlers: Record<string, UsageHandler> = {
-  moonshot: {
+  "moonshot:kimi-code": {
     fetchUsage: (creds) =>
       fetchMoonshotUsage(creds.apiKey, "https://api.kimi.com/coding/v1/usages"),
     testConnection: (creds) => testMoonshotConnection(creds.apiKey),
   },
-  "fangzhou-agentplan": {
+  "fangzhou:agentplan": {
     fetchUsage: (creds) => fetchAgentPlanUsage(creds),
     testConnection: (creds) => testAgentPlanConnection(creds),
   },
-  "fangzhou-codingplan": {
+  "fangzhou:codingplan": {
     fetchUsage: (creds) => fetchCodingPlanUsage(creds),
     testConnection: (creds) => testCodingPlanConnection(creds),
   },
@@ -67,3 +72,34 @@ export const balanceHandlers: Record<string, BalanceHandler> = {
     testConnection: (creds) => testOpenRouterConnection(creds.apiKey),
   },
 };
+
+/**
+ * Resolves the handler key for a subscription's usage query.
+ * If the subscription has a planId, returns "providerId:planId";
+ * otherwise returns the bare provider id.
+ */
+export function resolveUsageHandlerKey(subscription: Subscription): string {
+  if (subscription.planId) {
+    return `${subscription.provider}:${subscription.planId}`;
+  }
+  return subscription.provider;
+}
+
+/**
+ * Resolves the usage API URL for a subscription.
+ * If the subscription has a planId and the provider has plans,
+ * returns the plan-level usageApiUrl; otherwise returns the
+ * provider-level usageApiUrl.
+ */
+export function resolveUsageApiUrl(
+  provider: Provider,
+  planId?: string
+): string | undefined {
+  if (planId && provider.plans) {
+    const plan = provider.plans.find((p) => p.id === planId);
+    if (plan?.usageApiUrl) {
+      return plan.usageApiUrl;
+    }
+  }
+  return provider.usageApiUrl;
+}

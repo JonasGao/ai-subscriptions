@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSubscriptionById, getProviders } from "@/lib/db";
 import { decryptCredentials } from "@/lib/encryption";
-import { usageHandlers } from "@/lib/providers";
+import {
+  usageHandlers,
+  resolveUsageHandlerKey,
+  resolveUsageApiUrl,
+} from "@/lib/providers";
 
 export const dynamic = "force-dynamic";
 
@@ -30,14 +34,18 @@ export async function GET(
     const providerConfig = providers.find(
       (p) => p.id === subscription.provider
     );
-    if (!providerConfig?.usageApiUrl) {
+    const usageApiUrl = providerConfig
+      ? resolveUsageApiUrl(providerConfig, subscription.planId)
+      : undefined;
+    if (!usageApiUrl) {
       return NextResponse.json(
         { error: `Usage query not supported for ${subscription.provider}` },
         { status: 400 }
       );
     }
 
-    const handler = usageHandlers[subscription.provider];
+    const handlerKey = resolveUsageHandlerKey(subscription);
+    const handler = usageHandlers[handlerKey];
     if (!handler) {
       return NextResponse.json(
         { error: "Unsupported provider" },

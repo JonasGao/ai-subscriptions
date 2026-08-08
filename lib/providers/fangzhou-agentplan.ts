@@ -67,7 +67,7 @@ export async function fetchAgentPlanUsage(
   }
 
   return {
-    provider: "fangzhou-agentplan",
+    provider: "fangzhou",
     fiveHour: afpFiveHour ? periodToUsageWindow(afpFiveHour) : null,
     weekly: periodToUsageWindow(afpWeekly),
     monthly: afpMonthly ? periodToUsageWindow(afpMonthly) : null,

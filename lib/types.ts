@@ -32,6 +32,7 @@ export interface Subscription {
   balance?: number;
   lowBalanceThreshold?: number;
   resetSchedules?: ResetSchedule[];
+  planId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,6 +67,12 @@ export interface CredentialField {
   type: "text" | "password";
 }
 
+export interface PlanDefinition {
+  id: string;
+  name: string;
+  usageApiUrl?: string;
+}
+
 export interface Provider {
   id: string;
   name: string;
@@ -74,6 +81,7 @@ export interface Provider {
   balanceApiUrl?: string;
   usageApiUrl?: string;
   credentialFields?: CredentialField[];
+  plans?: PlanDefinition[];
 }
 
 export const defaultProviders: Provider[] = [
@@ -113,8 +121,14 @@ export const defaultProviders: Provider[] = [
     description: "Kimi 系列",
     website: "https://kimi.moonshot.cn",
     balanceApiUrl: "https://api.moonshot.cn/v1/users/me/balance",
-    usageApiUrl: "https://api.kimi.com/coding/v1/usages",
     credentialFields: [{ key: "apiKey", label: "API Key", type: "password" }],
+    plans: [
+      {
+        id: "kimi-code",
+        name: "Kimi Code",
+        usageApiUrl: "https://api.kimi.com/coding/v1/usages",
+      },
+    ],
   },
   {
     id: "deepseek",
@@ -159,25 +173,25 @@ export const defaultProviders: Provider[] = [
     website: "https://doubao.com",
   },
   {
-    id: "fangzhou-codingplan",
-    name: "火山方舟 CodingPlan",
-    description: "火山方舟 CodingPlan 模型服务",
+    id: "fangzhou",
+    name: "火山方舟",
+    description: "火山方舟模型服务",
     website: "https://www.volcengine.com/product/ark",
-    usageApiUrl: "https://open.volcengineapi.com/open/GetCodingPlanUsage",
     credentialFields: [
       { key: "ak", label: "Access Key", type: "text" },
       { key: "sk", label: "Secret Key", type: "password" },
     ],
-  },
-  {
-    id: "fangzhou-agentplan",
-    name: "火山方舟 AgentPlan",
-    description: "火山方舟 AgentPlan 模型服务",
-    website: "https://www.volcengine.com/product/ark",
-    usageApiUrl: "https://open.volcengineapi.com/open/GetAFPUsage",
-    credentialFields: [
-      { key: "ak", label: "Access Key", type: "text" },
-      { key: "sk", label: "Secret Key", type: "password" },
+    plans: [
+      {
+        id: "codingplan",
+        name: "Coding Plan",
+        usageApiUrl: "https://open.volcengineapi.com/open/GetCodingPlanUsage",
+      },
+      {
+        id: "agentplan",
+        name: "Agent Plan",
+        usageApiUrl: "https://open.volcengineapi.com/open/GetAFPUsage",
+      },
     ],
   },
   {
@@ -230,6 +244,7 @@ export interface SubscriptionFormData {
   balance?: number;
   lowBalanceThreshold?: number | null;
   resetSchedules?: ResetSchedule[];
+  planId?: string;
 }
 
 export interface ResetScheduleFormData {

@@ -47,7 +47,7 @@ describe("fangzhou-agentplan", () => {
 
     const result = await fetchAgentPlanUsage({ ak: "test-ak", sk: "test-sk" });
 
-    expect(result.provider).toBe("fangzhou-agentplan");
+    expect(result.provider).toBe("fangzhou");
 
     // AFPFiveHour → fiveHour
     expect(result.fiveHour).not.toBeNull();
@@ -131,7 +131,7 @@ describe("fangzhou-codingplan", () => {
 
     const result = await fetchCodingPlanUsage({ ak: "test-ak", sk: "test-sk" });
 
-    expect(result.provider).toBe("fangzhou-codingplan");
+    expect(result.provider).toBe("fangzhou");
 
     // session → fiveHour (percent → used, limit=100)
     expect(result.fiveHour).not.toBeNull();

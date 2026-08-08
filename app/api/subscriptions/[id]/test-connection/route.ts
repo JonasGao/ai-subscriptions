@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSubscriptionById } from "@/lib/db";
-import { usageHandlers, balanceHandlers } from "@/lib/providers";
+import {
+  usageHandlers,
+  balanceHandlers,
+  resolveUsageHandlerKey,
+} from "@/lib/providers";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +36,9 @@ export async function POST(
       );
     }
 
-    // Try usage handler first, then balance handler
-    const usageHandler = usageHandlers[subscription.provider];
+    // Try usage handler first (plan-aware key), then balance handler
+    const usageKey = resolveUsageHandlerKey(subscription);
+    const usageHandler = usageHandlers[usageKey];
     const balanceHandler = balanceHandlers[subscription.provider];
 
     if (usageHandler) {

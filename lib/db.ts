@@ -11,8 +11,8 @@ import {
   ResetSchedule,
   ResetScheduleType,
   ResetTickTrigger,
+  Provider,
 } from "./types";
-import { Provider } from "./types";
 import { v4 as uuidv4 } from "uuid";
 import { ensureDataDir, atomicWriteFile, dataDir } from "./file-ops";
 import { encryptApiKey, decryptApiKey, encryptCredentials } from "./encryption";
@@ -179,10 +179,18 @@ export function createSubscription(
 
   const data = readData();
   const now = new Date().toISOString();
+  const subType = subscriptionData.subscriptionType || "recurring";
+
+  const resolvedPlanId = resolvePlanId(
+    subscriptionData.provider,
+    subType,
+    subscriptionData.planId
+  );
 
   const newSubscription: Subscription = {
     ...subscriptionData,
-    subscriptionType: subscriptionData.subscriptionType || "recurring",
+    subscriptionType: subType,
+    planId: resolvedPlanId,
     id: uuidv4(),
     createdAt: now,
     updatedAt: now,
@@ -267,8 +275,29 @@ export function updateSubscription(
     return null;
   }
 
+  const existing = data.subscriptions[index];
+
+  // Resolve planId based on effective provider + subscriptionType
+  if (
+    updates.provider !== undefined ||
+    updates.subscriptionType !== undefined ||
+    updates.planId !== undefined
+  ) {
+    const effectiveProvider = updates.provider ?? existing.provider;
+    const effectiveType =
+      (updates.subscriptionType as SubscriptionType | undefined) ??
+      existing.subscriptionType;
+    const effectivePlanId =
+      updates.planId !== undefined ? updates.planId : existing.planId;
+    updates.planId = resolvePlanId(
+      effectiveProvider,
+      effectiveType,
+      effectivePlanId
+    );
+  }
+
   data.subscriptions[index] = {
-    ...data.subscriptions[index],
+    ...existing,
     ...updates,
     updatedAt: new Date().toISOString(),
   };
@@ -328,6 +357,50 @@ export function addCategory(category: string): string[] {
 
 export function getProviders(): Provider[] {
   return defaultProviders;
+}
+
+/**
+ * Resolves planId for a subscription based on the provider's plan offerings.
+ * - one-time → always clears planId (plans are recurring-only)
+ * - recurring, no plans → undefined
+ * - recurring, single plan, no planId provided → auto-fill that plan
+ * - recurring, multiple plans, planId provided → keep as-is
+ * - recurring, multiple plans, no planId → throws (user must choose)
+ * - recurring, planId provided but invalid → throws
+ */
+export function resolvePlanId(
+  providerId: string,
+  subscriptionType: SubscriptionType,
+  planId?: string
+): string | undefined {
+  if (subscriptionType !== "recurring") {
+    return undefined;
+  }
+
+  const provider = defaultProviders.find((p) => p.id === providerId);
+  const plans = provider?.plans;
+
+  if (!plans || plans.length === 0) {
+    return undefined;
+  }
+
+  if (plans.length === 1) {
+    return plans[0].id;
+  }
+
+  // Multiple plans — planId is required
+  if (!planId) {
+    throw new Error(
+      `Provider "${providerId}" has multiple plans; planId is required`
+    );
+  }
+
+  const plan = plans.find((p) => p.id === planId);
+  if (!plan) {
+    throw new Error(`Plan "${planId}" not found for provider "${providerId}"`);
+  }
+
+  return planId;
 }
 
 export function recomputeStatus(

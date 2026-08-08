@@ -6,7 +6,15 @@ A subscription management system for AI services with quota tracking and automat
 
 **Subscription**:
 A recurring or one-time service subscription to an AI provider.
-_Avoid_: Account, plan
+_Avoid_: Account. ("Plan" was formerly avoided as a synonym for Subscription; it is now a distinct term — see below.)
+
+**Provider**:
+An AI service vendor (e.g., Volcengine Ark, Moonshot, OpenAI). A provider statically declares which Plans it offers.
+_Avoid_: Vendor, service
+
+**Plan**:
+A distinct subscription offering within a provider's recurring subscriptions (e.g., Volcengine Ark offers the Coding Plan and the Agent Plan). Plans differ in how usage is queried. A provider declares zero or more Plans: multiple Plans mean the user must pick one for a recurring subscription; a single Plan is selected implicitly; no Plans means no subdivision exists. A subscription records its chosen Plan via `planId`.
+_Avoid_: 套餐 (package/tier), subscription tier
 
 **Quota Window**:
 A time period during which a subscription has available credits or usage allowance. Quota windows reset on fixed schedules (e.g., every 5 hours, daily, weekly, monthly).
@@ -41,6 +49,8 @@ The choice between offset-based and direct input methods for creating reset sche
 
 ## Relationships
 
+- **Provider → Plan**: A provider declares the Plans it offers (if any)
+- **Subscription → Plan**: A recurring subscription may record the chosen Plan (`planId`) when its provider offers Plans
 - **Subscription → Quota Window**: A subscription may have quota windows (if not unlimited usage)
 - **Quota Window → Reset Schedule**: Quota windows are tracked via reset schedules
 - **Reset Schedule → Reset Time**: Each schedule calculates and stores the next reset time

@@ -29,6 +29,7 @@ import {
   defaultProviders,
   ResetSchedule,
   CredentialField,
+  PlanDefinition,
 } from "@/lib/types";
 import { ResetScheduleConfig } from "@/components/ResetScheduleConfig";
 import {
@@ -63,6 +64,7 @@ const initialFormData: SubscriptionFormData = {
   balance: undefined,
   lowBalanceThreshold: undefined,
   resetSchedules: [],
+  planId: undefined,
 };
 
 export function SubscriptionForm({
@@ -75,11 +77,19 @@ export function SubscriptionForm({
   const [formData, setFormData] =
     useState<SubscriptionFormData>(initialFormData);
   const [providers, setProviders] = useState<Provider[]>(defaultProviders);
-  const providerConfig = defaultProviders.find(
-    (p) => p.id === formData.provider
+  const providerConfig = providers.find((p) => p.id === formData.provider);
+  const plans = providerConfig?.plans ?? [];
+  const showPlanSelector =
+    formData.subscriptionType === "recurring" && plans.length > 1;
+  const selectedPlan: PlanDefinition | undefined = plans.find(
+    (p) => p.id === formData.planId
   );
+  const planUsageApiUrl = selectedPlan?.usageApiUrl;
   const hasQuerySupport = !!(
-    providerConfig?.balanceApiUrl || providerConfig?.usageApiUrl
+    providerConfig?.balanceApiUrl ||
+    planUsageApiUrl ||
+    (plans.length === 1 && plans[0].usageApiUrl) ||
+    (!formData.planId && providerConfig?.usageApiUrl)
   );
   const hasBalanceQuery = !!providerConfig?.balanceApiUrl;
   const credentialFields = providerConfig?.credentialFields || [];
@@ -117,6 +127,7 @@ export function SubscriptionForm({
         balance: subscription.balance,
         lowBalanceThreshold: subscription.lowBalanceThreshold,
         resetSchedules: subscription.resetSchedules || [],
+        planId: subscription.planId,
       });
       // Auto-expand if editing without credentials
       const hasExistingCreds = subscription.hasCredentials === true;
@@ -180,12 +191,18 @@ export function SubscriptionForm({
       return;
     setTestLoading(true);
     setTestResult(null);
+    // For plan-based providers, send the effective planId:
+    // - explicit planId if set (multi-plan selector)
+    // - otherwise the single plan's id if provider has exactly one plan
+    const effectivePlanId =
+      formData.planId || (plans.length === 1 ? plans[0].id : undefined);
     try {
       const res = await fetch("/api/test-connection", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider: formData.provider,
+          planId: effectivePlanId,
           credentials: formData.credentials,
         }),
       });
@@ -256,9 +273,13 @@ export function SubscriptionForm({
                 <Label htmlFor="provider">提供商 *</Label>
                 <Select
                   value={formData.provider}
-                  onValueChange={(value) =>
-                    handleInputChange("provider", value)
-                  }
+                  onValueChange={(value) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      provider: value,
+                      planId: undefined,
+                    }));
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="选择提供商" />
@@ -287,17 +308,43 @@ export function SubscriptionForm({
                 />
               </div>
             )}
+            {showPlanSelector && (
+              <div className="grid gap-2">
+                <Label htmlFor="planId">方案 *</Label>
+                <Select
+                  value={formData.planId || ""}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      planId: value || undefined,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择方案" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {plans.map((plan) => (
+                      <SelectItem key={plan.id} value={plan.id}>
+                        {plan.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-2">
                 <Label htmlFor="subscriptionType">订阅类型 *</Label>
                 <Select
                   value={formData.subscriptionType}
-                  onValueChange={(value) =>
-                    handleInputChange(
-                      "subscriptionType",
-                      value as SubscriptionType
-                    )
-                  }
+                  onValueChange={(value) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      subscriptionType: value as SubscriptionType,
+                      planId: undefined,
+                    }));
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="选择类型" />

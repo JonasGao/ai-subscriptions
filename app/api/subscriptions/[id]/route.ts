@@ -113,6 +113,9 @@ export async function PUT(
         { status: 400 }
       );
     }
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     return NextResponse.json(
       { error: "Failed to update subscription" },
       { status: 500 }

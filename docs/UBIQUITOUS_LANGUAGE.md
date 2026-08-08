@@ -82,7 +82,7 @@ For recurring subscriptions, represents live quota consumption data queried from
 - May include auxiliary data: booster wallet balance, monthly spending, parallel limit, membership tier
 - **Manual trigger only** — user clicks to refresh (not auto-polled)
 - **Frontend-only** — not persisted; each query fetches fresh data
-- Available only for providers that expose `usageApiUrl`
+- Available only for providers that expose `usageApiUrl` — declared at the **Plan** level when the provider offers Plans, otherwise at the provider level
 
 **Difference from Reset Schedule:**
 
@@ -141,8 +141,8 @@ A method of creating reset schedules where the user manually selects schedule pr
 
 When editing a subscription:
 
-- Switching from Recurring to One-time: Hide reset schedules in UI, preserve data in memory
-- Switching from One-time to Recurring: Show reset schedule configuration (with previously saved data if any)
+- Switching from Recurring to One-time: Hide reset schedules in UI, preserve data in memory; **`planId` is cleared** (Plans are a recurring-only concept, and unlike reset schedules there is no value in preserving the selection)
+- Switching from One-time to Recurring: Show reset schedule configuration (with previously saved data if any); Plan selection starts fresh (re-picked by the user, or re-assigned implicitly if the provider has a single Plan)
 
 ## Examples
 
@@ -178,9 +178,29 @@ An AI service provider. Defines identity and supported query capabilities:
 
 - `id`, `name`, `description`, `website` — identity
 - `balanceApiUrl?` — endpoint for live balance queries (one-time subscriptions)
-- `usageApiUrl?` — endpoint for live usage queries (recurring subscriptions)
+- `usageApiUrl?` — endpoint for live usage queries (recurring subscriptions), used when the provider has no Plans
+- `plans?` — the provider's Plan offerings (see below)
 
-The presence of a Query URL indicates the provider supports that query type. A provider may support neither, one, or both. The unified "额度" button on subscription cards auto-selects the query type based on the subscription's type and the provider's configured URLs.
+The presence of a Query URL indicates the provider supports that query type. A provider may support neither, one, or both. The unified "额度" button on subscription cards auto-selects the query type based on the subscription's type, its `planId` (if any), and the configured URLs.
+
+### Plan (订阅方案)
+
+A distinct subscription offering within a provider's **recurring** subscriptions. Plans differ in how usage is queried:
+
+- `id` — unique within the provider (e.g. `codingplan`, `agentplan`, `kimi-code`)
+- `name` — display name, kept in the provider's original wording (Coding Plan, Agent Plan, Kimi Code)
+- `usageApiUrl?` — the Plan's own usage query endpoint
+
+**Selection rules:**
+
+- **Multiple Plans** — the user must pick one when creating a recurring subscription (required field)
+- **Single Plan** — no picker is shown; the backend implicitly assigns it (`planId` is always stored explicitly)
+- **No Plans** — no subdivision; usage capability stays at the provider level
+
+**Applicability:**
+
+- Plans are only meaningful for **Recurring Subscriptions**; switching a subscription to one-time **clears** `planId`
+- **Not called "套餐"** — the canonical term is Plan (订阅方案)
 
 ## Relationships
 
@@ -190,8 +210,9 @@ Subscription
 │   ├── billingCycle: Monthly | Yearly
 │   ├── startDate: Date
 │   ├── renewalDate: Date
+│   ├── planId?: Plan  (when the provider offers Plans)
 │   ├── resetSchedules: QuotaResetSchedule[] (optional)
-│   └── usage (frontend-only, queried from Provider.usageApiUrl)
+│   └── usage (frontend-only, queried from Plan.usageApiUrl or Provider.usageApiUrl)
 │
 └── One-time
     ├── balance: number (remaining credits)
@@ -199,19 +220,22 @@ Subscription
 
 Provider
 ├── balanceApiUrl?: string  → supports balance query for one-time subs
-└── usageApiUrl?: string    → supports usage query for recurring subs
+├── usageApiUrl?: string    → supports usage query for recurring subs (no Plans)
+└── plans?: Plan[]
+    └── usageApiUrl?: string → supports usage query for that Plan
 ```
 
 ## Glossary
 
-| Chinese      | English                | Definition                                                    |
-| ------------ | ---------------------- | ------------------------------------------------------------- |
-| 订阅         | Subscription           | User's access to an AI service                                |
-| 周期性订阅   | Recurring Subscription | Regular billing cycle, periodic quota reset                   |
-| 一次性订阅   | One-time Subscription  | Single payment, use until exhausted                           |
-| 额度重置计划 | Quota Reset Schedule   | Manually configured local tracking for quota reset timing     |
-| 计费周期     | Billing Cycle          | Payment frequency (monthly/yearly)                            |
-| 余额         | Balance                | Prepaid credits for one-time subscriptions, can be live-queried |
-| 用量         | Usage                  | Live quota consumption data from provider API for recurring subs |
-| 提供商       | Provider               | AI service provider with optional query endpoint configuration   |
-| 分类         | Category               | Subscription grouping (AI助手, 图像生成, etc.)                |
+| Chinese      | English                | Definition                                                                             |
+| ------------ | ---------------------- | -------------------------------------------------------------------------------------- |
+| 订阅         | Subscription           | User's access to an AI service                                                         |
+| 周期性订阅   | Recurring Subscription | Regular billing cycle, periodic quota reset                                            |
+| 一次性订阅   | One-time Subscription  | Single payment, use until exhausted                                                    |
+| 额度重置计划 | Quota Reset Schedule   | Manually configured local tracking for quota reset timing                              |
+| 计费周期     | Billing Cycle          | Payment frequency (monthly/yearly)                                                     |
+| 余额         | Balance                | Prepaid credits for one-time subscriptions, can be live-queried                        |
+| 用量         | Usage                  | Live quota consumption data from provider API for recurring subs                       |
+| 提供商       | Provider               | AI service provider with optional query endpoint configuration                         |
+| 订阅方案     | Plan                   | A provider's distinct recurring subscription offering (e.g. Coding Plan); never "套餐" |
+| 分类         | Category               | Subscription grouping (AI助手, 图像生成, etc.)                                         |

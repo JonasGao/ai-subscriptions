@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
       // match what we've established at runtime.
       lowBalanceThreshold: body.lowBalanceThreshold ?? undefined,
       resetSchedules: body.resetSchedules,
+      planId: body.planId,
     });
 
     return NextResponse.json(stripCredentials(newSubscription), {
@@ -136,6 +137,9 @@ export async function POST(request: NextRequest) {
         { error: "Invalid JSON in request body" },
         { status: 400 }
       );
+    }
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return NextResponse.json(
       { error: "Failed to create subscription" },

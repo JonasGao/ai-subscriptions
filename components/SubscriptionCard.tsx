@@ -89,6 +89,25 @@ function getProviderName(provider: string, providerCustom?: string): string {
   return found?.name || provider;
 }
 
+function getPlanName(provider: string, planId?: string): string | null {
+  if (!planId) return null;
+  const found = defaultProviders.find((p) => p.id === provider);
+  const plan = found?.plans?.find((p) => p.id === planId);
+  return plan?.name ?? null;
+}
+
+function getPlanUsageApiUrl(
+  provider: (typeof defaultProviders)[number] | undefined,
+  planId?: string
+): string | undefined {
+  if (!provider) return undefined;
+  if (planId && provider.plans) {
+    const plan = provider.plans.find((p) => p.id === planId);
+    if (plan?.usageApiUrl) return plan.usageApiUrl;
+  }
+  return provider.usageApiUrl;
+}
+
 function getTypeLabel(type: string): string {
   return type === "recurring" ? "周期性" : "一次性";
 }
@@ -218,6 +237,7 @@ export function SubscriptionCard({
     subscription.provider,
     subscription.providerCustom
   );
+  const planName = getPlanName(subscription.provider, subscription.planId);
   const typeLabel = getTypeLabel(subscription.subscriptionType);
   const priceLabel =
     subscription.subscriptionType === "one-time"
@@ -231,7 +251,7 @@ export function SubscriptionCard({
   const canQuery =
     subscription.subscriptionType === "one-time"
       ? !!providerConfig?.balanceApiUrl
-      : !!providerConfig?.usageApiUrl;
+      : !!getPlanUsageApiUrl(providerConfig, subscription.planId);
   const isOneTime = subscription.subscriptionType === "one-time";
   const canToggleStatus =
     subscription.status === "active" || subscription.status === "paused";
@@ -346,6 +366,12 @@ export function SubscriptionCard({
               <span className="text-sm text-muted-foreground">提供商</span>
               <span className="text-sm font-medium">{providerName}</span>
             </div>
+            {planName && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">方案</span>
+                <span className="text-sm font-medium">{planName}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">分类</span>
               <span className="text-sm font-medium">

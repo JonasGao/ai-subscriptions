@@ -69,7 +69,7 @@ export async function fetchCodingPlanUsage(
   const monthly = quotas.find((q) => q.Label === "monthly");
 
   return {
-    provider: "fangzhou-codingplan",
+    provider: "fangzhou",
     // session is the short rolling window → fiveHour slot
     fiveHour: session
       ? percentToUsageWindow(session.Percent, session.ResetTimestamp)
