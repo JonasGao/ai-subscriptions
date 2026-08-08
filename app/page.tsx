@@ -16,6 +16,7 @@ import {
   CreditCard,
   Wrench,
   Bell,
+  Boxes,
 } from "lucide-react";
 import Link from "next/link";
 import { PriorityManager } from "@/components/PriorityManager";
@@ -268,6 +269,11 @@ export default function Home() {
               </Button>
             </div>
             <ThemeToggle />
+            <Link href="/providers">
+              <Button variant="outline" size="icon" title="服务商管理">
+                <Boxes className="h-4 w-4" />
+              </Button>
+            </Link>
             <Link href="/notifications">
               <Button variant="outline" size="icon" title="通知设置">
                 <Bell className="h-4 w-4" />

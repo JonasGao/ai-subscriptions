@@ -9,7 +9,7 @@ A recurring or one-time service subscription to an AI provider.
 _Avoid_: Account. ("Plan" was formerly avoided as a synonym for Subscription; it is now a distinct term — see below.)
 
 **Provider**:
-An AI service vendor (e.g., Volcengine Ark, Moonshot, OpenAI). A provider statically declares which Plans it offers.
+An AI service vendor (e.g., Volcengine Ark, Moonshot, OpenAI). A provider statically declares which Plans it offers. Provider definitions are currently read-only: usage/balance query logic is hard-bound to specific provider definitions in code, so providers cannot be created, edited, or deleted through the UI.
 _Avoid_: Vendor, service
 
 **Plan**:
