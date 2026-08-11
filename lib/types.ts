@@ -114,6 +114,16 @@ export const defaultProviders: Provider[] = [
     name: "阿里云百炼",
     description: "Qwen 系列",
     website: "https://bailian.console.aliyun.com",
+    plans: [
+      {
+        id: "coding-plan",
+        name: "Coding Plan",
+      },
+      {
+        id: "token-plan",
+        name: "Token Plan",
+      },
+    ],
   },
   {
     id: "moonshot",

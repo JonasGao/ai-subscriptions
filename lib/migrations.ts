@@ -82,6 +82,24 @@ export function migrateProviderPlans(): void {
       sub.planId = "kimi-code";
       changed = true;
     }
+
+    // Backfill alibaba recurring subscriptions based on subscription name
+    // Heuristic: match "Coding" → coding-plan, "Token" → token-plan
+    if (
+      sub.provider === "alibaba" &&
+      sub.subscriptionType === "recurring" &&
+      !sub.planId &&
+      typeof sub.name === "string"
+    ) {
+      const name = sub.name.toLowerCase();
+      if (name.includes("coding")) {
+        sub.planId = "coding-plan";
+        changed = true;
+      } else if (name.includes("token")) {
+        sub.planId = "token-plan";
+        changed = true;
+      }
+    }
   }
 
   if (changed) {

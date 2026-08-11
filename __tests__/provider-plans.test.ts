@@ -102,6 +102,23 @@ describe("resolvePlanId", () => {
       db.resolvePlanId("fangzhou", "recurring", "nonexistent")
     ).toThrow(/not found/);
   });
+
+  it("throws for alibaba multi-plan provider without planId", async () => {
+    const db = await getDb();
+    expect(() => db.resolvePlanId("alibaba", "recurring")).toThrow(
+      /planId is required/
+    );
+  });
+
+  it("keeps explicit planId for alibaba multi-plan provider", async () => {
+    const db = await getDb();
+    expect(db.resolvePlanId("alibaba", "recurring", "coding-plan")).toBe(
+      "coding-plan"
+    );
+    expect(db.resolvePlanId("alibaba", "recurring", "token-plan")).toBe(
+      "token-plan"
+    );
+  });
 });
 
 // ============ createSubscription plan resolution ============
@@ -349,6 +366,53 @@ describe("migrateProviderPlans", () => {
     const migrations = await getMigrations();
     // Should not throw
     expect(() => migrations.migrateProviderPlans()).not.toThrow();
+  });
+
+  it("backfills planId for alibaba recurring subscriptions by name", async () => {
+    const data: SubscriptionData = {
+      subscriptions: [
+        {
+          ...makeSubscription({
+            id: "sub-alibaba-1",
+            provider: "alibaba",
+            subscriptionType: "recurring",
+            name: "阿里云 Coding Plan",
+          }),
+        },
+        {
+          ...makeSubscription({
+            id: "sub-alibaba-2",
+            provider: "alibaba",
+            subscriptionType: "recurring",
+            name: "阿里云 Token Plan",
+          }),
+        },
+        {
+          ...makeSubscription({
+            id: "sub-alibaba-3",
+            provider: "alibaba",
+            subscriptionType: "recurring",
+            name: "其他方案",
+          }),
+        },
+      ],
+      categories: [],
+    };
+    fs.writeFileSync(
+      path.join(tempDataDir, "subscriptions.json"),
+      JSON.stringify(data)
+    );
+
+    const migrations = await getMigrations();
+    migrations.migrateProviderPlans();
+
+    const result = JSON.parse(
+      fs.readFileSync(path.join(tempDataDir, "subscriptions.json"), "utf-8")
+    );
+    expect(result.subscriptions[0].planId).toBe("coding-plan");
+    expect(result.subscriptions[1].planId).toBe("token-plan");
+    // No match → planId remains undefined
+    expect(result.subscriptions[2].planId).toBeUndefined();
   });
 });
 
