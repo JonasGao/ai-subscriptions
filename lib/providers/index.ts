@@ -23,6 +23,10 @@ import {
   fetchCodingPlanUsage,
   testCodingPlanConnection,
 } from "./fangzhou-codingplan";
+import {
+  fetchTokenPlanUsage,
+  testTokenPlanConnection,
+} from "./alibaba-tokenplan";
 
 export interface UsageHandler {
   fetchUsage(credentials: Record<string, string>): Promise<UsageResult>;
@@ -51,6 +55,10 @@ export const usageHandlers: Record<string, UsageHandler> = {
   "fangzhou:codingplan": {
     fetchUsage: (creds) => fetchCodingPlanUsage(creds),
     testConnection: (creds) => testCodingPlanConnection(creds),
+  },
+  "alibaba:token-plan": {
+    fetchUsage: (creds) => fetchTokenPlanUsage(creds),
+    testConnection: (creds) => testTokenPlanConnection(creds),
   },
 };
 

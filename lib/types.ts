@@ -114,6 +114,11 @@ export const defaultProviders: Provider[] = [
     name: "阿里云百炼",
     description: "Qwen 系列",
     website: "https://bailian.console.aliyun.com",
+    credentialFields: [
+      { key: "ak", label: "Access Key ID", type: "text" },
+      { key: "sk", label: "Access Key Secret", type: "password" },
+      { key: "workspaceId", label: "Workspace ID", type: "text" },
+    ],
     plans: [
       {
         id: "coding-plan",
@@ -122,6 +127,8 @@ export const defaultProviders: Provider[] = [
       {
         id: "token-plan",
         name: "Token Plan",
+        usageApiUrl:
+          "https://modelstudio.cn-beijing.aliyuncs.com/tokenplan/subscription/seat-detail",
       },
     ],
   },
