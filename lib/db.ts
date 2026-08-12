@@ -234,6 +234,14 @@ export function updateSubscription(
   }
 
   if (
+    updates.balanceCurrency !== undefined &&
+    (typeof updates.balanceCurrency !== "string" ||
+      updates.balanceCurrency.trim() === "")
+  ) {
+    throw new Error("balanceCurrency must be a non-empty string");
+  }
+
+  if (
     updates.lowBalanceThreshold !== undefined &&
     updates.lowBalanceThreshold !== null &&
     (typeof updates.lowBalanceThreshold !== "number" ||

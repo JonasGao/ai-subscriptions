@@ -30,6 +30,7 @@ export interface Subscription {
   credentials?: string;
   hasCredentials?: boolean;
   balance?: number;
+  balanceCurrency?: string;
   lowBalanceThreshold?: number;
   resetSchedules?: ResetSchedule[];
   planId?: string;
@@ -344,13 +345,17 @@ export interface ToolFormData {
 
 export interface BalanceInfo {
   currency: string;
-  totalBalance: string;
-  grantedBalance: string;
-  toppedUpBalance: string;
+  available: string;
+  total: string | null;
+  toppedUp: string | null;
+  granted: string | null;
+  used: string | null;
+  frozen: string | null;
+  extras?: { label: string; value: string }[];
 }
 
 export interface BalanceResult {
-  provider?: string;
+  provider: string;
   isAvailable: boolean;
   balanceInfos: BalanceInfo[];
 }
