@@ -266,15 +266,19 @@ export function SubscriptionCard({
     subscription.status === "active" || subscription.status === "paused";
   const statusReason = getStatusReason(subscription);
 
+  // Rate-limit: 60s after last successful query. Button shows disabled
+  // during loading OR within the cooldown window so the user knows why
+  // clicking is a no-op.
+  const inCooldown = lastQueryAt !== null && Date.now() - lastQueryAt < 60_000;
+  const queryDisabled = balanceLoading || inCooldown;
+
   const handleQueryBalance = async () => {
     // If credentials are not configured, open the edit dialog
     if (!subscription.hasCredentials) {
       onEdit(subscription);
       return;
     }
-    // Rate-limit: ignore within 60s of last query start
-    if (lastQueryAt && Date.now() - lastQueryAt < 60_000) return;
-    setLastQueryAt(Date.now());
+    if (queryDisabled) return;
     setBalanceLoading(true);
     setBalanceError(null);
     try {
@@ -289,6 +293,7 @@ export function SubscriptionCard({
         }
         const data: UsageResult = await res.json();
         setUsage(data);
+        setLastQueryAt(Date.now());
         return;
       }
       const res = await fetch(`/api/subscriptions/${subscription.id}/balance`, {
@@ -320,6 +325,7 @@ export function SubscriptionCard({
         }
       }
       setBalance(data);
+      setLastQueryAt(Date.now());
     } catch {
       setBalanceError("网络请求失败");
     } finally {
@@ -680,7 +686,12 @@ export function SubscriptionCard({
                 variant="outline"
                 size="sm"
                 onClick={handleQueryBalance}
-                disabled={balanceLoading}
+                disabled={queryDisabled}
+                title={
+                  inCooldown && !balanceLoading
+                    ? "查询冷却中，60 秒后可重试"
+                    : undefined
+                }
               >
                 {balanceLoading ? (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />

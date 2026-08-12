@@ -241,14 +241,7 @@ export default function Home() {
   ) => {
     setSubscriptions((prev) =>
       prev.map((s) =>
-        s.id === id
-          ? {
-              ...s,
-              balance,
-              balanceCurrency: currency,
-              updatedAt: new Date().toISOString(),
-            }
-          : s
+        s.id === id ? { ...s, balance, balanceCurrency: currency } : s
       )
     );
   };

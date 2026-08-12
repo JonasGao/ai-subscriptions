@@ -91,7 +91,7 @@ describe("balance handler unification", () => {
   });
 
   describe("siliconflow (semantics fixed)", () => {
-    it("maps available=balance, total=totalBalance, toppedUp=chargeBalance", async () => {
+    it("maps available=totalBalance, granted=balance, toppedUp=chargeBalance", async () => {
       vi.spyOn(globalThis, "fetch").mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -113,11 +113,14 @@ describe("balance handler unification", () => {
       expect(result.balanceInfos).toHaveLength(1);
       const info = result.balanceInfos[0];
       expect(info.currency).toBe("CNY");
-      // Semantic fix: available is the usable balance (not totalBalance)
-      expect(info.available).toBe("300.00");
-      expect(info.total).toBe("500.00");
+      // available = totalBalance (total usable balance, persisted to Subscription.balance)
+      expect(info.available).toBe("500.00");
+      // granted = balance (voucher/gifted portion)
+      expect(info.granted).toBe("300.00");
+      // toppedUp = chargeBalance (cash top-up portion)
       expect(info.toppedUp).toBe("200.00");
-      expect(info.granted).toBeNull();
+      // total = null (avoids duplicate display with available)
+      expect(info.total).toBeNull();
       expect(info.used).toBeNull();
     });
   });
