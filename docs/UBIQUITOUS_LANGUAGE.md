@@ -72,6 +72,7 @@ For one-time subscriptions, tracks remaining prepaid credits:
 - No automatic reset or renewal
 - User must manually recharge when exhausted
 - Can be queried live from provider APIs that support `balanceApiUrl`
+- Same dual trigger as Usage: auto-queried once on list-page open, plus manual refresh; a successful query also persists the total balance back to the subscription
 
 ### Usage (用量)
 
@@ -80,7 +81,7 @@ For recurring subscriptions, represents live quota consumption data queried from
 - Snapshot of current usage window (limit / used / remaining / reset time)
 - Provider-specific windows: e.g. 5-hour rolling rate limit, 7-day weekly quota
 - May include auxiliary data: booster wallet balance, monthly spending, parallel limit, membership tier
-- **Manual trigger only** — user clicks to refresh (not auto-polled)
+- **Dual trigger** — auto-queried once when the subscription list page opens (active, query-capable subscriptions only), plus manual refresh via the card button; never polled on a timer
 - **Frontend-only** — not persisted; each query fetches fresh data
 - Available only for providers that expose `usageApiUrl` — declared at the **Plan** level when the provider offers Plans, otherwise at the provider level
 

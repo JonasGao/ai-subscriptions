@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -304,6 +304,17 @@ export function SubscriptionCard({
       setBalanceLoading(false);
     }
   };
+
+  // Auto-trigger a single usage/balance query on mount for eligible active
+  // subscriptions. Guarded locally so the edit dialog never opens when
+  // credentials are missing — handleQueryBalance would otherwise call onEdit.
+  useEffect(() => {
+    if (subscription.status !== "active") return;
+    if (!subscription.hasCredentials) return;
+    if (!canQuery) return;
+    handleQueryBalance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleStatusToggle = () => {
     if (!canToggleStatus) return;
