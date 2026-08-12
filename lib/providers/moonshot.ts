@@ -211,15 +211,17 @@ export async function fetchMoonshotBalance(
     balanceInfos: [
       {
         currency: "CNY",
-        totalBalance: availableBalance.toFixed(2),
-        grantedBalance: (typeof voucherBalance === "number"
+        available: availableBalance.toFixed(2),
+        total: null,
+        toppedUp: (typeof cashBalance === "number" ? cashBalance : 0).toFixed(
+          2
+        ),
+        granted: (typeof voucherBalance === "number"
           ? voucherBalance
           : 0
         ).toFixed(2),
-        toppedUpBalance: (typeof cashBalance === "number"
-          ? cashBalance
-          : 0
-        ).toFixed(2),
+        used: null,
+        frozen: null,
       },
     ],
   };

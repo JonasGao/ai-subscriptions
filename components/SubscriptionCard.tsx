@@ -289,15 +289,6 @@ export function SubscriptionCard({
       }
       const data: BalanceResult = await res.json();
       setBalance(data);
-      const total = data.balanceInfos.reduce(
-        (sum, i) => sum + parseFloat(i.totalBalance || "0"),
-        0
-      );
-      await fetch(`/api/subscriptions/${subscription.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ balance: total }),
-      });
     } catch {
       setBalanceError("网络请求失败");
     } finally {

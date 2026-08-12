@@ -33,9 +33,12 @@ export async function fetchOpenRouterBalance(
     balanceInfos: [
       {
         currency: "USD",
-        totalBalance: remainingCredits,
-        grantedBalance: totalCredits.toFixed(2),
-        toppedUpBalance: totalUsage.toFixed(2),
+        available: remainingCredits,
+        total: totalCredits.toFixed(2),
+        toppedUp: null,
+        granted: null,
+        used: totalUsage.toFixed(2),
+        frozen: null,
       },
     ],
   };

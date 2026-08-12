@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSubscriptionById, getProviders } from "@/lib/db";
+import {
+  getSubscriptionById,
+  getProviders,
+  updateSubscription,
+} from "@/lib/db";
 import { decryptCredentials } from "@/lib/encryption";
 import { balanceHandlers } from "@/lib/providers";
 
@@ -49,6 +53,17 @@ export async function GET(
 
     try {
       const result = await handler.fetchBalance(credentials);
+      const first = result.balanceInfos[0];
+      if (first) {
+        const availableNum = parseFloat(first.available);
+        updateSubscription(params.id, {
+          balance:
+            Number.isFinite(availableNum) && availableNum >= 0
+              ? availableNum
+              : undefined,
+          balanceCurrency: first.currency,
+        });
+      }
       return NextResponse.json(result, {
         headers: { "Cache-Control": "no-store" },
       });

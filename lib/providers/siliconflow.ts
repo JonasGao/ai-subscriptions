@@ -38,9 +38,12 @@ export async function fetchSiliconFlowBalance(
     balanceInfos: [
       {
         currency: "CNY",
-        totalBalance,
-        grantedBalance: balance || "0",
-        toppedUpBalance: chargeBalance || "0",
+        available: parseFloat(balance || "0").toFixed(2),
+        total: parseFloat(totalBalance).toFixed(2),
+        toppedUp: parseFloat(chargeBalance || "0").toFixed(2),
+        granted: null,
+        used: null,
+        frozen: null,
       },
     ],
   };

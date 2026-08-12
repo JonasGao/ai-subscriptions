@@ -27,12 +27,21 @@ export async function fetchDeepSeekBalance(
         total_balance: string;
         granted_balance: string;
         topped_up_balance: string;
-      }) => ({
-        currency: info.currency || "USD",
-        totalBalance: info.total_balance || "0",
-        grantedBalance: info.granted_balance || "0",
-        toppedUpBalance: info.topped_up_balance || "0",
-      })
+      }) => {
+        const toFixed2 = (v: string) => {
+          const n = parseFloat(v);
+          return (Number.isFinite(n) ? n : 0).toFixed(2);
+        };
+        return {
+          currency: info.currency || "USD",
+          available: toFixed2(info.total_balance || "0"),
+          total: null,
+          toppedUp: toFixed2(info.topped_up_balance || "0"),
+          granted: toFixed2(info.granted_balance || "0"),
+          used: null,
+          frozen: null,
+        };
+      }
     ),
   };
 }
