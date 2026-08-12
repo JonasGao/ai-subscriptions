@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, waitFor, RenderResult } from "@testing-library/react";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
-import { Subscription } from "@/lib/types";
+import { Subscription, BalanceResult } from "@/lib/types";
 
 function makeSubscription(overrides: Partial<Subscription> = {}): Subscription {
   return {
@@ -17,6 +17,29 @@ function makeSubscription(overrides: Partial<Subscription> = {}): Subscription {
     hasCredentials: true,
     createdAt: "2025-01-01",
     updatedAt: "2025-01-01",
+    ...overrides,
+  };
+}
+
+function makeBalanceResult(
+  overrides: Partial<BalanceResult> & {
+    balanceInfos?: BalanceResult["balanceInfos"];
+  } = {}
+): BalanceResult {
+  return {
+    provider: "moonshot",
+    isAvailable: true,
+    balanceInfos: [
+      {
+        currency: "USD",
+        available: "10.00",
+        total: null,
+        toppedUp: null,
+        granted: null,
+        used: null,
+        frozen: null,
+      },
+    ],
     ...overrides,
   };
 }
@@ -49,7 +72,19 @@ describe("SubscriptionCard auto-query on mount", () => {
     fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        balanceInfos: [{ currency: "USD", totalBalance: "10.00" }],
+        provider: "moonshot",
+        isAvailable: true,
+        balanceInfos: [
+          {
+            currency: "USD",
+            available: "10.00",
+            total: null,
+            toppedUp: null,
+            granted: null,
+            used: null,
+            frozen: null,
+          },
+        ],
       }),
     });
     vi.clearAllMocks();
@@ -155,8 +190,8 @@ describe("SubscriptionCard auto-query on mount", () => {
     });
     const { result, onEdit } = renderCard(sub);
 
-    // Wait for the initial auto-query. One-time balance flow issues two
-    // fetches: GET /balance then PUT write-back. Both are expected.
+    // Wait for the initial auto-query. One-time balance flow issues a single
+    // GET /balance (server-side now persists the result; no client PUT).
     await waitFor(() =>
       expect(
         fetchMock.mock.calls.filter(
@@ -181,5 +216,181 @@ describe("SubscriptionCard auto-query on mount", () => {
         (c) => c[0] === "/api/subscriptions/sub-1/balance"
       ).length
     ).toBe(1);
+  });
+
+  it("does NOT issue a client PUT write-back after balance query", async () => {
+    renderCard(
+      makeSubscription({
+        status: "active",
+        hasCredentials: true,
+        provider: "moonshot",
+      })
+    );
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(
+          (c) => c[0] === "/api/subscriptions/sub-1/balance"
+        ).length
+      ).toBe(1)
+    );
+
+    await waitForEffects();
+    const putCalls = fetchMock.mock.calls.filter(
+      (c) =>
+        Array.isArray(c[1]) === false &&
+        typeof c[1] === "object" &&
+        (c[1] as { method?: string }).method === "PUT"
+    );
+    expect(putCalls).toHaveLength(0);
+  });
+});
+
+describe("SubscriptionCard balance display", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("shows only new balance when no previous balance exists", () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () =>
+          makeBalanceResult({
+            balanceInfos: [
+              {
+                currency: "USD",
+                available: "399.00",
+                total: null,
+                toppedUp: null,
+                granted: null,
+                used: null,
+                frozen: null,
+              },
+            ],
+          }),
+      })
+    );
+
+    const { result } = renderCard(
+      makeSubscription({
+        balance: undefined,
+        balanceCurrency: undefined,
+      })
+    );
+
+    return waitFor(
+      () => {
+        expect(result.getByText("$399.00")).toBeTruthy();
+      },
+      { timeout: 1000 }
+    );
+  });
+
+  it("shows new (old) comparison when balance changes", () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () =>
+          makeBalanceResult({
+            balanceInfos: [
+              {
+                currency: "CNY",
+                available: "399.00",
+                total: null,
+                toppedUp: null,
+                granted: null,
+                used: null,
+                frozen: null,
+              },
+            ],
+          }),
+      })
+    );
+
+    const { result } = renderCard(
+      makeSubscription({ balance: 500, balanceCurrency: "CNY" })
+    );
+
+    return waitFor(
+      () => {
+        expect(result.getByText("¥399.00")).toBeTruthy();
+        expect(result.getByText(/¥500\.00/)).toBeTruthy();
+      },
+      { timeout: 1000 }
+    );
+  });
+
+  it("shows only new balance (no parenthesis) when balance equals previous", () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () =>
+          makeBalanceResult({
+            balanceInfos: [
+              {
+                currency: "CNY",
+                available: "500.00",
+                total: null,
+                toppedUp: null,
+                granted: null,
+                used: null,
+                frozen: null,
+              },
+            ],
+          }),
+      })
+    );
+
+    const { result } = renderCard(
+      makeSubscription({ balance: 500, balanceCurrency: "CNY" })
+    );
+
+    return waitFor(
+      () => {
+        expect(result.getByText("¥500.00")).toBeTruthy();
+        // No parenthesis should be present for equal balances
+        const allText = result.container.textContent || "";
+        expect(allText).not.toMatch(/¥500\.00\s*\(\s*¥500\.00\s*\)/);
+      },
+      { timeout: 1000 }
+    );
+  });
+
+  it("renders USD currency symbol correctly", () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () =>
+          makeBalanceResult({
+            provider: "openrouter",
+            balanceInfos: [
+              {
+                currency: "USD",
+                available: "42.50",
+                total: null,
+                toppedUp: null,
+                granted: null,
+                used: null,
+                frozen: null,
+              },
+            ],
+          }),
+      })
+    );
+
+    const { result } = renderCard(makeSubscription({ provider: "openrouter" }));
+
+    return waitFor(
+      () => {
+        expect(result.getByText("$42.50")).toBeTruthy();
+      },
+      { timeout: 1000 }
+    );
   });
 });
