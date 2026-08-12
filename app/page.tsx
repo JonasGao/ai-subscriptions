@@ -234,6 +234,25 @@ export default function Home() {
     setFormOpen(true);
   };
 
+  const handleBalanceUpdate = (
+    id: string,
+    balance: number,
+    currency: string
+  ) => {
+    setSubscriptions((prev) =>
+      prev.map((s) =>
+        s.id === id
+          ? {
+              ...s,
+              balance,
+              balanceCurrency: currency,
+              updatedAt: new Date().toISOString(),
+            }
+          : s
+      )
+    );
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto py-8 px-4">
@@ -335,6 +354,7 @@ export default function Home() {
                 onDelete={handleDelete}
                 onStatusChange={handleSubscriptionStatusChange}
                 onScheduleToggle={handleScheduleToggle}
+                onBalanceUpdate={handleBalanceUpdate}
               />
             </div>
 

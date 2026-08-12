@@ -13,6 +13,7 @@ interface SubscriptionListProps {
     scheduleId: string,
     exhausted: boolean
   ) => void;
+  onBalanceUpdate?: (id: string, balance: number, currency: string) => void;
 }
 
 export function SubscriptionList({
@@ -21,6 +22,7 @@ export function SubscriptionList({
   onDelete,
   onStatusChange,
   onScheduleToggle,
+  onBalanceUpdate,
 }: SubscriptionListProps) {
   if (subscriptions.length === 0) {
     return (
@@ -40,6 +42,7 @@ export function SubscriptionList({
           onDelete={onDelete}
           onStatusChange={onStatusChange}
           onScheduleToggle={onScheduleToggle}
+          onBalanceUpdate={onBalanceUpdate}
         />
       ))}
     </div>

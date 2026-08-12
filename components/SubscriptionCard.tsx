@@ -28,6 +28,8 @@ import {
   formatResetTimeTooltip,
   getUsagePercent,
   getProgressTier,
+  formatBalance,
+  getProviderCurrency,
   type ProgressTier,
 } from "@/lib/utils";
 import { sortResetSchedules } from "@/lib/reset-schedule";
@@ -51,6 +53,7 @@ interface SubscriptionCardProps {
     scheduleId: string,
     exhausted: boolean
   ) => void;
+  onBalanceUpdate?: (id: string, balance: number, currency: string) => void;
 }
 
 function getStatusBadgeVariant(
@@ -217,6 +220,7 @@ export function SubscriptionCard({
   onDelete,
   onStatusChange,
   onScheduleToggle,
+  onBalanceUpdate,
 }: SubscriptionCardProps) {
   // Re-render periodically so formatNextResetTime (which uses new Date()) updates
   useNow();
@@ -224,6 +228,11 @@ export function SubscriptionCard({
   const [usage, setUsage] = useState<UsageResult | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceError, setBalanceError] = useState<string | null>(null);
+  const [previousBalance, setPreviousBalance] = useState<{
+    amount: number;
+    currency: string;
+  } | null>(null);
+  const [lastQueryAt, setLastQueryAt] = useState<number | null>(null);
   const isRecurring = subscription.subscriptionType === "recurring";
   const expiringSoon =
     isRecurring && subscription.renewalDate
@@ -263,6 +272,9 @@ export function SubscriptionCard({
       onEdit(subscription);
       return;
     }
+    // Rate-limit: ignore within 60s of last query start
+    if (lastQueryAt && Date.now() - lastQueryAt < 60_000) return;
+    setLastQueryAt(Date.now());
     setBalanceLoading(true);
     setBalanceError(null);
     try {
@@ -288,6 +300,25 @@ export function SubscriptionCard({
         return;
       }
       const data: BalanceResult = await res.json();
+      // Capture previous balance before overwriting
+      const first = data.balanceInfos[0];
+      if (first) {
+        const prevCurrency =
+          subscription.balanceCurrency ??
+          getProviderCurrency(subscription.provider);
+        const prevAmount = balance?.balanceInfos[0]
+          ? parseFloat(balance.balanceInfos[0].available)
+          : (subscription.balance ?? NaN);
+        if (Number.isFinite(prevAmount)) {
+          setPreviousBalance({ amount: prevAmount, currency: prevCurrency });
+        }
+        if (onBalanceUpdate) {
+          const newAmount = parseFloat(first.available);
+          if (Number.isFinite(newAmount)) {
+            onBalanceUpdate(subscription.id, newAmount, first.currency);
+          }
+        }
+      }
       setBalance(data);
     } catch {
       setBalanceError("网络请求失败");
@@ -396,15 +427,45 @@ export function SubscriptionCard({
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">余额</span>
                 <span className="text-sm font-medium text-green-600">
-                  {canQuery
-                    ? balance
-                      ? `¥${balance.balanceInfos.reduce((s, i) => s + parseFloat(i.totalBalance || "0"), 0).toFixed(2)}`
-                      : subscription.balance != null
-                        ? `¥${subscription.balance.toFixed(2)}`
-                        : "-"
-                    : subscription.balance != null
-                      ? `¥${subscription.balance.toFixed(2)}`
-                      : "-"}
+                  {(() => {
+                    const currency =
+                      balance?.balanceInfos[0]?.currency ??
+                      subscription.balanceCurrency ??
+                      getProviderCurrency(subscription.provider);
+                    if (balance && balance.balanceInfos[0]) {
+                      const newAmount = balance.balanceInfos[0].available;
+                      const oldAmountStr = previousBalance
+                        ? formatBalance(
+                            previousBalance.amount,
+                            previousBalance.currency
+                          )
+                        : subscription.balance != null
+                          ? formatBalance(subscription.balance, currency)
+                          : null;
+                      const newNum = parseFloat(newAmount);
+                      const oldNum = previousBalance
+                        ? previousBalance.amount
+                        : (subscription.balance ?? NaN);
+                      const showParen =
+                        oldAmountStr &&
+                        Number.isFinite(oldNum) &&
+                        Number.isFinite(newNum) &&
+                        newNum !== oldNum;
+                      return (
+                        <>
+                          <span>{formatBalance(newAmount, currency)}</span>
+                          {showParen && (
+                            <span className="ml-1 text-gray-500 font-normal">
+                              ({oldAmountStr})
+                            </span>
+                          )}
+                        </>
+                      );
+                    }
+                    return subscription.balance != null
+                      ? formatBalance(subscription.balance, currency)
+                      : "-";
+                  })()}
                 </span>
               </div>
             )}
@@ -425,43 +486,67 @@ export function SubscriptionCard({
               balance &&
               balance.balanceInfos.map((info) => (
                 <Fragment key={info.currency}>
-                  {balance.provider === "moonshot" ? (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          可用余额
-                        </span>
-                        <span className="text-sm font-medium text-green-600">
-                          ¥{info.totalBalance}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          代金券
-                        </span>
-                        <span className="text-sm font-medium">
-                          ¥{info.grantedBalance}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          现金余额
-                        </span>
-                        <span className="text-sm font-medium">
-                          ¥{info.toppedUpBalance}
-                        </span>
-                      </div>
-                    </>
-                  ) : (
+                  {info.total !== null && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">
-                        余额 ({info.currency})
+                        总额度
                       </span>
-                      <span className="text-sm font-medium text-green-600">
-                        ${info.totalBalance}
+                      <span className="text-sm font-medium">
+                        {formatBalance(info.total, info.currency)}
                       </span>
                     </div>
                   )}
+                  {info.toppedUp !== null && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        充值余额
+                      </span>
+                      <span className="text-sm font-medium">
+                        {formatBalance(info.toppedUp, info.currency)}
+                      </span>
+                    </div>
+                  )}
+                  {info.granted !== null && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        赠送额度
+                      </span>
+                      <span className="text-sm font-medium">
+                        {formatBalance(info.granted, info.currency)}
+                      </span>
+                    </div>
+                  )}
+                  {info.used !== null && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        已使用
+                      </span>
+                      <span className="text-sm font-medium">
+                        {formatBalance(info.used, info.currency)}
+                      </span>
+                    </div>
+                  )}
+                  {info.frozen !== null && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        冻结金额
+                      </span>
+                      <span className="text-sm font-medium">
+                        {formatBalance(info.frozen, info.currency)}
+                      </span>
+                    </div>
+                  )}
+                  {info.extras?.map((extra) => (
+                    <div
+                      key={extra.label}
+                      className="flex items-center justify-between"
+                    >
+                      <span className="text-sm text-muted-foreground">
+                        {extra.label}
+                      </span>
+                      <span className="text-sm font-medium">{extra.value}</span>
+                    </div>
+                  ))}
                 </Fragment>
               ))}
             {usage && (
