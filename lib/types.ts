@@ -109,6 +109,8 @@ export const defaultProviders: Provider[] = [
     name: "GitHub",
     description: "GitHub Copilot",
     website: "https://github.com",
+    usageApiUrl: "https://api.github.com/copilot_internal/user",
+    credentialFields: [{ key: "token", label: "Token", type: "password" }],
   },
   {
     id: "alibaba",

@@ -27,6 +27,7 @@ import {
   fetchTokenPlanUsage,
   testTokenPlanConnection,
 } from "./alibaba-tokenplan";
+import { fetchGithubUsage, testGithubConnection } from "./github";
 
 export interface UsageHandler {
   fetchUsage(credentials: Record<string, string>): Promise<UsageResult>;
@@ -59,6 +60,10 @@ export const usageHandlers: Record<string, UsageHandler> = {
   "alibaba:token-plan": {
     fetchUsage: (creds) => fetchTokenPlanUsage(creds),
     testConnection: (creds) => testTokenPlanConnection(creds),
+  },
+  github: {
+    fetchUsage: (creds) => fetchGithubUsage(creds),
+    testConnection: (creds) => testGithubConnection(creds),
   },
 };
 
