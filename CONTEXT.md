@@ -36,6 +36,14 @@ _Avoid_: Refresh time, renewal time
 The frequency at which a subscription is charged (monthly or yearly). Independent from quota reset schedules.
 _Avoid_: Payment cycle
 
+**Usage Query**:
+An on-demand request to a provider's API for a recurring subscription's usage data. The result is a set of usage buckets (five-hour, weekly, monthly) plus optional provider-specific blocks, each with used/remaining limits and a reset time. Only recurring subscriptions support usage queries.
+_Avoid_: usage window (a result bucket is a snapshot of usage, not the Quota Window time period itself), usage check
+
+**Balance Query**:
+An on-demand request to a provider's API for a one-time subscription's remaining balance (e.g., API credits). One-time subscriptions support balance queries; recurring subscriptions support usage queries.
+_Avoid_: credit check
+
 **Offset-Based Schedule Creation**:
 A method of creating reset schedules where the user specifies a duration from the current time (e.g., "3d 5h"), and the system infers the schedule properties (dayOfWeek/dayOfMonth, timeOfDay) from that offset. The inferred values are stored permanently, and future resets follow the calculated schedule pattern.
 _Avoid_: Relative schedule creation, duration-based schedule
@@ -55,3 +63,5 @@ The choice between offset-based and direct input methods for creating reset sche
 - **Quota Window → Reset Schedule**: Quota windows are tracked via reset schedules
 - **Reset Schedule → Reset Time**: Each schedule calculates and stores the next reset time
 - **Billing Cycle ⊥ Quota Reset**: These are independent concepts; a monthly subscription can have daily quota resets
+- **Subscription → Usage Query**: recurring subscriptions support usage queries
+- **Subscription → Balance Query**: one-time subscriptions support balance queries
