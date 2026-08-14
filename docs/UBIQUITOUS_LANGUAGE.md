@@ -46,16 +46,16 @@ A schedule that tracks when an AI service's quota/rate limit will reset.
 
 **Properties:**
 
-- `type`: Reset interval (hourly, weekly, monthly)
+- `type`: Reset interval (fiveHour, weekly, monthly) — at most one schedule per type per subscription
 - `nextResetTime`: When the next quota reset will occur
 - `enabled`: Whether to track this schedule
 - `timezone`: User's timezone for display
-- `exhausted`: Whether quota has been used up
+- `exhausted`: Whether quota has been used up (set manually, or automatically when a usage query shows the matching window fully consumed)
 
 **Applicability:**
 
 - **Only for Recurring Subscriptions**: One-time subscriptions have no quota reset concept
-- Multiple schedules can be configured per subscription (e.g., hourly API limit + monthly billing reset)
+- At most one schedule per reset type (fiveHour / weekly / monthly) per subscription — duplicates are rejected on write and deduplicated on load (earliest-created kept)
 
 ### Billing Cycle (计费周期)
 
@@ -83,13 +83,14 @@ For recurring subscriptions, represents live quota consumption data queried from
 - May include auxiliary data: booster wallet balance, monthly spending, parallel limit, membership tier
 - **Dual trigger** — auto-queried once when the subscription list page opens (active, query-capable subscriptions only), plus manual refresh via the card button; never polled on a timer
 - **Frontend-only** — not persisted; each query fetches fresh data
+- **Exhaustion side effect** — when a returned window is fully consumed (`used >= limit`, `limit > 0`), the matching reset schedule (same interval type, if configured, enabled, and not already exhausted) is automatically marked exhausted, exactly as if the user clicked the 可用/用尽 toggle; one-way only — recovery stays with the reset tick
 - Available only for providers that expose `usageApiUrl` — declared at the **Plan** level when the provider offers Plans, otherwise at the provider level
 
 **Difference from Reset Schedule:**
 
 - Usage is live data from provider APIs; Reset Schedule is manually configured local tracking
 - Usage shows actual consumption numbers; Reset Schedule only tracks reset timing
-- Usage may be replaced by Reset Schedule integration in the future
+- The two are integrated in one direction: a fully-consumed usage window marks the matching Reset Schedule exhausted
 
 ### Offset-Based Schedule Creation (基于偏移的计划创建)
 
@@ -137,6 +138,38 @@ A method of creating reset schedules where the user manually selects schedule pr
 - Frontend: Hide Reset Schedule configuration for one-time subscriptions
 - Backend: No validation (allow data to exist for flexibility)
 - Data migration: Not required (existing data can be preserved)
+
+### Reset Schedule Type Uniqueness
+
+**Rule**: A subscription can have at most one Reset Schedule per reset type (fiveHour / weekly / monthly).
+
+**Rationale**:
+
+- Usage query results map 1:1 to schedule types; duplicates would make automatic exhaustion marking ambiguous
+- Multiple same-type schedules have no meaningful use case
+
+**Implementation**:
+
+- Frontend: already-used types are disabled in the add form
+- Backend: write endpoints reject duplicate types
+- Existing duplicate data: deduplicated on load, earliest-created schedule kept (regardless of enabled state)
+
+### Automatic Exhaustion Marking
+
+**Rule**: When a usage query returns a window that is fully consumed (`used >= limit`, `limit > 0`), the subscription's reset schedule of the matching type is automatically marked `exhausted` — exactly as if the user clicked the 可用/用尽 toggle.
+
+**Rationale**:
+
+- A 100%-consumed window is ground truth that the quota is gone; the schedule should reflect it without manual action
+- One-way only: a window below 100% does NOT clear exhaustion (recovery remains the reset tick's job, so a manual 用尽 mark is never silently undone)
+- No new timer: marking rides on the existing usage-query triggers (page open + manual refresh)
+
+**Implementation**:
+
+- Frontend-only: after a successful usage query, the card compares each returned window (fiveHour / weekly / monthly) against the subscription's schedules and calls the existing toggle endpoint for matches
+- Skipped: windows that are null or `limit <= 0`; schedules that are disabled or already exhausted; types with no configured schedule (no auto-creation)
+- No notification is emitted for automatic marking
+- One-time subscriptions / balance queries are out of scope
 
 ### Subscription Type Transitions
 
