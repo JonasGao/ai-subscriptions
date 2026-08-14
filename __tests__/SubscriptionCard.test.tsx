@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, waitFor, RenderResult } from "@testing-library/react";
+import {
+  render,
+  waitFor,
+  fireEvent,
+  cleanup,
+  RenderResult,
+} from "@testing-library/react";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { Subscription, BalanceResult } from "@/lib/types";
 
@@ -243,6 +249,155 @@ describe("SubscriptionCard auto-query on mount", () => {
         (c[1] as { method?: string }).method === "PUT"
     );
     expect(putCalls).toHaveLength(0);
+  });
+});
+
+describe("SubscriptionCard quota query cooldown", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+  let now: number;
+
+  beforeEach(() => {
+    // RTL auto-cleanup does not run with vitest globals:false — clear DOM
+    // accumulated by earlier describe blocks in this file.
+    cleanup();
+    now = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () =>
+        makeBalanceResult({
+          balanceInfos: [
+            {
+              currency: "USD",
+              available: "10.00",
+              total: null,
+              toppedUp: null,
+              granted: null,
+              used: null,
+              frozen: null,
+            },
+          ],
+        }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("opens confirm dialog instead of querying when clicked within 60s of the mount auto-query", async () => {
+    const { result } = renderCard(
+      makeSubscription({
+        status: "active",
+        hasCredentials: true,
+        provider: "moonshot",
+      })
+    );
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(result.getByRole("button", { name: /额度/ }));
+    expect(result.getByText("再次查询确认")).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("confirming in cooldown re-runs the query and restarts the cooldown", async () => {
+    const { result } = renderCard(
+      makeSubscription({
+        status: "active",
+        hasCredentials: true,
+        provider: "moonshot",
+      })
+    );
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(result.getByRole("button", { name: /额度/ }));
+    fireEvent.click(result.getByRole("button", { name: /确认查询/ }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+    // The confirmed query restarted the cooldown, so clicking again prompts
+    // again without an immediate third query.
+    fireEvent.click(result.getByRole("button", { name: /额度/ }));
+    expect(result.getByText("再次查询确认")).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("cancel keeps the cooldown and does not query", async () => {
+    const { result } = renderCard(
+      makeSubscription({
+        status: "active",
+        hasCredentials: true,
+        provider: "moonshot",
+      })
+    );
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(result.getByRole("button", { name: /额度/ }));
+    fireEvent.click(result.getByRole("button", { name: /取消/ }));
+
+    await waitForEffects();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("queries directly without confirmation once 60s have passed", async () => {
+    const sub = makeSubscription({
+      status: "active",
+      hasCredentials: true,
+      provider: "moonshot",
+    });
+    const { result, onEdit } = renderCard(sub);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    // Advance time past the cooldown and force a re-render
+    now = 61_000;
+    result.rerender(
+      <SubscriptionCard
+        subscription={sub}
+        onEdit={onEdit}
+        onDelete={vi.fn<(id: string) => void>()}
+        onStatusChange={vi.fn<(id: string, s: "active" | "paused") => void>()}
+      />
+    );
+
+    fireEvent.click(result.getByRole("button", { name: /额度/ }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(result.queryByText("再次查询确认")).toBeNull();
+  });
+
+  it("disables the quota button while a query is in flight", async () => {
+    let resolveFetch!: (value: unknown) => void;
+    fetchMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        })
+    );
+
+    const { result } = renderCard(
+      makeSubscription({
+        status: "active",
+        hasCredentials: true,
+        provider: "moonshot",
+      })
+    );
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const button = result.getByRole("button", {
+      name: /额度/,
+    }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+
+    resolveFetch({
+      ok: true,
+      json: async () => makeBalanceResult(),
+    });
+    await waitFor(() => expect(button.disabled).toBe(false));
   });
 });
 

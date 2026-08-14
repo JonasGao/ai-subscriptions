@@ -21,11 +21,11 @@ A time period during which a subscription has available credits or usage allowan
 _Avoid_: Credit period, usage window
 
 **Quota Exhaustion**:
-The state when a subscription's quota is depleted. User manually marks subscription as paused to indicate exhausted quota.
+The state when a subscription's quota is depleted. Exhaustion is marked per Reset Schedule — either manually by the user, or automatically when a Usage Query reports the matching window fully consumed. An enabled exhausted schedule makes the subscription paused until the schedule's reset time passes.
 _Avoid_: Out of credits, limit reached
 
 **Reset Schedule**:
-A configuration that defines when a subscription's quota window renews. Each subscription can have multiple schedules (e.g., 5-hour, daily, weekly, monthly) operating independently.
+A configuration that defines when a subscription's quota window renews. A subscription can track several reset intervals (5-hour, weekly, monthly) — at most one schedule per interval — operating independently.
 _Avoid_: Renewal timer, refresh schedule
 
 **Reset Time**:
@@ -37,12 +37,16 @@ The frequency at which a subscription is charged (monthly or yearly). Independen
 _Avoid_: Payment cycle
 
 **Usage Query**:
-An on-demand request to a provider's API for a recurring subscription's usage data. The result is a set of usage buckets (five-hour, weekly, monthly) plus optional provider-specific blocks, each with used/remaining limits and a reset time. Only recurring subscriptions support usage queries.
+An on-demand request to a provider's API for a recurring subscription's usage data. The result is a set of usage buckets (five-hour, weekly, monthly) plus optional provider-specific blocks, each with used/remaining limits and a reset time. Only recurring subscriptions support usage queries. When a queried bucket is fully consumed, the subscription's reset schedule for that interval (if one exists) is automatically marked exhausted — one-way only; recovery still follows the schedule's reset time.
 _Avoid_: usage window (a result bucket is a snapshot of usage, not the Quota Window time period itself), usage check
 
 **Balance Query**:
 An on-demand request to a provider's API for a one-time subscription's remaining balance (e.g., API credits). One-time subscriptions support balance queries; recurring subscriptions support usage queries.
 _Avoid_: credit check
+
+**Query Cooldown**:
+The brief window after a successful Usage Query or Balance Query during which the quota query button remains clickable but requires an explicit confirmation before issuing another query. Confirming re-runs the query and restarts the window; failed queries neither start nor restart it.
+_Avoid_: Rate limit, throttle
 
 **Offset-Based Schedule Creation**:
 A method of creating reset schedules where the user specifies a duration from the current time (e.g., "3d 5h"), and the system infers the schedule properties (dayOfWeek/dayOfMonth, timeOfDay) from that offset. The inferred values are stored permanently, and future resets follow the calculated schedule pattern.
@@ -64,4 +68,6 @@ The choice between offset-based and direct input methods for creating reset sche
 - **Reset Schedule → Reset Time**: Each schedule calculates and stores the next reset time
 - **Billing Cycle ⊥ Quota Reset**: These are independent concepts; a monthly subscription can have daily quota resets
 - **Subscription → Usage Query**: recurring subscriptions support usage queries
+- **Usage Query → Reset Schedule**: a fully-consumed usage bucket marks the matching reset schedule exhausted
 - **Subscription → Balance Query**: one-time subscriptions support balance queries
+- **Usage Query / Balance Query → Query Cooldown**: a successful query starts a query cooldown

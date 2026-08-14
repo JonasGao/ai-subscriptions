@@ -11,6 +11,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Subscription,
   defaultProviders,
   BalanceResult,
@@ -233,6 +241,7 @@ export function SubscriptionCard({
     currency: string;
   } | null>(null);
   const [lastQueryAt, setLastQueryAt] = useState<number | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const isRecurring = subscription.subscriptionType === "recurring";
   const expiringSoon =
     isRecurring && subscription.renewalDate
@@ -266,19 +275,13 @@ export function SubscriptionCard({
     subscription.status === "active" || subscription.status === "paused";
   const statusReason = getStatusReason(subscription);
 
-  // Rate-limit: 60s after last successful query. Button shows disabled
-  // during loading OR within the cooldown window so the user knows why
-  // clicking is a no-op.
+  // Query cooldown: 60s after the last successful query (including the
+  // mount auto-query). Within the window the button stays clickable but
+  // asks for confirmation first; confirming re-runs the query and restarts
+  // the window. Failed queries neither start nor restart the cooldown.
   const inCooldown = lastQueryAt !== null && Date.now() - lastQueryAt < 60_000;
-  const queryDisabled = balanceLoading || inCooldown;
 
-  const handleQueryBalance = async () => {
-    // If credentials are not configured, open the edit dialog
-    if (!subscription.hasCredentials) {
-      onEdit(subscription);
-      return;
-    }
-    if (queryDisabled) return;
+  const runQuery = async () => {
     setBalanceLoading(true);
     setBalanceError(null);
     try {
@@ -333,14 +336,33 @@ export function SubscriptionCard({
     }
   };
 
+  const handleQueryClick = () => {
+    // If credentials are not configured, open the edit dialog
+    if (!subscription.hasCredentials) {
+      onEdit(subscription);
+      return;
+    }
+    if (balanceLoading) return;
+    if (inCooldown) {
+      setConfirmOpen(true);
+      return;
+    }
+    runQuery();
+  };
+
+  const handleConfirmQuery = () => {
+    setConfirmOpen(false);
+    runQuery();
+  };
+
   // Auto-trigger a single usage/balance query on mount for eligible active
-  // subscriptions. Guarded locally so the edit dialog never opens when
-  // credentials are missing — handleQueryBalance would otherwise call onEdit.
+  // subscriptions. Calls runQuery directly (not handleQueryClick) so it never
+  // opens the confirm dialog or the edit dialog.
   useEffect(() => {
     if (subscription.status !== "active") return;
     if (!subscription.hasCredentials) return;
     if (!canQuery) return;
-    handleQueryBalance();
+    runQuery();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -685,11 +707,11 @@ export function SubscriptionCard({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleQueryBalance}
-                disabled={queryDisabled}
+                onClick={handleQueryClick}
+                disabled={balanceLoading}
                 title={
                   inCooldown && !balanceLoading
-                    ? "查询冷却中，60 秒后可重试"
+                    ? "60 秒内已查询过，再次点击需确认"
                     : undefined
                 }
               >
@@ -720,6 +742,22 @@ export function SubscriptionCard({
           </div>
         </CardContent>
       </Card>
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>再次查询确认</DialogTitle>
+            <DialogDescription>
+              距上次查询不足 60 秒，确定要再次查询吗？
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={handleConfirmQuery}>确认查询</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </TooltipProvider>
   );
 }
