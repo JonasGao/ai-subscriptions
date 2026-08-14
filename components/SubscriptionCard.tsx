@@ -60,7 +60,7 @@ interface SubscriptionCardProps {
     subscriptionId: string,
     scheduleId: string,
     exhausted: boolean
-  ) => void;
+  ) => Promise<void> | void;
   onBalanceUpdate?: (id: string, balance: number, currency: string) => void;
 }
 
@@ -297,6 +297,36 @@ export function SubscriptionCard({
         const data: UsageResult = await res.json();
         setUsage(data);
         setLastQueryAt(Date.now());
+
+        // Auto-exhaust: mark schedules as exhausted when usage reaches 100%.
+        // Toggles are awaited sequentially so concurrent read-modify-write on
+        // subscriptions.json cannot lose updates (each POST sees the previous
+        // write's result before the next starts).
+        const windows: Array<{
+          type: "fiveHour" | "weekly" | "monthly";
+          usageWindow: UsageWindow | null;
+        }> = [
+          { type: "fiveHour", usageWindow: data.fiveHour },
+          { type: "weekly", usageWindow: data.weekly },
+          { type: "monthly", usageWindow: data.monthly },
+        ];
+
+        for (const { type, usageWindow } of windows) {
+          if (!usageWindow) continue;
+          const limit = Number(usageWindow.limit);
+          const used = Number(usageWindow.used);
+          if (!Number.isFinite(limit) || limit <= 0) continue;
+          if (!Number.isFinite(used) || used < limit) continue;
+
+          // Find matching schedule
+          const schedule = subscription.resetSchedules?.find(
+            (s) => s.type === type && s.enabled && !s.exhausted
+          );
+          if (schedule) {
+            await handleScheduleToggle(schedule.id, true);
+          }
+        }
+
         return;
       }
       const res = await fetch(`/api/subscriptions/${subscription.id}/balance`, {
@@ -372,9 +402,12 @@ export function SubscriptionCard({
     onStatusChange(subscription.id, newStatus);
   };
 
-  const handleScheduleToggle = (scheduleId: string, exhausted: boolean) => {
+  const handleScheduleToggle = (
+    scheduleId: string,
+    exhausted: boolean
+  ): Promise<void> | void => {
     if (onScheduleToggle) {
-      onScheduleToggle(subscription.id, scheduleId, exhausted);
+      return onScheduleToggle(subscription.id, scheduleId, exhausted);
     }
   };
 

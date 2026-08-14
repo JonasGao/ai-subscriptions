@@ -12,7 +12,7 @@ interface SubscriptionListProps {
     subscriptionId: string,
     scheduleId: string,
     exhausted: boolean
-  ) => void;
+  ) => Promise<void> | void;
   onBalanceUpdate?: (id: string, balance: number, currency: string) => void;
 }
 
