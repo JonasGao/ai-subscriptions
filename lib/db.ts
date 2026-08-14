@@ -32,6 +32,19 @@ function getInitialData(): SubscriptionData {
   };
 }
 
+/** Each subscription may hold at most one schedule per type. */
+function assertUniqueScheduleTypes(schedules: ResetSchedule[]): void {
+  const seenTypes = new Set<ResetScheduleType>();
+  for (const schedule of schedules) {
+    if (seenTypes.has(schedule.type)) {
+      throw new Error(
+        `Duplicate schedule type "${schedule.type}" — each type is allowed at most once`
+      );
+    }
+    seenTypes.add(schedule.type);
+  }
+}
+
 export function readData(): SubscriptionData {
   ensureDataDir();
 
@@ -89,6 +102,24 @@ export function readData(): SubscriptionData {
 
         if (sub.resetSchedules.length !== validSchedules.length) {
           sub.resetSchedules = validSchedules;
+          needsWrite = true;
+        }
+
+        // Deduplicate: keep at most one schedule per type (earliest createdAt wins)
+        const byType = new Map<ResetScheduleType, ResetSchedule>();
+        for (const schedule of sub.resetSchedules) {
+          const existing = byType.get(schedule.type);
+          if (!existing || schedule.createdAt < existing.createdAt) {
+            byType.set(schedule.type, schedule);
+          }
+        }
+        const deduped = Array.from(byType.values());
+        if (deduped.length !== sub.resetSchedules.length) {
+          sub.resetSchedules = deduped;
+          // A dropped duplicate may have been the exhausted one that drove the
+          // stored status; recompute so status stays consistent with the
+          // surviving schedules (recomputeStatus preserves "cancelled").
+          sub.status = recomputeStatus(sub);
           needsWrite = true;
         }
       }
@@ -175,6 +206,11 @@ export function createSubscription(
     !subscriptionData.billingCycle
   ) {
     throw new Error("billingCycle is required for recurring subscriptions");
+  }
+
+  // Uniqueness: at most one schedule per type
+  if (subscriptionData.resetSchedules) {
+    assertUniqueScheduleTypes(subscriptionData.resetSchedules);
   }
 
   const data = readData();
@@ -270,6 +306,11 @@ export function updateSubscription(
     !validBillingCycles.includes(updates.billingCycle)
   ) {
     throw new Error("Invalid billingCycle value");
+  }
+
+  // Uniqueness: at most one schedule per type
+  if (updates.resetSchedules) {
+    assertUniqueScheduleTypes(updates.resetSchedules);
   }
 
   if (updates.credentials && typeof updates.credentials === "string") {
@@ -440,6 +481,14 @@ export function addResetSchedule(
 
   if (index === -1) {
     return null;
+  }
+
+  // Uniqueness: at most one schedule per type
+  const existing = data.subscriptions[index].resetSchedules;
+  if (existing?.some((s) => s.type === scheduleData.type)) {
+    throw new Error(
+      `Schedule type "${scheduleData.type}" already exists for this subscription`
+    );
   }
 
   const schedule = createResetSchedule(scheduleData);

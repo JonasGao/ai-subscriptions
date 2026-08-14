@@ -1,5 +1,12 @@
 export type ResetScheduleType = "fiveHour" | "weekly" | "monthly";
 
+/** All possible reset schedule types, in display order. */
+export const RESET_SCHEDULE_TYPES: ResetScheduleType[] = [
+  "fiveHour",
+  "weekly",
+  "monthly",
+];
+
 export interface ResetSchedule {
   id: string;
   enabled: boolean;

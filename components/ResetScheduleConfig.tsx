@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ResetSchedule, ResetScheduleType } from "@/lib/types";
+import {
+  ResetSchedule,
+  ResetScheduleType,
+  RESET_SCHEDULE_TYPES,
+} from "@/lib/types";
 import { createResetSchedule } from "@/lib/reset-schedule";
 import {
   formatNextResetTime,
@@ -188,8 +192,29 @@ export function ResetScheduleConfig({
     calculatePreview,
   ]);
 
+  const usedTypes = useMemo(
+    () => new Set(schedules.map((s) => s.type)),
+    [schedules]
+  );
+
+  // When opening the add form, ensure the selected type isn't already used
+  useEffect(() => {
+    if (showAddForm && usedTypes.has(scheduleType)) {
+      const available = RESET_SCHEDULE_TYPES.find((t) => !usedTypes.has(t));
+      if (available) {
+        setScheduleType(available);
+      }
+    }
+  }, [showAddForm, usedTypes, scheduleType]);
+
   const handleAddSchedule = () => {
     setOffsetError("");
+
+    // Safety check: prevent duplicate types
+    if (usedTypes.has(scheduleType)) {
+      setOffsetError(`类型 "${getScheduleTypeLabel(scheduleType)}" 已存在`);
+      return;
+    }
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -411,15 +436,17 @@ export function ResetScheduleConfig({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Label className="text-sm font-medium">额度重置计划</Label>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setShowAddForm(true)}
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          添加
-        </Button>
+        {usedTypes.size < RESET_SCHEDULE_TYPES.length && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAddForm(true)}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            添加
+          </Button>
+        )}
       </div>
 
       {schedules.length > 0 && (
@@ -494,9 +521,15 @@ export function ResetScheduleConfig({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fiveHour">每5小时</SelectItem>
-                  <SelectItem value="weekly">每周</SelectItem>
-                  <SelectItem value="monthly">每月</SelectItem>
+                  {RESET_SCHEDULE_TYPES.map((type) => (
+                    <SelectItem
+                      key={type}
+                      value={type}
+                      disabled={usedTypes.has(type)}
+                    >
+                      {getScheduleTypeLabel(type)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
