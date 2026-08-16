@@ -404,6 +404,27 @@ export function addCategory(category: string): string[] {
   return data.categories;
 }
 
+export function deleteCategory(category: string): string[] {
+  const data = readData();
+
+  // Safety check: prevent deleting categories with subscriptions
+  const inUse = data.subscriptions.some((s) => s.category === category);
+  if (inUse) {
+    throw new Error("Cannot delete category with subscriptions");
+  }
+
+  const originalLength = data.categories.length;
+  data.categories = data.categories.filter((c) => c !== category);
+
+  if (data.categories.length === originalLength) {
+    // Category didn't exist, no change needed
+    return data.categories;
+  }
+
+  writeData(data);
+  return data.categories;
+}
+
 export function getProviders(): Provider[] {
   return defaultProviders;
 }

@@ -60,14 +60,7 @@ export interface SubscriptionData {
   categories: string[];
 }
 
-export const defaultCategories: string[] = [
-  "AI助手",
-  "图像生成",
-  "代码工具",
-  "写作工具",
-  "数据分析",
-  "其他",
-];
+export const defaultCategories: string[] = ["AI助手", "中转站"];
 
 export interface CredentialField {
   key: string;
