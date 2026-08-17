@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   Select,
@@ -6,23 +6,24 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface CategoryFilterProps {
-  categories: string[]
-  selectedCategory: string
-  selectedStatus: string
-  onCategoryChange: (category: string) => void
-  onStatusChange: (status: string) => void
+  categories: string[];
+  selectedCategory: string;
+  selectedStatus: string;
+  onCategoryChange: (category: string) => void;
+  onStatusChange: (status: string) => void;
 }
 
 const statusOptions = [
-  { value: 'all', label: '全部状态' },
-  { value: 'active', label: '活跃' },
-  { value: 'paused', label: '暂停' },
-  { value: 'cancelled', label: '已取消' },
-]
+  { value: "all", label: "全部状态" },
+  { value: "active", label: "活跃" },
+  { value: "paused", label: "暂停" },
+  { value: "cancelled", label: "已取消" },
+];
 
 export function CategoryFilter({
   categories,
@@ -35,10 +36,7 @@ export function CategoryFilter({
     <div className="flex gap-4 flex-wrap">
       <div className="flex items-center gap-2">
         <Label htmlFor="category-filter">分类筛选</Label>
-        <Select
-          value={selectedCategory}
-          onValueChange={onCategoryChange}
-        >
+        <Select value={selectedCategory} onValueChange={onCategoryChange}>
           <SelectTrigger id="category-filter" className="w-[150px]">
             <SelectValue placeholder="选择分类" />
           </SelectTrigger>
@@ -52,24 +50,29 @@ export function CategoryFilter({
           </SelectContent>
         </Select>
       </div>
-      <div className="flex items-center gap-2">
-        <Label htmlFor="status-filter">状态筛选</Label>
-        <Select
+      <div className="flex items-center gap-3">
+        <Label>状态筛选</Label>
+        <RadioGroup
           value={selectedStatus}
           onValueChange={onStatusChange}
+          className="flex items-center gap-4"
         >
-          <SelectTrigger id="status-filter" className="w-[150px]">
-            <SelectValue placeholder="选择状态" />
-          </SelectTrigger>
-          <SelectContent>
-            {statusOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
+          {statusOptions.map((option) => (
+            <div key={option.value} className="flex items-center space-x-2">
+              <RadioGroupItem
+                value={option.value}
+                id={`status-${option.value}`}
+              />
+              <Label
+                htmlFor={`status-${option.value}`}
+                className="cursor-pointer font-normal"
+              >
                 {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              </Label>
+            </div>
+          ))}
+        </RadioGroup>
       </div>
     </div>
-  )
+  );
 }
