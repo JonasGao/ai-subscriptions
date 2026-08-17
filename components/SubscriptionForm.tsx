@@ -236,7 +236,7 @@ export function SubscriptionForm({
         <DialogHeader>
           <DialogTitle>{subscription ? "编辑订阅" : "添加订阅"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete="off">
           <div className="grid gap-3 py-3">
             <div className="grid gap-2">
               <Label htmlFor="name">名称 *</Label>
@@ -246,6 +246,7 @@ export function SubscriptionForm({
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="输入订阅名称"
                 required
+                autoComplete="off"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -305,6 +306,7 @@ export function SubscriptionForm({
                   }
                   placeholder="输入自定义提供商名称"
                   required={showCustomProvider}
+                  autoComplete="off"
                 />
               </div>
             )}
@@ -408,6 +410,7 @@ export function SubscriptionForm({
                   }
                   placeholder="0.00"
                   required
+                  autoComplete="off"
                 />
               </div>
               {isRecurring && (
@@ -447,6 +450,7 @@ export function SubscriptionForm({
                     )
                   }
                   placeholder="手动输入余额"
+                  autoComplete="off"
                 />
               </div>
             )}
@@ -476,6 +480,7 @@ export function SubscriptionForm({
                     }
                   }}
                   placeholder="留空使用全局默认阈值"
+                  autoComplete="off"
                 />
               </div>
             )}
@@ -491,6 +496,7 @@ export function SubscriptionForm({
                       handleInputChange("startDate", e.target.value)
                     }
                     required
+                    autoComplete="off"
                   />
                 </div>
                 <div className="grid gap-2">
@@ -503,6 +509,7 @@ export function SubscriptionForm({
                       handleInputChange("renewalDate", e.target.value)
                     }
                     required
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -560,6 +567,7 @@ export function SubscriptionForm({
                                 ? "已配置，留空保持不变"
                                 : `输入 ${field.label}`
                             }
+                            autoComplete="off"
                           />
                         </div>
                       )
@@ -601,6 +609,7 @@ export function SubscriptionForm({
                 value={formData.notes}
                 onChange={(e) => handleInputChange("notes", e.target.value)}
                 placeholder="可选备注信息"
+                autoComplete="off"
               />
             </div>
           </div>
