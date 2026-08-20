@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Subscription, EffectiveStatusReason } from "./types";
+import { explainStatus } from "./status-policy";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -191,28 +192,7 @@ export function getScheduleTypeLabel(type: string): string {
 export function getStatusReason(
   subscription: Subscription
 ): EffectiveStatusReason {
-  if (subscription.status === "cancelled") {
-    return { kind: "manual-cancelled" };
-  }
-
-  const enabledSchedules =
-    subscription.resetSchedules?.filter((s) => s.enabled) ?? [];
-  const exhaustedSchedules = enabledSchedules.filter(
-    (s) => s.exhausted === true
-  );
-
-  if (exhaustedSchedules.length > 0) {
-    return {
-      kind: "schedule-exhausted",
-      scheduleIds: exhaustedSchedules.map((s) => s.id),
-    };
-  }
-
-  if (subscription.status === "paused") {
-    return { kind: "manual-paused" };
-  }
-
-  return { kind: "available" };
+  return explainStatus(subscription);
 }
 
 // ============ Usage progress helpers ============

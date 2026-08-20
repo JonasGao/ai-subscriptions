@@ -3,8 +3,6 @@ import {
   getSubscriptionById,
   updateSubscription,
   deleteSubscription,
-  recomputeStatus,
-  setStatusManually,
 } from "@/lib/db";
 import { SubscriptionStatus } from "@/lib/types";
 import { normalizeNullable, validateNonNegative } from "@/lib/validation";
@@ -92,20 +90,7 @@ export async function PUT(
       );
     }
 
-    // Recompute status if resetSchedules was updated — but never override a
-    // status the user explicitly chose in this request.
-    let finalSubscription = updatedSubscription;
-    if (body.resetSchedules !== undefined && body.status === undefined) {
-      const computedStatus = recomputeStatus(updatedSubscription);
-      if (computedStatus !== updatedSubscription.status) {
-        const statusUpdated = setStatusManually(params.id, computedStatus);
-        if (statusUpdated) {
-          finalSubscription = statusUpdated;
-        }
-      }
-    }
-
-    return NextResponse.json(stripCredentials(finalSubscription));
+    return NextResponse.json(stripCredentials(updatedSubscription));
   } catch (error) {
     console.error("PUT /api/subscriptions/[id] error:", error);
     if (error instanceof SyntaxError) {

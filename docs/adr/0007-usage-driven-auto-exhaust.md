@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-Reset schedules track when a subscription's quota resets. Each schedule has an `exhausted` flag that, when true, contributes to the subscription's "paused" status (via `recomputeStatus`). Users previously had to manually click the "可用/用尽" toggle button after noticing their usage was at 100%.
+Reset schedules track when a subscription's quota resets. Each schedule has an `exhausted` flag that, when true, contributes to the subscription's "paused" status through the shared status policy. Users previously had to manually click the "可用/用尽" toggle button after noticing their usage was at 100%.
 
 Two observations drove this change:
 

@@ -21,6 +21,7 @@ import {
   updateResetScheduleNextTime,
   validateResetSchedule,
 } from "./reset-schedule";
+import { deriveStatus } from "./status-policy";
 
 const dataFile = path.join(dataDir, "subscriptions.json");
 const prioritiesFile = path.join(dataDir, "priorities.json");
@@ -118,8 +119,8 @@ export function readData(): SubscriptionData {
           sub.resetSchedules = deduped;
           // A dropped duplicate may have been the exhausted one that drove the
           // stored status; recompute so status stays consistent with the
-          // surviving schedules (recomputeStatus preserves "cancelled").
-          sub.status = recomputeStatus(sub);
+          // surviving schedules.
+          sub.status = deriveStatus(sub);
           needsWrite = true;
         }
       }
@@ -345,11 +346,18 @@ export function updateSubscription(
     );
   }
 
-  data.subscriptions[index] = {
+  const updatedSubscription: Subscription = {
     ...existing,
     ...updates,
     updatedAt: new Date().toISOString(),
   };
+
+  // Schedule edits derive status unless the caller explicitly chose one.
+  if (updates.resetSchedules !== undefined && updates.status === undefined) {
+    updatedSubscription.status = deriveStatus(updatedSubscription);
+  }
+
+  data.subscriptions[index] = updatedSubscription;
 
   writeData(data);
   return data.subscriptions[index];
@@ -471,20 +479,6 @@ export function resolvePlanId(
   }
 
   return planId;
-}
-
-export function recomputeStatus(
-  subscription: Subscription
-): SubscriptionStatus {
-  if (subscription.status === "cancelled") {
-    return "cancelled";
-  }
-
-  const enabledSchedules =
-    subscription.resetSchedules?.filter((s) => s.enabled) ?? [];
-  const anyExhausted = enabledSchedules.some((s) => s.exhausted === true);
-
-  return anyExhausted ? "paused" : "active";
 }
 
 export function addResetSchedule(
@@ -650,7 +644,7 @@ export function processResetTick(): ResetTickTrigger[] {
     });
 
     if (subAnyFired) {
-      const newStatus = recomputeStatus(sub);
+      const newStatus = deriveStatus(sub);
       if (newStatus !== sub.status) {
         sub.status = newStatus;
         sub.updatedAt = nowIso;
@@ -690,7 +684,7 @@ export function toggleScheduleExhausted(
     exhausted;
   data.subscriptions[subIndex].resetSchedules![scheduleIndex].updatedAt = now;
 
-  const newStatus = recomputeStatus(data.subscriptions[subIndex]);
+  const newStatus = deriveStatus(data.subscriptions[subIndex]);
   data.subscriptions[subIndex].status = newStatus;
   data.subscriptions[subIndex].updatedAt = now;
 
