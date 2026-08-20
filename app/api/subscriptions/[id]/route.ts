@@ -92,9 +92,10 @@ export async function PUT(
       );
     }
 
-    // Recompute status if resetSchedules was updated
+    // Recompute status if resetSchedules was updated — but never override a
+    // status the user explicitly chose in this request.
     let finalSubscription = updatedSubscription;
-    if (body.resetSchedules !== undefined) {
+    if (body.resetSchedules !== undefined && body.status === undefined) {
       const computedStatus = recomputeStatus(updatedSubscription);
       if (computedStatus !== updatedSubscription.status) {
         const statusUpdated = setStatusManually(params.id, computedStatus);
