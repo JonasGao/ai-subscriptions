@@ -54,22 +54,56 @@ type EditFn = (s: Subscription) => void;
 
 function renderCard(sub: Subscription): {
   onEdit: ReturnType<typeof vi.fn<EditFn>>;
+  onDelete: ReturnType<typeof vi.fn<(id: string) => void>>;
   result: RenderResult;
 } {
   const onEdit = vi.fn<EditFn>();
+  const onDelete = vi.fn<(id: string) => void>();
   const result = render(
     <SubscriptionCard
       subscription={sub}
       onEdit={onEdit}
-      onDelete={vi.fn<(id: string) => void>()}
+      onDelete={onDelete}
       onStatusChange={vi.fn<(id: string, s: "active" | "paused") => void>()}
     />
   );
-  return { onEdit, result };
+  return { onEdit, onDelete, result };
 }
 
 const waitForEffects = () =>
   waitFor(() => new Promise((r) => setTimeout(r, 20)));
+
+describe("SubscriptionCard deletion confirmation", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("requires two confirmations before deleting a subscription", () => {
+    const { onDelete, result } = renderCard(makeSubscription());
+
+    fireEvent.click(result.getByRole("button", { name: "删除" }));
+    expect(result.getByText("确认删除订阅")).toBeTruthy();
+    expect(onDelete).not.toHaveBeenCalled();
+
+    fireEvent.click(result.getByRole("button", { name: "继续删除" }));
+    expect(result.getByText("再次确认删除")).toBeTruthy();
+    expect(onDelete).not.toHaveBeenCalled();
+
+    fireEvent.click(result.getByRole("button", { name: "确认删除" }));
+    expect(onDelete).toHaveBeenCalledOnce();
+    expect(onDelete).toHaveBeenCalledWith("sub-1");
+  });
+
+  it("cancelling the confirmation does not delete the subscription", () => {
+    const { onDelete, result } = renderCard(makeSubscription());
+
+    fireEvent.click(result.getByRole("button", { name: "删除" }));
+    fireEvent.click(result.getByRole("button", { name: "取消" }));
+
+    expect(result.queryByText("确认删除订阅")).toBeNull();
+    expect(onDelete).not.toHaveBeenCalled();
+  });
+});
 
 describe("SubscriptionCard auto-query on mount", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
