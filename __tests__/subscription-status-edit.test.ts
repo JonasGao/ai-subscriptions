@@ -26,6 +26,44 @@ async function getDeps() {
 }
 
 describe("subscription status edit (cancel → pause)", () => {
+  it("keeps an explicitly chosen active status even with exhausted schedules", async () => {
+    const { db, route, NextRequest } = await getDeps();
+    const sub = db.createSubscription({
+      name: "测试订阅",
+      category: "AI助手",
+      provider: "openai",
+      subscriptionType: "recurring",
+      billingCycle: "monthly",
+      price: 20,
+      status: "paused",
+      resetSchedules: [
+        {
+          id: "sched-1",
+          enabled: true,
+          type: "monthly",
+          nextResetTime: "2026-09-01T00:00:00Z",
+          exhausted: true,
+          createdAt: "2026-08-01T00:00:00Z",
+          updatedAt: "2026-08-01T00:00:00Z",
+        },
+      ],
+    });
+
+    const req = new NextRequest(
+      `http://localhost/api/subscriptions/${sub.id}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ status: "active" }),
+      }
+    );
+
+    const res = await route.PUT(req, { params: { id: sub.id } });
+
+    expect(res.status).toBe(200);
+    expect((await res.json()).status).toBe("active");
+    expect(db.getSubscriptionById(sub.id)?.status).toBe("active");
+  });
+
   it("keeps the manually chosen status after saving the edit form", async () => {
     const { db, route, NextRequest } = await getDeps();
 

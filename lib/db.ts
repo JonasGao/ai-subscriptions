@@ -691,22 +691,3 @@ export function toggleScheduleExhausted(
   writeData(data);
   return data.subscriptions[subIndex];
 }
-
-export function setStatusManually(
-  subscriptionId: string,
-  status: SubscriptionStatus
-): Subscription | null {
-  const data = readData();
-  const subIndex = data.subscriptions.findIndex((s) => s.id === subscriptionId);
-
-  if (subIndex === -1) {
-    return null;
-  }
-
-  const now = new Date().toISOString();
-  data.subscriptions[subIndex].status = status;
-  data.subscriptions[subIndex].updatedAt = now;
-
-  writeData(data);
-  return data.subscriptions[subIndex];
-}

@@ -171,5 +171,44 @@ describe("processResetTick filtering", () => {
     // Schedule should now be marked as not exhausted.
     const saved = db.getSubscriptions();
     expect(saved[0].resetSchedules![0].exhausted).toBe(false);
+    expect(saved[0].status).toBe("active");
+  });
+});
+
+describe("schedule exhaustion status transitions", () => {
+  it("pauses an active subscription when a schedule is exhausted", async () => {
+    const db = await getDb();
+    db.writeData(
+      makeData({ subscriptions: [makeSubscription({ status: "active" })] })
+    );
+
+    const updated = db.toggleScheduleExhausted("sub-1", "sched-1", true);
+
+    expect(updated?.status).toBe("paused");
+    expect(updated?.resetSchedules?.[0].exhausted).toBe(true);
+  });
+
+  it("restores active after an exhausted schedule is cleared", async () => {
+    const db = await getDb();
+    db.writeData(
+      makeData({
+        subscriptions: [
+          makeSubscription({
+            status: "paused",
+            resetSchedules: [
+              {
+                ...makeSubscription().resetSchedules![0],
+                exhausted: true,
+              },
+            ],
+          }),
+        ],
+      })
+    );
+
+    const updated = db.toggleScheduleExhausted("sub-1", "sched-1", false);
+
+    expect(updated?.status).toBe("active");
+    expect(updated?.resetSchedules?.[0].exhausted).toBe(false);
   });
 });
