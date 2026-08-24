@@ -49,6 +49,22 @@
   }
 }
 
+@layer components {
+  .priority-row {
+    background-color: rgb(59 130 246 / var(--priority-bg-opacity-light));
+    border: 1px solid rgb(37 99 235 / var(--priority-border-opacity-light));
+    transition:
+      box-shadow 150ms ease,
+      background-color 150ms ease,
+      border-color 150ms ease;
+  }
+
+  .dark .priority-row {
+    background-color: rgb(96 165 250 / var(--priority-bg-opacity-dark));
+    border-color: rgb(96 165 250 / var(--priority-border-opacity-dark));
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
