@@ -59,6 +59,14 @@ _Avoid_: Absolute schedule creation, manual schedule input
 **Schedule Creation Input Method**:
 The choice between offset-based and direct input methods for creating reset schedules. The system supports both methods to accommodate different user mental models: "when will it reset?" (offset) vs "what day/time should it reset?" (direct).
 
+**Priority Scene**:
+A named usage context in which subscriptions are arranged independently by preference. A subscription may appear in multiple priority scenes.
+_Avoid_: Priority list, usage scene
+
+**Priority Rank**:
+A subscription's relative position within a Priority Scene. The first subscription has the highest priority and the last has the lowest; rank is not an absolute priority level.
+_Avoid_: Priority level, priority score
+
 ## Relationships
 
 - **Provider → Plan**: A provider declares the Plans it offers (if any)
@@ -71,3 +79,4 @@ The choice between offset-based and direct input methods for creating reset sche
 - **Usage Query → Reset Schedule**: a fully-consumed usage bucket marks the matching reset schedule exhausted
 - **Subscription → Balance Query**: one-time subscriptions support balance queries
 - **Usage Query / Balance Query → Query Cooldown**: a successful query starts a query cooldown
+- **Priority Scene → Subscription**: a priority scene orders subscriptions by relative Priority Rank
