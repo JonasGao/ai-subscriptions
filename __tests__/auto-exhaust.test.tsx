@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, waitFor, cleanup } from "@testing-library/react";
+import { render, waitFor, cleanup, screen } from "@testing-library/react";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { Subscription, UsageResult } from "@/lib/types";
 
@@ -52,6 +52,33 @@ describe("SubscriptionCard auto-exhaust on usage query", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     cleanup();
+  });
+
+  it("renders the usage percentage below the progress bar", async () => {
+    fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () =>
+        makeUsageResult({
+          monthly: {
+            limit: "100",
+            used: "50",
+            remaining: "50",
+            resetTime: "2025-02-01T00:00:00Z",
+          },
+        }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <SubscriptionCard
+        subscription={makeSubscription()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onStatusChange={vi.fn()}
+      />
+    );
+
+    await waitFor(() => expect(screen.getByText("50.0%")).toBeTruthy());
   });
 
   it("calls onScheduleToggle when usage reaches 100% for a window", async () => {

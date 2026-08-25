@@ -179,6 +179,7 @@ function UsageProgressBar({ window }: { window: UsageWindow }) {
   const percent = getUsagePercent(window.used, window.limit);
   const tier = percent === null ? null : getProgressTier(percent);
   const width = percent === null ? 0 : Math.round(percent);
+  const percentLabel = percent === null ? null : `${percent.toFixed(1)}%`;
   return (
     <div className="mt-1 space-y-1">
       {tier !== null && (
@@ -204,6 +205,11 @@ function UsageProgressBar({ window }: { window: UsageWindow }) {
           </Tooltip>
         ) : (
           <span className="text-xs text-muted-foreground">—</span>
+        )}
+        {percentLabel !== null && (
+          <span className="ml-auto text-xs tabular-nums text-muted-foreground">
+            {percentLabel}
+          </span>
         )}
       </div>
     </div>
