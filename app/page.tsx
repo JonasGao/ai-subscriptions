@@ -7,7 +7,7 @@ import { CategoryPieChart } from "@/components/CategoryPieChart";
 import { SubscriptionList } from "@/components/SubscriptionList";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { SubscriptionForm } from "@/components/SubscriptionForm";
-import { Subscription, SubscriptionFormData } from "@/lib/types";
+import { Subscription, SubscriptionFormData, Tag } from "@/lib/types";
 import { defaultCategories } from "@/lib/types";
 import {
   Plus,
@@ -29,6 +29,7 @@ export default function Home() {
   );
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [categories, setCategories] = useState<string[]>(defaultCategories);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("selectedCategory") || "all";
@@ -55,9 +56,10 @@ export default function Home() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [subsRes, catsRes] = await Promise.all([
+      const [subsRes, catsRes, tagsRes] = await Promise.all([
         fetch("/api/subscriptions"),
         fetch("/api/categories"),
+        fetch("/api/tags"),
       ]);
 
       if (subsRes.ok) {
@@ -68,6 +70,11 @@ export default function Home() {
       if (catsRes.ok) {
         const catsData = await catsRes.json();
         setCategories(catsData);
+      }
+
+      if (tagsRes.ok) {
+        const tagsData = await tagsRes.json();
+        setTags(tagsData);
       }
     } catch (error) {
       console.error("Failed to load data:", error);
@@ -94,7 +101,20 @@ export default function Home() {
     return categoryMatch && statusMatch;
   });
 
-  const handleFormSubmit = async (data: SubscriptionFormData) => {
+  const refreshTags = async (): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/tags");
+      if (!response.ok) return false;
+      setTags(await response.json());
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleFormSubmit = async (
+    data: SubscriptionFormData
+  ): Promise<boolean> => {
     setErrorMessage(null);
     try {
       if (editingSubscription) {
@@ -112,9 +132,15 @@ export default function Home() {
           setSubscriptions((prev) =>
             prev.map((s) => (s.id === updated.id ? updated : s))
           );
+          if (!(await refreshTags())) {
+            setErrorMessage("订阅已保存，但标签列表刷新失败，请刷新页面");
+          }
+          setEditingSubscription(null);
+          return true;
         } else {
           const errorData = await response.json();
           setErrorMessage(errorData.error || "保存失败");
+          return false;
         }
       } else {
         const response = await fetch("/api/subscriptions", {
@@ -130,16 +156,56 @@ export default function Home() {
           if (!categories.includes(data.category)) {
             setCategories((prev) => [...prev, data.category]);
           }
+          if (!(await refreshTags())) {
+            setErrorMessage("订阅已保存，但标签列表刷新失败，请刷新页面");
+          }
+          setEditingSubscription(null);
+          return true;
         } else {
           const errorData = await response.json();
           setErrorMessage(errorData.error || "保存失败");
+          return false;
         }
       }
     } catch {
       setErrorMessage("保存订阅时发生错误");
-    } finally {
-      setEditingSubscription(null);
+      return false;
     }
+  };
+
+  const handleRenameTag = async (tagId: string, name: string): Promise<Tag> => {
+    const response = await fetch(`/api/tags/${tagId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "重命名标签失败");
+
+    setTags((previous) =>
+      previous.map((tag) => (tag.id === data.id ? data : tag))
+    );
+    return data;
+  };
+
+  const handleDeleteTag = async (tagId: string): Promise<void> => {
+    const response = await fetch(`/api/tags/${tagId}`, { method: "DELETE" });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "删除标签失败");
+
+    setTags((previous) => previous.filter((tag) => tag.id !== tagId));
+    setSubscriptions((previous) =>
+      previous.map((subscription) =>
+        (subscription.tagIds ?? []).includes(tagId)
+          ? {
+              ...subscription,
+              tagIds: (subscription.tagIds ?? []).filter(
+                (item) => item !== tagId
+              ),
+            }
+          : subscription
+      )
+    );
   };
 
   const handleEdit = (subscription: Subscription) => {
@@ -343,6 +409,7 @@ export default function Home() {
               <h2 className="text-xl font-semibold mb-4">订阅列表</h2>
               <SubscriptionList
                 subscriptions={filteredSubscriptions}
+                tags={tags}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onStatusChange={handleSubscriptionStatusChange}
@@ -372,8 +439,12 @@ export default function Home() {
           open={formOpen}
           onOpenChange={setFormOpen}
           subscription={editingSubscription}
+          subscriptions={subscriptions}
           categories={categories}
+          tags={tags}
           onSubmit={handleFormSubmit}
+          onRenameTag={handleRenameTag}
+          onDeleteTag={handleDeleteTag}
         />
       </div>
     </div>

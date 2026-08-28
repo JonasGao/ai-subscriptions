@@ -24,6 +24,7 @@ import {
   BalanceResult,
   UsageResult,
   UsageWindow,
+  Tag,
 } from "@/lib/types";
 import { useNow } from "@/hooks/useNow";
 import {
@@ -53,6 +54,7 @@ import { Fragment } from "react";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
+  tags?: Tag[];
   onEdit: (subscription: Subscription) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, newStatus: "active" | "paused") => void;
@@ -230,6 +232,7 @@ function UsageBlock({ label, window }: { label: string; window: UsageWindow }) {
 
 export function SubscriptionCard({
   subscription,
+  tags = [],
   onEdit,
   onDelete,
   onStatusChange,
@@ -263,6 +266,9 @@ export function SubscriptionCard({
     subscription.providerCustom
   );
   const planName = getPlanName(subscription.provider, subscription.planId);
+  const subscriptionTags = (subscription.tagIds ?? [])
+    .map((tagId) => tags.find((tag) => tag.id === tagId))
+    .filter((tag): tag is Tag => Boolean(tag));
   const typeLabel = getTypeLabel(subscription.subscriptionType);
   const priceLabel =
     subscription.subscriptionType === "one-time"
@@ -479,6 +485,24 @@ export function SubscriptionCard({
                 {subscription.category}
               </span>
             </div>
+            {subscriptionTags.length > 0 && (
+              <div className="flex items-start justify-between gap-3">
+                <span className="shrink-0 pt-1 text-sm text-muted-foreground">
+                  标签
+                </span>
+                <div className="flex min-w-0 flex-wrap justify-end gap-1">
+                  {subscriptionTags.map((tag) => (
+                    <Badge
+                      key={tag.id}
+                      variant="secondary"
+                      className="max-w-full break-all text-xs"
+                    >
+                      {tag.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">类型</span>
               <Badge variant="outline" className="text-xs">

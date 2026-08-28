@@ -105,6 +105,44 @@ describe("SubscriptionCard deletion confirmation", () => {
   });
 });
 
+describe("SubscriptionCard tags", () => {
+  afterEach(cleanup);
+
+  it("renders tags in the subscription association order", () => {
+    const subscription = makeSubscription({
+      tagIds: ["second", "first"],
+    });
+    const result = render(
+      <SubscriptionCard
+        subscription={subscription}
+        tags={[
+          {
+            id: "first",
+            name: "稳定",
+            createdAt: "2026-01-01",
+            updatedAt: "2026-01-01",
+          },
+          {
+            id: "second",
+            name: "质量高",
+            createdAt: "2026-01-02",
+            updatedAt: "2026-01-02",
+          },
+        ]}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onStatusChange={vi.fn()}
+      />
+    );
+
+    const labels = result.getAllByText(/质量高|稳定/);
+    expect(labels.map((label) => label.textContent)).toEqual([
+      "质量高",
+      "稳定",
+    ]);
+  });
+});
+
 describe("SubscriptionCard auto-query on mount", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 

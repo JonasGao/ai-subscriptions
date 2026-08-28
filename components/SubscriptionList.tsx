@@ -1,10 +1,11 @@
 "use client";
 
-import { Subscription } from "@/lib/types";
+import { Subscription, Tag } from "@/lib/types";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
 
 interface SubscriptionListProps {
   subscriptions: Subscription[];
+  tags: Tag[];
   onEdit: (subscription: Subscription) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, newStatus: "active" | "paused") => void;
@@ -18,6 +19,7 @@ interface SubscriptionListProps {
 
 export function SubscriptionList({
   subscriptions,
+  tags,
   onEdit,
   onDelete,
   onStatusChange,
@@ -38,6 +40,7 @@ export function SubscriptionList({
         <SubscriptionCard
           key={subscription.id}
           subscription={subscription}
+          tags={tags}
           onEdit={onEdit}
           onDelete={onDelete}
           onStatusChange={onStatusChange}

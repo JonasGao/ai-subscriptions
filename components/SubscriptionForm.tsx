@@ -30,8 +30,11 @@ import {
   ResetSchedule,
   CredentialField,
   PlanDefinition,
+  Tag,
 } from "@/lib/types";
 import { ResetScheduleConfig } from "@/components/ResetScheduleConfig";
+import { TagInput } from "@/components/TagInput";
+import { TagManagerDialog } from "@/components/TagManagerDialog";
 import {
   Loader2,
   CheckCircle,
@@ -44,8 +47,12 @@ interface SubscriptionFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   subscription?: Subscription | null;
+  subscriptions: Subscription[];
   categories: string[];
-  onSubmit: (data: SubscriptionFormData) => void;
+  tags: Tag[];
+  onSubmit: (data: SubscriptionFormData) => Promise<boolean>;
+  onRenameTag: (tagId: string, name: string) => Promise<Tag>;
+  onDeleteTag: (tagId: string) => Promise<void>;
 }
 
 const initialFormData: SubscriptionFormData = {
@@ -65,14 +72,19 @@ const initialFormData: SubscriptionFormData = {
   lowBalanceThreshold: undefined,
   resetSchedules: [],
   planId: undefined,
+  tagNames: [],
 };
 
 export function SubscriptionForm({
   open,
   onOpenChange,
   subscription,
+  subscriptions,
   categories,
+  tags,
   onSubmit,
+  onRenameTag,
+  onDeleteTag,
 }: SubscriptionFormProps) {
   const [formData, setFormData] =
     useState<SubscriptionFormData>(initialFormData);
@@ -100,7 +112,10 @@ export function SubscriptionForm({
     ok: boolean;
     message: string;
   } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const firstCredentialRef = useRef<HTMLInputElement>(null);
+  const tagsRef = useRef(tags);
+  tagsRef.current = tags;
 
   useEffect(() => {
     fetch("/api/providers")
@@ -128,6 +143,9 @@ export function SubscriptionForm({
         lowBalanceThreshold: subscription.lowBalanceThreshold,
         resetSchedules: subscription.resetSchedules || [],
         planId: subscription.planId,
+        tagNames: (subscription.tagIds ?? [])
+          .map((tagId) => tagsRef.current.find((tag) => tag.id === tagId)?.name)
+          .filter((name): name is string => Boolean(name)),
       });
       // Auto-expand if editing without credentials
       const hasExistingCreds = subscription.hasCredentials === true;
@@ -151,14 +169,46 @@ export function SubscriptionForm({
     }
   }, [credentialsOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload: SubscriptionFormData = {
       ...formData,
       lowBalanceThreshold: formData.lowBalanceThreshold ?? null,
     };
-    onSubmit(payload);
-    onOpenChange(false);
+    setSubmitting(true);
+    try {
+      const saved = await onSubmit(payload);
+      if (saved) onOpenChange(false);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRenameTag = async (tagId: string, name: string) => {
+    const oldName = tags.find((tag) => tag.id === tagId)?.name;
+    const renamed = await onRenameTag(tagId, name);
+    if (oldName) {
+      setFormData((previous) => ({
+        ...previous,
+        tagNames: (previous.tagNames ?? []).map((tagName) =>
+          tagName === oldName ? renamed.name : tagName
+        ),
+      }));
+    }
+    return renamed;
+  };
+
+  const handleDeleteTag = async (tagId: string) => {
+    const deletedName = tags.find((tag) => tag.id === tagId)?.name;
+    await onDeleteTag(tagId);
+    if (deletedName) {
+      setFormData((previous) => ({
+        ...previous,
+        tagNames: (previous.tagNames ?? []).filter(
+          (tagName) => tagName !== deletedName
+        ),
+      }));
+    }
   };
 
   const handleInputChange = (
@@ -231,8 +281,13 @@ export function SubscriptionForm({
   const hasExistingCredentials = subscription?.hasCredentials === true;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px]">
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!submitting) onOpenChange(nextOpen);
+      }}
+    >
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>{subscription ? "编辑订阅" : "添加订阅"}</DialogTitle>
         </DialogHeader>
@@ -293,6 +348,32 @@ export function SubscriptionForm({
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="subscription-tags">标签</Label>
+                <span className="text-xs text-muted-foreground">
+                  {(formData.tagNames ?? []).length}/20
+                </span>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <TagInput
+                    tags={tags}
+                    value={formData.tagNames ?? []}
+                    onChange={(tagNames) =>
+                      setFormData((previous) => ({ ...previous, tagNames }))
+                    }
+                    disabled={submitting}
+                  />
+                </div>
+                <TagManagerDialog
+                  tags={tags}
+                  subscriptions={subscriptions}
+                  onRename={handleRenameTag}
+                  onDelete={handleDeleteTag}
+                />
               </div>
             </div>
             {showCustomProvider && (
@@ -618,10 +699,14 @@ export function SubscriptionForm({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={submitting}
             >
               取消
             </Button>
-            <Button type="submit">{subscription ? "保存" : "添加"}</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {subscription ? "保存" : "添加"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
