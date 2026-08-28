@@ -12,6 +12,7 @@ import {
   ResetScheduleType,
   ResetTickTrigger,
   Provider,
+  Tag,
 } from "./types";
 import { v4 as uuidv4 } from "uuid";
 import { ensureDataDir, atomicWriteFile, dataDir } from "./file-ops";
@@ -22,6 +23,7 @@ import {
   validateResetSchedule,
 } from "./reset-schedule";
 import { deriveStatus } from "./status-policy";
+import { validateTagName, validateTagNames } from "./tags";
 
 const dataFile = path.join(dataDir, "subscriptions.json");
 const prioritiesFile = path.join(dataDir, "priorities.json");
@@ -30,7 +32,30 @@ function getInitialData(): SubscriptionData {
   return {
     subscriptions: [],
     categories: defaultCategories,
+    tags: [],
   };
+}
+
+function resolveTagIds(data: SubscriptionData, names: unknown): string[] {
+  const tagNames = validateTagNames(names);
+  const now = new Date().toISOString();
+  const tags = (data.tags ??= []);
+
+  return tagNames.map((name) => {
+    const existing = tags.find((tag) => tag.name === name);
+    if (existing) {
+      return existing.id;
+    }
+
+    const tag: Tag = {
+      id: uuidv4(),
+      name,
+      createdAt: now,
+      updatedAt: now,
+    };
+    tags.push(tag);
+    return tag.id;
+  });
 }
 
 /** Each subscription may hold at most one schedule per type. */
@@ -57,15 +82,37 @@ export function readData(): SubscriptionData {
 
   try {
     const fileContent = fs.readFileSync(dataFile, "utf-8");
+    let needsWrite = false;
     const data = JSON.parse(fileContent) as SubscriptionData;
 
-    data.subscriptions = data.subscriptions.map((sub) => ({
-      ...sub,
-      subscriptionType: sub.subscriptionType || "recurring",
-      billingCycle: sub.billingCycle || "monthly",
-    }));
+    if (!Array.isArray(data.tags)) {
+      data.tags = [];
+      needsWrite = true;
+    }
 
-    let needsWrite = false;
+    const knownTagIds = new Set(data.tags.map((tag) => tag.id));
+    data.subscriptions = data.subscriptions.map((sub) => {
+      const rawTagIds = Array.isArray(sub.tagIds) ? sub.tagIds : [];
+      const tagIds = Array.from(
+        new Set(
+          rawTagIds.filter(
+            (tagId): tagId is string =>
+              typeof tagId === "string" && knownTagIds.has(tagId)
+          )
+        )
+      );
+
+      if (!Array.isArray(sub.tagIds) || tagIds.length !== rawTagIds.length) {
+        needsWrite = true;
+      }
+
+      return {
+        ...sub,
+        subscriptionType: sub.subscriptionType || "recurring",
+        billingCycle: sub.billingCycle || "monthly",
+        tagIds,
+      };
+    });
 
     // Migrate apiKey → credentials
     data.subscriptions.forEach((sub) => {
@@ -155,7 +202,11 @@ export function getSubscriptionById(id: string): Subscription | null {
 }
 
 export function createSubscription(
-  subscriptionData: Omit<Subscription, "id" | "createdAt" | "updatedAt">
+  subscriptionData: Omit<
+    Subscription,
+    "id" | "createdAt" | "updatedAt" | "tagIds"
+  >,
+  tagNames: unknown = []
 ): Subscription {
   if (!subscriptionData.name || subscriptionData.name.trim() === "") {
     throw new Error("Subscription name is required");
@@ -217,6 +268,7 @@ export function createSubscription(
   const data = readData();
   const now = new Date().toISOString();
   const subType = subscriptionData.subscriptionType || "recurring";
+  const tagIds = resolveTagIds(data, tagNames);
 
   const resolvedPlanId = resolvePlanId(
     subscriptionData.provider,
@@ -228,6 +280,7 @@ export function createSubscription(
     ...subscriptionData,
     subscriptionType: subType,
     planId: resolvedPlanId,
+    tagIds,
     id: uuidv4(),
     createdAt: now,
     updatedAt: now,
@@ -247,7 +300,8 @@ export function createSubscription(
 
 export function updateSubscription(
   id: string,
-  updates: Partial<Omit<Subscription, "id" | "createdAt">>
+  updates: Partial<Omit<Subscription, "id" | "createdAt" | "tagIds">>,
+  tagNames?: unknown
 ): Subscription | null {
   if (
     updates.name !== undefined &&
@@ -326,6 +380,10 @@ export function updateSubscription(
   }
 
   const existing = data.subscriptions[index];
+  const tagIds =
+    tagNames === undefined
+      ? (existing.tagIds ?? [])
+      : resolveTagIds(data, tagNames);
 
   // Resolve planId based on effective provider + subscriptionType
   if (
@@ -349,6 +407,7 @@ export function updateSubscription(
   const updatedSubscription: Subscription = {
     ...existing,
     ...updates,
+    tagIds,
     updatedAt: new Date().toISOString(),
   };
 
@@ -398,6 +457,64 @@ export function deleteSubscription(id: string): boolean {
 export function getCategories(): string[] {
   const data = readData();
   return data.categories;
+}
+
+export function getTags(): Tag[] {
+  return [...(readData().tags ?? [])].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt)
+  );
+}
+
+export function renameTag(id: string, rawName: unknown): Tag | null {
+  const name = validateTagName(rawName);
+  const data = readData();
+  const tags = (data.tags ??= []);
+  const tag = tags.find((item) => item.id === id);
+
+  if (!tag) {
+    return null;
+  }
+  if (tags.some((item) => item.id !== id && item.name === name)) {
+    throw new Error("标签名称已存在");
+  }
+  if (tag.name === name) {
+    return tag;
+  }
+
+  tag.name = name;
+  tag.updatedAt = new Date().toISOString();
+  writeData(data);
+  return tag;
+}
+
+export interface DeleteTagResult {
+  tagId: string;
+  affectedSubscriptionIds: string[];
+}
+
+export function deleteTag(id: string): DeleteTagResult | null {
+  const data = readData();
+  const tags = (data.tags ??= []);
+  const tagIndex = tags.findIndex((tag) => tag.id === id);
+
+  if (tagIndex === -1) {
+    return null;
+  }
+
+  const affectedSubscriptionIds: string[] = [];
+  const now = new Date().toISOString();
+  for (const subscription of data.subscriptions) {
+    if (subscription.tagIds?.includes(id)) {
+      subscription.tagIds = subscription.tagIds.filter((tagId) => tagId !== id);
+      subscription.updatedAt = now;
+      affectedSubscriptionIds.push(subscription.id);
+    }
+  }
+
+  tags.splice(tagIndex, 1);
+  writeData(data);
+
+  return { tagId: id, affectedSubscriptionIds };
 }
 
 export function addCategory(category: string): string[] {

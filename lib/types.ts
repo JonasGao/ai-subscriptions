@@ -41,6 +41,14 @@ export interface Subscription {
   lowBalanceThreshold?: number;
   resetSchedules?: ResetSchedule[];
   planId?: string;
+  tagIds?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -58,6 +66,7 @@ export type EffectiveStatusReason =
 export interface SubscriptionData {
   subscriptions: Subscription[];
   categories: string[];
+  tags?: Tag[];
 }
 
 export const defaultCategories: string[] = ["AI助手", "中转站"];
@@ -265,6 +274,7 @@ export interface SubscriptionFormData {
   lowBalanceThreshold?: number | null;
   resetSchedules?: ResetSchedule[];
   planId?: string;
+  tagNames?: string[];
 }
 
 export interface ResetScheduleFormData {

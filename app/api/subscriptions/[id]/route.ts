@@ -81,7 +81,12 @@ export async function PUT(
       body.credentials = JSON.stringify(body.credentials);
     }
 
-    const updatedSubscription = updateSubscription(params.id, body);
+    const { tagNames, tagIds: _ignoredTagIds, ...updates } = body;
+    const updatedSubscription = updateSubscription(
+      params.id,
+      updates,
+      tagNames
+    );
 
     if (!updatedSubscription) {
       return NextResponse.json(

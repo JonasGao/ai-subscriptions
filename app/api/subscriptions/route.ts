@@ -102,30 +102,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const newSubscription = createSubscription({
-      name: body.name,
-      category: body.category,
-      provider: body.provider || "other",
-      providerCustom: body.providerCustom,
-      subscriptionType: body.subscriptionType || "recurring",
-      billingCycle: body.billingCycle,
-      price: body.price,
-      startDate: body.startDate,
-      renewalDate: body.renewalDate,
-      status: body.status || "active",
-      notes: body.notes,
-      credentials: body.credentials
-        ? JSON.stringify(body.credentials)
-        : undefined,
-      balance: body.balance,
-      // normalizeNullable above converts explicit null → undefined, so the
-      // stored value is always `number | undefined` (Subscription type
-      // doesn't admit null). The `?? undefined` narrows the TS type to
-      // match what we've established at runtime.
-      lowBalanceThreshold: body.lowBalanceThreshold ?? undefined,
-      resetSchedules: body.resetSchedules,
-      planId: body.planId,
-    });
+    const newSubscription = createSubscription(
+      {
+        name: body.name,
+        category: body.category,
+        provider: body.provider || "other",
+        providerCustom: body.providerCustom,
+        subscriptionType: body.subscriptionType || "recurring",
+        billingCycle: body.billingCycle,
+        price: body.price,
+        startDate: body.startDate,
+        renewalDate: body.renewalDate,
+        status: body.status || "active",
+        notes: body.notes,
+        credentials: body.credentials
+          ? JSON.stringify(body.credentials)
+          : undefined,
+        balance: body.balance,
+        // normalizeNullable above converts explicit null → undefined, so the
+        // stored value is always `number | undefined` (Subscription type
+        // doesn't admit null). The `?? undefined` narrows the TS type to
+        // match what we've established at runtime.
+        lowBalanceThreshold: body.lowBalanceThreshold ?? undefined,
+        resetSchedules: body.resetSchedules,
+        planId: body.planId,
+      },
+      body.tagNames ?? []
+    );
 
     return NextResponse.json(stripCredentials(newSubscription), {
       status: 201,
