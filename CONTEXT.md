@@ -8,6 +8,10 @@ A subscription management system for AI services with quota tracking and automat
 A recurring or one-time service subscription to an AI provider.
 _Avoid_: Account. ("Plan" was formerly avoided as a synonym for Subscription; it is now a distinct term — see below.)
 
+**Tag**:
+A reusable, case-sensitive descriptor for evaluating or characterizing subscriptions. A Tag may describe zero or more subscriptions and remains part of the available vocabulary while unused.
+_Avoid_: Category, label
+
 **Provider**:
 An AI service vendor (e.g., Volcengine Ark, Moonshot, OpenAI). A provider statically declares which Plans it offers. Provider definitions are currently read-only: usage/balance query logic is hard-bound to specific provider definitions in code, so providers cannot be created, edited, or deleted through the UI.
 _Avoid_: Vendor, service
@@ -80,3 +84,5 @@ _Avoid_: Priority level, priority score
 - **Subscription → Balance Query**: one-time subscriptions support balance queries
 - **Usage Query / Balance Query → Query Cooldown**: a successful query starts a query cooldown
 - **Priority Scene → Subscription**: a priority scene orders subscriptions by relative Priority Rank
+- **Subscription ↔ Tag**: a subscription may have zero or more Tags, and a Tag may describe zero or more subscriptions
+- **Category ⊥ Tag**: a subscription has one Category for primary grouping; Tags provide additional, flexible characterization
