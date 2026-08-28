@@ -4,7 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Subscription } from "@/lib/types";
+import { ResetSchedule, Subscription } from "@/lib/types";
 import type { CSSProperties } from "react";
 
 interface SortableItemProps {
@@ -13,6 +13,37 @@ interface SortableItemProps {
   onRemove: (id: string) => void;
   rank: number;
   total: number;
+}
+
+const EXHAUSTED_SCOPE_PRIORITY: Record<ResetSchedule["type"], number> = {
+  fiveHour: 0,
+  weekly: 1,
+  monthly: 2,
+};
+
+const EXHAUSTED_SCOPE_LABEL: Record<ResetSchedule["type"], string> = {
+  fiveHour: "5小时",
+  weekly: "周",
+  monthly: "月度",
+};
+
+function getExhaustedScopeLabel(subscription: Subscription): string | null {
+  if (subscription.status === "cancelled") {
+    return null;
+  }
+  const schedules = subscription.resetSchedules ?? [];
+  let best: ResetSchedule["type"] | null = null;
+  for (const schedule of schedules) {
+    if (!schedule.enabled || !schedule.exhausted) continue;
+    if (
+      best === null ||
+      EXHAUSTED_SCOPE_PRIORITY[schedule.type] > EXHAUSTED_SCOPE_PRIORITY[best]
+    ) {
+      best = schedule.type;
+    }
+  }
+  if (best === null) return null;
+  return EXHAUSTED_SCOPE_LABEL[best];
 }
 
 function getPriorityOpacity(
@@ -44,6 +75,8 @@ function SortableItem({
     transition,
     isDragging,
   } = useSortable({ id });
+
+  const exhaustedScopeLabel = getExhaustedScopeLabel(subscription);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -88,6 +121,15 @@ function SortableItem({
       </span>
 
       <span className="flex-1 text-sm truncate">{subscription.name}</span>
+
+      {exhaustedScopeLabel && (
+        <span
+          aria-label={`额度用尽范围：${exhaustedScopeLabel}`}
+          className="text-xs font-semibold text-red-500 shrink-0"
+        >
+          {exhaustedScopeLabel}
+        </span>
+      )}
 
       <Badge
         variant={
