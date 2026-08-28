@@ -113,6 +113,7 @@ export function SubscriptionForm({
     message: string;
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pendingTagInput, setPendingTagInput] = useState("");
   const firstCredentialRef = useRef<HTMLInputElement>(null);
   const tagsRef = useRef(tags);
   tagsRef.current = tags;
@@ -155,10 +156,12 @@ export function SubscriptionForm({
         setCredentialsOpen(false);
       }
       setTestResult(null);
+      setPendingTagInput("");
     } else {
       setFormData(initialFormData);
       setCredentialsOpen(false);
       setTestResult(null);
+      setPendingTagInput("");
     }
   }, [subscription, open]);
 
@@ -171,8 +174,12 @@ export function SubscriptionForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const pendingTag = pendingTagInput.trim();
     const payload: SubscriptionFormData = {
       ...formData,
+      tagNames: pendingTag
+        ? Array.from(new Set([...(formData.tagNames ?? []), pendingTag]))
+        : formData.tagNames,
       lowBalanceThreshold: formData.lowBalanceThreshold ?? null,
     };
     setSubmitting(true);
@@ -365,6 +372,7 @@ export function SubscriptionForm({
                     onChange={(tagNames) =>
                       setFormData((previous) => ({ ...previous, tagNames }))
                     }
+                    onPendingChange={setPendingTagInput}
                     disabled={submitting}
                   />
                 </div>

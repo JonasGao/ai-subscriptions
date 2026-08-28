@@ -14,10 +14,17 @@ interface TagInputProps {
   tags: Tag[];
   value: string[];
   onChange: (names: string[]) => void;
+  onPendingChange?: (value: string) => void;
   disabled?: boolean;
 }
 
-export function TagInput({ tags, value, onChange, disabled }: TagInputProps) {
+export function TagInput({
+  tags,
+  value,
+  onChange,
+  onPendingChange,
+  disabled,
+}: TagInputProps) {
   const [input, setInput] = useState("");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -63,6 +70,7 @@ export function TagInput({ tags, value, onChange, disabled }: TagInputProps) {
     onChange(next);
     setFeedback(skipped.length > 0 ? `未加入：${skipped.join("；")}` : null);
     setInput("");
+    onPendingChange?.("");
     setActiveIndex(-1);
     setOpen(true);
   };
@@ -77,10 +85,12 @@ export function TagInput({ tags, value, onChange, disabled }: TagInputProps) {
       const parts = nextInput.split(/[,，]/);
       addNames(parts.slice(0, -1));
       setInput(parts.at(-1) ?? "");
+      onPendingChange?.(parts.at(-1) ?? "");
       return;
     }
 
     setInput(nextInput);
+    onPendingChange?.(nextInput);
     setActiveIndex(-1);
     setOpen(true);
   };
