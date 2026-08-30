@@ -218,6 +218,9 @@ export function updateProxySubscription(
     ...existing,
     ...mutableUpdates,
     name: mutableUpdates.name?.trim() ?? existing.name,
+    monthlyPrice: mutableUpdates.monthlyPrice ?? existing.monthlyPrice,
+    expirationDate: mutableUpdates.expirationDate ?? existing.expirationDate,
+    status: mutableUpdates.status ?? existing.status,
     website:
       mutableUpdates.website === ""
         ? undefined
