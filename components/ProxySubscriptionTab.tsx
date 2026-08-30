@@ -70,7 +70,7 @@ function money(value: number) {
   return `¥${value.toFixed(2)}`;
 }
 
-function ProxySubscriptionForm({
+export function ProxySubscriptionForm({
   open,
   onOpenChange,
   subscription,
@@ -91,6 +91,7 @@ function ProxySubscriptionForm({
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<ProxySubscriptionStatus>("unused");
   const [tagNames, setTagNames] = useState<string[]>([]);
+  const [pendingTagInput, setPendingTagInput] = useState("");
   const [dateMode, setDateMode] = useState<"expiration" | "duration">(
     "duration"
   );
@@ -131,6 +132,7 @@ function ProxySubscriptionForm({
       setDurationDays("");
     }
     setError(null);
+    setPendingTagInput("");
   }, [open, subscription, tags]);
 
   const calculatedExpiration =
@@ -158,6 +160,7 @@ function ProxySubscriptionForm({
       );
     setSubmitting(true);
     try {
+      const pendingTag = pendingTagInput.trim();
       const ok = await onSubmit({
         name: name.trim(),
         monthlyPrice: Number(monthlyPrice),
@@ -165,7 +168,9 @@ function ProxySubscriptionForm({
         website: website.trim() || undefined,
         notes: notes || undefined,
         status,
-        tagNames,
+        tagNames: pendingTag
+          ? Array.from(new Set([...tagNames, pendingTag]))
+          : tagNames,
       });
       if (ok) onOpenChange(false);
     } catch (submitError) {
@@ -321,7 +326,13 @@ function ProxySubscriptionForm({
             <Label>标签</Label>
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
-                <TagInput tags={tags} value={tagNames} onChange={setTagNames} />
+                <TagInput
+                  tags={tags}
+                  value={tagNames}
+                  onChange={setTagNames}
+                  onPendingChange={setPendingTagInput}
+                  disabled={submitting}
+                />
               </div>
             </div>
           </div>
