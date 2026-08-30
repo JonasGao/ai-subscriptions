@@ -86,6 +86,7 @@ function ProxySubscriptionForm({
   const [name, setName] = useState("");
   const [monthlyPrice, setMonthlyPrice] = useState("0");
   const [expirationDate, setExpirationDate] = useState("");
+  const [hasExpiration, setHasExpiration] = useState(true);
   const [website, setWebsite] = useState("");
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<ProxySubscriptionStatus>("unused");
@@ -103,7 +104,8 @@ function ProxySubscriptionForm({
     if (subscription) {
       setName(subscription.name);
       setMonthlyPrice(String(subscription.monthlyPrice));
-      setExpirationDate(subscription.expirationDate);
+      setExpirationDate(subscription.expirationDate ?? "");
+      setHasExpiration(!!subscription.expirationDate);
       setWebsite(subscription.website ?? "");
       setNotes(subscription.notes ?? "");
       setStatus(subscription.status);
@@ -119,6 +121,7 @@ function ProxySubscriptionForm({
       setName("");
       setMonthlyPrice("0");
       setExpirationDate("");
+      setHasExpiration(true);
       setWebsite("");
       setNotes("");
       setStatus("unused");
@@ -137,8 +140,11 @@ function ProxySubscriptionForm({
     Number(durationDays) > 0
       ? calculateProxyExpirationDate(startDate, Number(durationDays))
       : "";
-  const effectiveExpiration =
-    dateMode === "duration" ? calculatedExpiration : expirationDate;
+  const effectiveExpiration = hasExpiration
+    ? dateMode === "duration"
+      ? calculatedExpiration
+      : expirationDate
+    : undefined;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -146,7 +152,7 @@ function ProxySubscriptionForm({
     if (!name.trim()) return setError("请输入代理订阅名称");
     if (!Number.isFinite(Number(monthlyPrice)) || Number(monthlyPrice) < 0)
       return setError("请输入有效的单月价格");
-    if (!effectiveExpiration)
+    if (hasExpiration && !effectiveExpiration)
       return setError(
         dateMode === "duration" ? "请输入有效的订阅天数" : "请输入到期日期"
       );
@@ -155,7 +161,7 @@ function ProxySubscriptionForm({
       const ok = await onSubmit({
         name: name.trim(),
         monthlyPrice: Number(monthlyPrice),
-        expirationDate: effectiveExpiration,
+        expirationDate: effectiveExpiration ?? "",
         website: website.trim() || undefined,
         notes: notes || undefined,
         status,
@@ -224,68 +230,91 @@ function ProxySubscriptionForm({
             </div>
           </div>
           <div className="space-y-3">
-            <Label>到期日期输入方式</Label>
+            <Label>有效期</Label>
             <RadioGroup
-              value={dateMode}
-              onValueChange={(value) => {
-                const nextMode = value as typeof dateMode;
-                setDateMode(nextMode);
-                if (nextMode === "duration") {
-                  setStartDate(today());
-                  setDurationDays("");
-                }
-              }}
+              value={hasExpiration ? "dated" : "unlimited"}
+              onValueChange={(value) => setHasExpiration(value === "dated")}
               className="flex flex-wrap gap-4"
             >
               <div className="flex items-center gap-2">
-                <RadioGroupItem value="duration" id="proxy-duration" />
-                <Label htmlFor="proxy-duration">起始日期 + 可用天数</Label>
+                <RadioGroupItem value="dated" id="proxy-has-expiration" />
+                <Label htmlFor="proxy-has-expiration">设置到期日期</Label>
               </div>
               <div className="flex items-center gap-2">
-                <RadioGroupItem value="expiration" id="proxy-expiration" />
-                <Label htmlFor="proxy-expiration">直接输入到期日期</Label>
+                <RadioGroupItem value="unlimited" id="proxy-unlimited" />
+                <Label htmlFor="proxy-unlimited">无限期（按流量）</Label>
               </div>
             </RadioGroup>
-            {dateMode === "duration" ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="proxy-start">起始日期</Label>
-                  <Input
-                    id="proxy-start"
-                    type="date"
-                    value={startDate}
-                    onChange={(event) => setStartDate(event.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="proxy-days">可用天数</Label>
-                  <Input
-                    id="proxy-days"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={durationDays}
-                    onChange={(event) => setDurationDays(event.target.value)}
-                    placeholder="例如 30"
-                  />
-                  {calculatedExpiration && (
-                    <p className="text-xs text-muted-foreground">
-                      到期日期：{formatDate(calculatedExpiration)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label htmlFor="proxy-expiration-date">到期日期</Label>
-                <Input
-                  id="proxy-expiration-date"
-                  type="date"
-                  value={expirationDate}
-                  onChange={(event) => setExpirationDate(event.target.value)}
-                  required
-                />
-              </div>
+            {hasExpiration && (
+              <>
+                <Label>到期日期输入方式</Label>
+                <RadioGroup
+                  value={dateMode}
+                  onValueChange={(value) => {
+                    const nextMode = value as typeof dateMode;
+                    setDateMode(nextMode);
+                    if (nextMode === "duration") {
+                      setStartDate(today());
+                      setDurationDays("");
+                    }
+                  }}
+                  className="flex flex-wrap gap-4"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="duration" id="proxy-duration" />
+                    <Label htmlFor="proxy-duration">起始日期 + 可用天数</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="expiration" id="proxy-expiration" />
+                    <Label htmlFor="proxy-expiration">直接输入到期日期</Label>
+                  </div>
+                </RadioGroup>
+                {dateMode === "duration" ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="proxy-start">起始日期</Label>
+                      <Input
+                        id="proxy-start"
+                        type="date"
+                        value={startDate}
+                        onChange={(event) => setStartDate(event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="proxy-days">可用天数</Label>
+                      <Input
+                        id="proxy-days"
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={durationDays}
+                        onChange={(event) =>
+                          setDurationDays(event.target.value)
+                        }
+                        placeholder="例如 30"
+                      />
+                      {calculatedExpiration && (
+                        <p className="text-xs text-muted-foreground">
+                          到期日期：{formatDate(calculatedExpiration)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="proxy-expiration-date">到期日期</Label>
+                    <Input
+                      id="proxy-expiration-date"
+                      type="date"
+                      value={expirationDate}
+                      onChange={(event) =>
+                        setExpirationDate(event.target.value)
+                      }
+                      required
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
           <div className="space-y-2">
@@ -385,7 +414,11 @@ function ProxySubscriptionCard({
         </div>
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">到期日期</span>
-          <span>{formatDate(subscription.expirationDate)}</span>
+          <span>
+            {subscription.expirationDate
+              ? formatDate(subscription.expirationDate)
+              : "无限期"}
+          </span>
         </div>
         {notice.kind === "remaining" && (
           <p className="text-xs text-emerald-600">剩余 {notice.days} 天</p>
@@ -483,7 +516,7 @@ export function ProxySubscriptionTab() {
             : sortKey === "price"
               ? b.monthlyPrice - a.monthlyPrice
               : sortKey === "expiration"
-                ? b.expirationDate.localeCompare(a.expirationDate)
+                ? (b.expirationDate ?? "").localeCompare(a.expirationDate ?? "")
                 : b.createdAt.localeCompare(a.createdAt)
         ),
     [subscriptions, selectedStatus, sortKey]

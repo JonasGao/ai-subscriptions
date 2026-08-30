@@ -59,7 +59,7 @@ export interface ProxySubscription {
   id: string;
   name: string;
   monthlyPrice: number;
-  expirationDate: string;
+  expirationDate?: string;
   website?: string;
   notes?: string;
   status: ProxySubscriptionStatus;
@@ -83,7 +83,7 @@ export interface ProxySubscriptionData {
 export interface ProxySubscriptionFormData {
   name: string;
   monthlyPrice: number;
-  expirationDate: string;
+  expirationDate?: string;
   website?: string;
   notes?: string;
   status: ProxySubscriptionStatus;

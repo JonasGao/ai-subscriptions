@@ -84,7 +84,11 @@ function validateSubscriptionFields(
   ) {
     throw new Error("单月价格必须是非负数字");
   }
-  if (input.expirationDate !== undefined && !isDateOnly(input.expirationDate)) {
+  if (
+    input.expirationDate !== undefined &&
+    input.expirationDate !== "" &&
+    !isDateOnly(input.expirationDate)
+  ) {
     throw new Error("到期日期必须是 YYYY-MM-DD 格式的有效日期");
   }
   if (input.website !== undefined && input.website !== "") {
@@ -171,13 +175,12 @@ export function createProxySubscription(
   validateSubscriptionFields(input);
   if (!input.name?.trim()) throw new Error("代理订阅名称不能为空");
   if (input.monthlyPrice === undefined) throw new Error("单月价格不能为空");
-  if (!input.expirationDate) throw new Error("到期日期不能为空");
   const data = readProxyData();
   const now = new Date().toISOString();
   const subscription: ProxySubscription = {
     name: input.name.trim(),
     monthlyPrice: input.monthlyPrice,
-    expirationDate: input.expirationDate,
+    expirationDate: input.expirationDate || undefined,
     website: input.website || undefined,
     notes: input.notes || undefined,
     status: input.status || "unused",
@@ -219,7 +222,12 @@ export function updateProxySubscription(
     ...mutableUpdates,
     name: mutableUpdates.name?.trim() ?? existing.name,
     monthlyPrice: mutableUpdates.monthlyPrice ?? existing.monthlyPrice,
-    expirationDate: mutableUpdates.expirationDate ?? existing.expirationDate,
+    expirationDate: Object.prototype.hasOwnProperty.call(
+      updates,
+      "expirationDate"
+    )
+      ? mutableUpdates.expirationDate || undefined
+      : existing.expirationDate,
     status: mutableUpdates.status ?? existing.status,
     website:
       mutableUpdates.website === ""

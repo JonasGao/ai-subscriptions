@@ -34,7 +34,12 @@ export async function PUT(
       status: body.status,
     };
     const updates = Object.fromEntries(
-      Object.entries(editableFields).filter(([, value]) => value !== undefined)
+      Object.entries(editableFields).filter(
+        ([key, value]) =>
+          value !== undefined ||
+          (key === "expirationDate" &&
+            Object.prototype.hasOwnProperty.call(body, "expirationDate"))
+      )
     ) as Parameters<typeof updateProxySubscription>[1];
     const subscription = updateProxySubscription(params.id, updates, tagNames);
     if (!subscription)

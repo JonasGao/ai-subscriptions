@@ -33,6 +33,16 @@ describe("proxy subscription date rules", () => {
     ).toEqual({ kind: "none" });
   });
 
+  it("skips expiration notices for unlimited in-use subscriptions", async () => {
+    const { getProxyDateNotice } = await import("@/lib/proxy-subscriptions");
+    expect(
+      getProxyDateNotice(
+        { status: "in-use", expirationDate: undefined },
+        new Date("2026-08-30T00:00:00Z")
+      )
+    ).toEqual({ kind: "none" });
+  });
+
   it("reports overdue days only for in-use subscriptions", async () => {
     const { getProxyDateNotice } = await import("@/lib/proxy-subscriptions");
     expect(
@@ -79,5 +89,20 @@ describe("proxy subscription storage", () => {
     });
     expect(db.getProxySubscriptionById(created.id)?.tagIds).toEqual([]);
     expect(db.deleteProxySubscription(created.id)).toBe(true);
+  });
+
+  it("supports unlimited subscriptions and clearing an expiration date", async () => {
+    const db = await import("@/lib/proxy-subscriptions");
+    const created = db.createProxySubscription({
+      name: "Traffic Relay",
+      monthlyPrice: 10,
+      status: "in-use",
+    });
+    expect(created.expirationDate).toBeUndefined();
+
+    const updated = db.updateProxySubscription(created.id, {
+      expirationDate: undefined,
+    });
+    expect(updated?.expirationDate).toBeUndefined();
   });
 });

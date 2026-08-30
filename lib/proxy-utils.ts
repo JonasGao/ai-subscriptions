@@ -54,6 +54,7 @@ export function getProxyDateNotice(
   now = new Date()
 ): ProxyDateNotice {
   if (subscription.status !== "in-use") return { kind: "none" };
+  if (!subscription.expirationDate) return { kind: "none" };
   if (!isDateOnly(subscription.expirationDate)) return { kind: "none" };
   const today = getProxyTodayDate(now);
   const expiration = new Date(`${subscription.expirationDate}T00:00:00Z`);

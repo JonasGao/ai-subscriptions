@@ -19,7 +19,7 @@ A subscription represents a user's access to an AI service. It tracks:
 
 ### Proxy Subscription (代理订阅)
 
-A separately managed proxy-access purchase. It stores a name, monthly price, expiration date, optional website and notes, manual status, and references to Proxy Subscription Tags. It has no provider, quota, balance, or usage-query semantics.
+A separately managed proxy-access purchase. It stores a name, monthly price, optional expiration date, optional website and notes, manual status, and references to Proxy Subscription Tags. An absent expiration date represents an unlimited-duration, traffic-based subscription. It has no provider, quota, balance, or usage-query semantics.
 
 Proxy Subscription Status is manually selected as Unused (未使用), In Use (正在使用), or Expired (已过期). Only In Use records participate in expiration notices; Unused records are excluded from expiration calculation.
 

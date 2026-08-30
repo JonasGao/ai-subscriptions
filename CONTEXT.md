@@ -9,7 +9,7 @@ A recurring or one-time service subscription to an AI provider.
 _Avoid_: Account. ("Plan" was formerly avoided as a synonym for Subscription; it is now a distinct term — see below.)
 
 **Proxy Subscription**:
-A separately managed purchase of proxy access, tracked by its name, duration, start date, monthly price, website, notes, and manual usage status. A Proxy Subscription is not an AI Subscription and does not have a Provider, Plan, quota window, or usage query.
+A separately managed purchase of proxy access, tracked by its name, monthly price, optional expiration date, website, notes, and manual usage status. An absent expiration date represents an unlimited-duration, traffic-based subscription. A Proxy Subscription is not an AI Subscription and does not have a Provider, Plan, quota window, or usage query.
 _Avoid_: Proxy Account, Proxy Plan
 
 **Proxy Subscription Tag**:
@@ -21,7 +21,7 @@ The manually maintained lifecycle state of a Proxy Subscription: Unused, In Use,
 _Avoid_: Proxy subscription state
 
 **Proxy Subscription Expiration**:
-The calendar date through which a Proxy Subscription is available. Only this date is persisted; a start date and subscription duration may be used as temporary form inputs to calculate it. Expiration is displayed as date information and does not change Proxy Subscription Status automatically.
+The optional calendar date through which a Proxy Subscription is available. Only this date is persisted when present; a start date and subscription duration may be used as temporary form inputs to calculate it. An absent expiration date means unlimited duration. Expiration is displayed as date information and does not change Proxy Subscription Status automatically.
 _Avoid_: Proxy renewal date, proxy reset date
 
 **Proxy Subscription Date Notice**:
