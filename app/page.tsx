@@ -371,12 +371,6 @@ export default function Home() {
                 <Settings className="h-4 w-4" />
               </Button>
             </Link>
-            {activeTab === "subscriptions" && (
-              <Button onClick={handleAddNew}>
-                <Plus className="h-4 w-4 mr-2" />
-                添加订阅
-              </Button>
-            )}
             {activeTab === "tools" && (
               <Button onClick={() => toolTabRef.current?.openAddForm()}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -415,7 +409,13 @@ export default function Home() {
             />
 
             <div>
-              <h2 className="text-xl font-semibold mb-4">订阅列表</h2>
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-xl font-semibold">订阅列表</h2>
+                <Button onClick={handleAddNew}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  添加订阅
+                </Button>
+              </div>
               <SubscriptionList
                 subscriptions={filteredSubscriptions}
                 tags={tags}
