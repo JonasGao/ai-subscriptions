@@ -53,6 +53,43 @@ export interface Tag {
   updatedAt: string;
 }
 
+export type ProxySubscriptionStatus = "unused" | "in-use" | "expired";
+
+export interface ProxySubscription {
+  id: string;
+  name: string;
+  monthlyPrice: number;
+  expirationDate: string;
+  website?: string;
+  notes?: string;
+  status: ProxySubscriptionStatus;
+  tagIds?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProxySubscriptionTag {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProxySubscriptionData {
+  subscriptions: ProxySubscription[];
+  tags: ProxySubscriptionTag[];
+}
+
+export interface ProxySubscriptionFormData {
+  name: string;
+  monthlyPrice: number;
+  expirationDate: string;
+  website?: string;
+  notes?: string;
+  status: ProxySubscriptionStatus;
+  tagNames?: string[];
+}
+
 export type SubscriptionStatus = "active" | "paused" | "cancelled";
 export type SubscriptionType = "recurring" | "one-time";
 export type BillingCycle = "monthly" | "yearly";

@@ -8,6 +8,26 @@ A subscription management system for AI services with quota tracking and automat
 A recurring or one-time service subscription to an AI provider.
 _Avoid_: Account. ("Plan" was formerly avoided as a synonym for Subscription; it is now a distinct term — see below.)
 
+**Proxy Subscription**:
+A separately managed purchase of proxy access, tracked by its name, duration, start date, monthly price, website, notes, and manual usage status. A Proxy Subscription is not an AI Subscription and does not have a Provider, Plan, quota window, or usage query.
+_Avoid_: Proxy Account, Proxy Plan
+
+**Proxy Subscription Tag**:
+A reusable, case-sensitive descriptor used only to comment on or mark Proxy Subscriptions. Proxy Subscription Tags are a separate vocabulary from AI Subscription Tags.
+_Avoid_: Proxy label, Proxy category
+
+**Proxy Subscription Status**:
+The manually maintained lifecycle state of a Proxy Subscription: Unused, In Use, or Expired. The status is not inferred from dates.
+_Avoid_: Proxy subscription state
+
+**Proxy Subscription Expiration**:
+The calendar date through which a Proxy Subscription is available. Only this date is persisted; a start date and subscription duration may be used as temporary form inputs to calculate it. Expiration is displayed as date information and does not change Proxy Subscription Status automatically.
+_Avoid_: Proxy renewal date, proxy reset date
+
+**Proxy Subscription Date Notice**:
+An informational notice derived from the persisted expiration date. It is shown for an In Use Proxy Subscription when its expiration date has passed, but is not shown for an Unused Proxy Subscription and never changes status.
+_Avoid_: Automatic expiration status
+
 **Tag**:
 A reusable, case-sensitive descriptor for evaluating or characterizing subscriptions. A Tag may describe zero or more subscriptions and remains part of the available vocabulary while unused.
 _Avoid_: Category, label
@@ -86,3 +106,5 @@ _Avoid_: Priority level, priority score
 - **Priority Scene → Subscription**: a priority scene orders subscriptions by relative Priority Rank
 - **Subscription ↔ Tag**: a subscription may have zero or more Tags, and a Tag may describe zero or more subscriptions
 - **Category ⊥ Tag**: a subscription has one Category for primary grouping; Tags provide additional, flexible characterization
+- **Proxy Subscription ↔ Proxy Subscription Tag**: a Proxy Subscription may have zero or more Proxy Subscription Tags, and a Proxy Subscription Tag may describe zero or more Proxy Subscriptions
+- **Proxy Subscription ⊥ Subscription**: Proxy Subscriptions and AI Subscriptions are independently managed entities with separate status and tag vocabularies

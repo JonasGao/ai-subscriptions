@@ -22,11 +22,12 @@ import Link from "next/link";
 import { PriorityManager } from "@/components/PriorityManager";
 import { ToolTab, ToolTabRef } from "@/components/ToolTab";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ProxySubscriptionTab } from "@/components/ProxySubscriptionTab";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"subscriptions" | "tools">(
-    "subscriptions"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "subscriptions" | "proxy" | "tools"
+  >("subscriptions");
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [categories, setCategories] = useState<string[]>(defaultCategories);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -345,6 +346,14 @@ export default function Home() {
                 <Wrench className="h-4 w-4 mr-1" />
                 工具
               </Button>
+              <Button
+                variant={activeTab === "proxy" ? "default" : "ghost"}
+                onClick={() => setActiveTab("proxy")}
+                className="rounded-none border-0"
+              >
+                <Boxes className="h-4 w-4 mr-1" />
+                代理订阅
+              </Button>
             </div>
             <ThemeToggle />
             <Link href="/providers">
@@ -435,17 +444,25 @@ export default function Home() {
           </div>
         )}
 
-        <SubscriptionForm
-          open={formOpen}
-          onOpenChange={setFormOpen}
-          subscription={editingSubscription}
-          subscriptions={subscriptions}
-          categories={categories}
-          tags={tags}
-          onSubmit={handleFormSubmit}
-          onRenameTag={handleRenameTag}
-          onDeleteTag={handleDeleteTag}
-        />
+        {activeTab === "proxy" && (
+          <div key="proxy" className="animate-fade-in">
+            <ProxySubscriptionTab />
+          </div>
+        )}
+
+        {activeTab === "subscriptions" && (
+          <SubscriptionForm
+            open={formOpen}
+            onOpenChange={setFormOpen}
+            subscription={editingSubscription}
+            subscriptions={subscriptions}
+            categories={categories}
+            tags={tags}
+            onSubmit={handleFormSubmit}
+            onRenameTag={handleRenameTag}
+            onDeleteTag={handleDeleteTag}
+          />
+        )}
       </div>
     </div>
   );

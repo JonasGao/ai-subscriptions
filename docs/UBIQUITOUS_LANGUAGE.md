@@ -17,6 +17,14 @@ A subscription represents a user's access to an AI service. It tracks:
 - **Recurring Subscription (周期性订阅)**: Regular billing cycle (monthly/yearly), quota resets periodically. May support live **Usage** queries from provider APIs.
 - **One-time Subscription (一次性订阅)**: Single payment, use until balance exhausted, no quota reset. May support live **Balance** queries from provider APIs.
 
+### Proxy Subscription (代理订阅)
+
+A separately managed proxy-access purchase. It stores a name, monthly price, expiration date, optional website and notes, manual status, and references to Proxy Subscription Tags. It has no provider, quota, balance, or usage-query semantics.
+
+Proxy Subscription Status is manually selected as Unused (未使用), In Use (正在使用), or Expired (已过期). Only In Use records participate in expiration notices; Unused records are excluded from expiration calculation.
+
+Proxy Subscription Tags are reusable descriptors managed independently from AI Subscription Tags.
+
 ### Subscription Type (订阅类型)
 
 Determines the billing model and quota behavior:
