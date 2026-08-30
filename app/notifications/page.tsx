@@ -769,7 +769,7 @@ export default function NotificationsPage() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link href="/">
+            <Link href="/subscriptions">
               <Button variant="outline" size="icon" aria-label="返回">
                 <ArrowLeft className="h-4 w-4" />
               </Button>

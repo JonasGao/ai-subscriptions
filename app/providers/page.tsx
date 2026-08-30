@@ -88,7 +88,7 @@ export default function ProvidersPage() {
     <div className="container mx-auto py-8 px-4">
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-3">
-          <Link href="/">
+          <Link href="/subscriptions">
             <Button variant="outline" size="icon" aria-label="返回">
               <ArrowLeft className="h-4 w-4" />
             </Button>

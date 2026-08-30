@@ -1,71 +1,71 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Lock } from "lucide-react"
+import { useState, useEffect } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Lock } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [isInitial, setIsInitial] = useState(false)
-  const [checkingInitial, setCheckingInitial] = useState(true)
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isInitial, setIsInitial] = useState(false);
+  const [checkingInitial, setCheckingInitial] = useState(true);
 
   useEffect(() => {
     fetch("/api/auth/is-initial")
-      .then(res => res.json())
-      .then(data => {
-        setIsInitial(data.isInitial)
-        setCheckingInitial(false)
+      .then((res) => res.json())
+      .then((data) => {
+        setIsInitial(data.isInitial);
+        setCheckingInitial(false);
       })
-      .catch(() => setCheckingInitial(false))
-  }, [])
+      .catch(() => setCheckingInitial(false));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
       const result = await signIn("credentials", {
         username,
         password,
-        redirect: false
-      })
+        redirect: false,
+      });
 
       if (result?.error) {
-        setError("用户名或密码错误")
+        setError("用户名或密码错误");
       } else {
-        const sessionRes = await fetch("/api/auth/session")
-        const session = await sessionRes.json()
+        const sessionRes = await fetch("/api/auth/session");
+        const session = await sessionRes.json();
 
         if (session?.user?.isInitial) {
-          router.push("/change-password?force=1")
+          router.push("/change-password?force=1");
         } else {
-          router.push("/")
+          router.push("/subscriptions");
         }
-        router.refresh()
+        router.refresh();
       }
     } catch {
-      setError("登录失败，请重试")
+      setError("登录失败，请重试");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (checkingInitial) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-muted-foreground">加载中...</div>
       </div>
-    )
+    );
   }
 
   return (
@@ -104,7 +104,9 @@ export default function LoginPage() {
               />
             </div>
             {error && (
-              <div className="text-sm text-destructive text-center">{error}</div>
+              <div className="text-sm text-destructive text-center">
+                {error}
+              </div>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "登录中..." : "登录"}
@@ -118,5 +120,5 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

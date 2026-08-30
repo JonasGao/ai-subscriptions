@@ -1,67 +1,67 @@
-"use client"
+"use client";
 
-import { useState, Suspense } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { signOut } from "next-auth/react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { KeyRound, ArrowLeft } from "lucide-react"
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signOut } from "next-auth/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { KeyRound, ArrowLeft } from "lucide-react";
 
 function ChangePasswordForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const isForced = searchParams.get("force") === "1"
-  
-  const [oldPassword, setOldPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const isForced = searchParams.get("force") === "1";
+
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    
+    e.preventDefault();
+    setError("");
+
     if (newPassword !== confirmPassword) {
-      setError("两次输入的新密码不一致")
-      return
+      setError("两次输入的新密码不一致");
+      return;
     }
-    
+
     if (newPassword.length < 6) {
-      setError("密码长度至少6位")
-      return
+      setError("密码长度至少6位");
+      return;
     }
-    
-    setLoading(true)
-    
+
+    setLoading(true);
+
     try {
       const res = await fetch("/api/auth/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ oldPassword, newPassword })
-      })
-      
-      const data = await res.json()
-      
+        body: JSON.stringify({ oldPassword, newPassword }),
+      });
+
+      const data = await res.json();
+
       if (!res.ok) {
-        setError(data.error || "修改失败")
+        setError(data.error || "修改失败");
       } else {
         if (isForced) {
-          await signOut({ redirect: false })
-          router.push("/login")
+          await signOut({ redirect: false });
+          router.push("/login");
         } else {
-          router.push("/")
+          router.push("/subscriptions");
         }
-        router.refresh()
+        router.refresh();
       }
     } catch {
-      setError("修改失败，请重试")
+      setError("修改失败，请重试");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -113,17 +113,19 @@ function ChangePasswordForm() {
               />
             </div>
             {error && (
-              <div className="text-sm text-destructive text-center">{error}</div>
+              <div className="text-sm text-destructive text-center">
+                {error}
+              </div>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "修改中..." : "确认修改"}
             </Button>
             {!isForced && (
-              <Button 
-                type="button" 
-                variant="ghost" 
-                className="w-full" 
-                onClick={() => router.push("/")}
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => router.push("/subscriptions")}
                 disabled={loading}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -134,17 +136,19 @@ function ChangePasswordForm() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 export default function ChangePasswordPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-muted-foreground">加载中...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="text-muted-foreground">加载中...</div>
+        </div>
+      }
+    >
       <ChangePasswordForm />
     </Suspense>
-  )
+  );
 }
