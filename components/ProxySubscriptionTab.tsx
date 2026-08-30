@@ -680,7 +680,7 @@ export function ProxySubscriptionTab() {
           暂无代理订阅
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {filtered.map((subscription) => (
             <ProxySubscriptionCard
               key={subscription.id}
