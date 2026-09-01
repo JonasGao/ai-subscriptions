@@ -324,7 +324,7 @@ export default function SubscriptionsPage() {
       )}
 
       <div className="flex flex-col gap-6 animate-fade-in">
-        <StatsCards subscriptions={subscriptions} />
+        <StatsCards subscriptions={filteredSubscriptions} />
 
         <CategoryFilter
           categories={categories}
