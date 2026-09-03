@@ -85,6 +85,25 @@ export function readData(): SubscriptionData {
     let needsWrite = false;
     const data = JSON.parse(fileContent) as SubscriptionData;
 
+    // Rename the built-in category while preserving existing user data.
+    // This migration is idempotent and also avoids duplicate categories when
+    // a user has already created the new name manually.
+    if (Array.isArray(data.categories) && data.categories.includes("AI助手")) {
+      data.categories = Array.from(
+        new Set(
+          data.categories.map((category) =>
+            category === "AI助手" ? "官方订阅" : category
+          )
+        )
+      );
+      data.subscriptions = data.subscriptions.map((subscription) =>
+        subscription.category === "AI助手"
+          ? { ...subscription, category: "官方订阅" }
+          : subscription
+      );
+      needsWrite = true;
+    }
+
     if (!Array.isArray(data.tags)) {
       data.tags = [];
       needsWrite = true;

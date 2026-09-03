@@ -106,7 +106,7 @@ export interface SubscriptionData {
   tags?: Tag[];
 }
 
-export const defaultCategories: string[] = ["AI助手", "中转站"];
+export const defaultCategories: string[] = ["官方订阅", "中转站"];
 
 export interface CredentialField {
   key: string;
