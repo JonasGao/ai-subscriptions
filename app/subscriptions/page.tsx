@@ -23,11 +23,18 @@ export default function SubscriptionsPage() {
     }
     return "all";
   });
-  const [selectedStatus, setSelectedStatus] = useState<string>(() => {
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("selectedStatus") || "all";
+      const stored = localStorage.getItem("selectedStatuses");
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch {
+          return [];
+        }
+      }
     }
-    return "all";
+    return [];
   });
   const [formOpen, setFormOpen] = useState(false);
   const [editingSubscription, setEditingSubscription] =
@@ -74,16 +81,16 @@ export default function SubscriptionsPage() {
     localStorage.setItem("selectedCategory", category);
   };
 
-  const handleStatusChange = (status: string) => {
-    setSelectedStatus(status);
-    localStorage.setItem("selectedStatus", status);
+  const handleStatusesChange = (statuses: string[]) => {
+    setSelectedStatuses(statuses);
+    localStorage.setItem("selectedStatuses", JSON.stringify(statuses));
   };
 
   const filteredSubscriptions = subscriptions.filter((sub) => {
     const categoryMatch =
       selectedCategory === "all" || sub.category === selectedCategory;
     const statusMatch =
-      selectedStatus === "all" || sub.status === selectedStatus;
+      selectedStatuses.length === 0 || selectedStatuses.includes(sub.status);
     return categoryMatch && statusMatch;
   });
 
@@ -329,9 +336,9 @@ export default function SubscriptionsPage() {
         <CategoryFilter
           categories={categories}
           selectedCategory={selectedCategory}
-          selectedStatus={selectedStatus}
+          selectedStatuses={selectedStatuses}
           onCategoryChange={handleCategoryChange}
-          onStatusChange={handleStatusChange}
+          onStatusesChange={handleStatusesChange}
         />
 
         <div>
