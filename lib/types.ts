@@ -261,6 +261,24 @@ export const defaultProviders: Provider[] = [
     ],
   },
   {
+    id: "opencode",
+    name: "OpenCode",
+    description: "OpenCode 编码助手",
+    website: "https://opencode.ai",
+    credentialFields: [{ key: "apiKey", label: "API Key", type: "password" }],
+    plans: [
+      {
+        id: "go",
+        name: "Go",
+        usageApiUrl: "https://opencode.ai/zen/go/v1/usage",
+      },
+      {
+        id: "zen",
+        name: "Zen",
+      },
+    ],
+  },
+  {
     id: "baidu",
     name: "百度",
     description: "文心一言",

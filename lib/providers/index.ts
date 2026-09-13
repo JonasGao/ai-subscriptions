@@ -28,6 +28,7 @@ import {
   testTokenPlanConnection,
 } from "./alibaba-tokenplan";
 import { fetchGithubUsage, testGithubConnection } from "./github";
+import { fetchOpencodeGoUsage, testOpencodeConnection } from "./opencode";
 
 export interface UsageHandler {
   fetchUsage(credentials: Record<string, string>): Promise<UsageResult>;
@@ -64,6 +65,10 @@ export const usageHandlers: Record<string, UsageHandler> = {
   github: {
     fetchUsage: (creds) => fetchGithubUsage(creds),
     testConnection: (creds) => testGithubConnection(creds),
+  },
+  "opencode:go": {
+    fetchUsage: (creds) => fetchOpencodeGoUsage(creds),
+    testConnection: (creds) => testOpencodeConnection(creds),
   },
 };
 
