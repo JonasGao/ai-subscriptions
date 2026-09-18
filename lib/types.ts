@@ -209,6 +209,14 @@ export const defaultProviders: Provider[] = [
     name: "智谱 AI",
     description: "GLM 系列",
     website: "https://bigmodel.cn",
+    credentialFields: [{ key: "apiKey", label: "API Key", type: "password" }],
+    plans: [
+      {
+        id: "coding-plan",
+        name: "Coding Plan",
+        usageApiUrl: "https://open.bigmodel.cn/api/monitor/usage/quota/limit",
+      },
+    ],
   },
   {
     id: "siliconflow",

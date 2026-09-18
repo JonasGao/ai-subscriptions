@@ -29,6 +29,7 @@ import {
 } from "./alibaba-tokenplan";
 import { fetchGithubUsage, testGithubConnection } from "./github";
 import { fetchOpencodeGoUsage, testOpencodeConnection } from "./opencode";
+import { fetchZhipuUsage, testZhipuConnection } from "./zhipu";
 
 export interface UsageHandler {
   fetchUsage(credentials: Record<string, string>): Promise<UsageResult>;
@@ -69,6 +70,10 @@ export const usageHandlers: Record<string, UsageHandler> = {
   "opencode:go": {
     fetchUsage: (creds) => fetchOpencodeGoUsage(creds),
     testConnection: (creds) => testOpencodeConnection(creds),
+  },
+  "zhipu:coding-plan": {
+    fetchUsage: (creds) => fetchZhipuUsage(creds),
+    testConnection: (creds) => testZhipuConnection(creds),
   },
 };
 
