@@ -72,10 +72,12 @@ export async function fetchZhipuUsage(
 
   let fiveHourRow: ZhipuLimitRow | null = null;
   let weeklyRow: ZhipuLimitRow | null = null;
+  const warnings: string[] = [];
 
   for (const row of limits) {
     if (row.type !== "CREDIT_LIMIT") {
       console.warn("zhipu: ignoring non-CREDIT_LIMIT row", row);
+      warnings.push(`未识别的配额类型: ${row.type ?? "(missing)"}`);
       continue;
     }
 
@@ -87,6 +89,7 @@ export async function fetchZhipuUsage(
         "zhipu: ignoring CREDIT_LIMIT row with unknown unit/number",
         row
       );
+      warnings.push(`未识别的配额窗口: unit=${row.unit}, number=${row.number}`);
       continue;
     }
 
@@ -119,6 +122,7 @@ export async function fetchZhipuUsage(
     boosterWallet: null,
     parallel: null,
     membership: level ? { level: level.toUpperCase() } : null,
+    ...(warnings.length > 0 && { warnings }),
   };
 }
 

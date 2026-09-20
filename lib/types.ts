@@ -464,6 +464,12 @@ export interface UsageResult {
   boosterWallet: UsageBoosterWallet | null;
   parallel: { limit: string } | null;
   membership: { level: string } | null;
+  /**
+   * Server-side parse warnings (e.g. skipped quota rows with unrecognized
+   * fields). Surfaced to the frontend as a single toast so users see
+   * anomalies instead of silent nulls. Absent = no warnings.
+   */
+  warnings?: string[];
 }
 
 // ============ Notification ============

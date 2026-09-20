@@ -61,7 +61,7 @@ The frequency at which a subscription is charged (monthly or yearly). Independen
 _Avoid_: Payment cycle
 
 **Usage Query**:
-An on-demand request to a provider's API for a recurring subscription's usage data. The result is a set of usage buckets (five-hour, weekly, monthly) plus optional provider-specific blocks, each with used/remaining (absolute quantities for most providers, or a usage percentage for providers that expose only that) and a reset time. Only recurring subscriptions support usage queries. When a queried bucket is fully consumed, the subscription's reset schedule for that interval (if one exists) is automatically marked exhausted — one-way only; recovery still follows the schedule's reset time.
+An on-demand request to a provider's API for a recurring subscription's usage data. The result is a set of usage buckets (five-hour, weekly, monthly) plus optional provider-specific blocks, each with used/remaining (absolute quantities for most providers, or a usage percentage for providers that expose only that) and a reset time. The result may also carry provider parse warnings (e.g., quota rows skipped due to unrecognized window identifiers), which the frontend surfaces to the user as toasts. Only recurring subscriptions support usage queries. When a queried bucket is fully consumed, the subscription's reset schedule for that interval (if one exists) is automatically marked exhausted — one-way only; recovery still follows the schedule's reset time.
 _Avoid_: usage window (a result bucket is a snapshot of usage, not the Quota Window time period itself), usage check
 
 **Balance Query**:

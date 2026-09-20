@@ -80,8 +80,8 @@ describe("fetchZhipuUsage", () => {
     expect(result.membership).toEqual({ level: "PRO" });
   });
 
-  // Test 2: unknown unit row ignored with warn
-  it("ignores unknown unit rows (warns) and still maps valid rows", async () => {
+  // Test 2: unknown unit row ignored with warn + warnings populated
+  it("ignores unknown unit rows (warns + warnings) and still maps valid rows", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       mockResponse({
@@ -117,10 +117,15 @@ describe("fetchZhipuUsage", () => {
     expect(result.fiveHour!.used).toBe("100");
     expect(result.weekly).toBeNull();
     expect(warnSpy).toHaveBeenCalled();
+    // Warnings array should contain the skipped row info
+    expect(result.warnings).toBeDefined();
+    expect(result.warnings!.length).toBeGreaterThan(0);
+    expect(result.warnings!.some((w) => w.includes("unit=9"))).toBe(true);
   });
 
   // Test 3: zero mapped windows (limits contains only non-decodable rows)
   it("throws when no CREDIT_LIMIT rows decode to known windows", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       mockResponse({
         code: 200,
@@ -146,6 +151,46 @@ describe("fetchZhipuUsage", () => {
     await expect(fetchZhipuUsage(baseCreds)).rejects.toThrow(
       "未识别到可用的配额窗口（CREDIT_LIMIT）"
     );
+    // Even though it throws, console.warn should have been called for the skipped row
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  // Test 3b: unknown type row → warnings populated before throw does not happen
+  // (when some valid rows exist alongside unknown types)
+  it("populates warnings for unknown type rows alongside valid rows", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockResponse({
+        code: 200,
+        msg: "ok",
+        data: {
+          limits: [
+            {
+              type: "TOKENS_LIMIT",
+              unit: 3,
+              number: 5,
+              usage: 12000,
+              currentValue: 0,
+              remaining: 12000,
+            },
+            {
+              type: "CREDIT_LIMIT",
+              unit: 3,
+              number: 5,
+              usage: 12000,
+              currentValue: 100,
+              remaining: 11900,
+            },
+          ],
+          level: "pro",
+        },
+        success: true,
+      })
+    );
+
+    const result = await fetchZhipuUsage(baseCreds);
+    expect(result.warnings).toBeDefined();
+    expect(result.warnings!.some((w) => w.includes("TOKENS_LIMIT"))).toBe(true);
   });
 
   // Test 4: same-bucket conflict → higher usage wins

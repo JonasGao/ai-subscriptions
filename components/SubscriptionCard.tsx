@@ -51,6 +51,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Fragment } from "react";
+import { toast } from "sonner";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
@@ -310,6 +311,11 @@ export function SubscriptionCard({
         const data: UsageResult = await res.json();
         setUsage(data);
         setLastQueryAt(Date.now());
+
+        // Surface server-side parse warnings (e.g. skipped quota rows) as a toast
+        if (data.warnings && data.warnings.length > 0) {
+          toast.warning(data.warnings.join("\n"));
+        }
 
         // Auto-exhaust: mark schedules as exhausted when usage reaches 100%.
         // Toggles are awaited sequentially so concurrent read-modify-write on

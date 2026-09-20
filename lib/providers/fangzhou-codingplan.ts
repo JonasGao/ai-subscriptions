@@ -6,17 +6,30 @@ const USAGE_URL =
   "https://open.volcengineapi.com/?Action=GetCodingPlanUsage&Version=2024-01-01";
 const TEST_URL =
   "https://open.volcengineapi.com/?Action=ListSubscribeTrade&Version=2024-01-01";
-function percentToUsageWindow(
+
+/**
+ * Map a single QuotaUsage row to a UsageWindow.
+ * - Percent is 0-100, used directly as `used`.
+ * - Cap is the percent-scale limit (typically 100); falls back to 100 if missing.
+ * - ResetTimestamp is epoch seconds; ×1000 → ISO. Zero → null (same convention
+ *   as opencode's absent resetsAt).
+ */
+function rowToUsageWindow(
   percent: number,
+  cap: number | undefined,
   resetTimestampSeconds: number
 ): UsageWindow {
+  const limit = cap ?? 100;
   return {
     used: String(percent),
-    limit: "100",
-    remaining: String(100 - percent),
+    limit: String(limit),
+    remaining: String(limit - percent),
     // ResetTimestamp is epoch seconds; convert to ISO for the frontend
     // (formatNextResetTime parses an ISO string, not a bare ms number)
-    resetTime: new Date(resetTimestampSeconds * 1000).toISOString(),
+    resetTime:
+      resetTimestampSeconds === 0
+        ? null
+        : new Date(resetTimestampSeconds * 1000).toISOString(),
   };
 }
 
@@ -58,31 +71,71 @@ export async function fetchCodingPlanUsage(
     throw new Error("Account not subscribed to CodingPlan");
   }
 
+  // Real API shape (production capture 2026-09-20):
+  // { Level: "session"|"weekly"|"monthly", Percent, ResetTimestamp, Cap, RewardTotalPercent }
+  // The original handler mistakenly matched on `Label` (which never existed).
   const quotas = result.QuotaUsage as Array<{
-    Label: string;
+    Level: string;
     Percent: number;
     ResetTimestamp: number;
+    Cap?: number;
+    RewardTotalPercent?: number;
   }>;
 
-  const session = quotas.find((q) => q.Label === "session");
-  const weekly = quotas.find((q) => q.Label === "weekly");
-  const monthly = quotas.find((q) => q.Label === "monthly");
+  const warnings: string[] = [];
+
+  let sessionRow: (typeof quotas)[number] | null = null;
+  let weeklyRow: (typeof quotas)[number] | null = null;
+  let monthlyRow: (typeof quotas)[number] | null = null;
+
+  for (const q of quotas) {
+    switch (q.Level) {
+      case "session":
+        sessionRow = q;
+        break;
+      case "weekly":
+        weeklyRow = q;
+        break;
+      case "monthly":
+        monthlyRow = q;
+        break;
+      default:
+        // Unknown Level — skip but surface to the user via warnings
+        console.warn(
+          `fangzhou-codingplan: skipping unrecognized Level: ${q.Level}`
+        );
+        warnings.push(`未识别的配额窗口: ${q.Level}`);
+    }
+  }
 
   return {
     provider: "fangzhou",
     // session is the short rolling window → fiveHour slot
-    fiveHour: session
-      ? percentToUsageWindow(session.Percent, session.ResetTimestamp)
+    fiveHour: sessionRow
+      ? rowToUsageWindow(
+          sessionRow.Percent,
+          sessionRow.Cap,
+          sessionRow.ResetTimestamp
+        )
       : null,
-    weekly: weekly
-      ? percentToUsageWindow(weekly.Percent, weekly.ResetTimestamp)
+    weekly: weeklyRow
+      ? rowToUsageWindow(
+          weeklyRow.Percent,
+          weeklyRow.Cap,
+          weeklyRow.ResetTimestamp
+        )
       : null,
-    monthly: monthly
-      ? percentToUsageWindow(monthly.Percent, monthly.ResetTimestamp)
+    monthly: monthlyRow
+      ? rowToUsageWindow(
+          monthlyRow.Percent,
+          monthlyRow.Cap,
+          monthlyRow.ResetTimestamp
+        )
       : null,
     boosterWallet: null,
     parallel: null,
     membership: null,
+    ...(warnings.length > 0 && { warnings }),
   };
 }
 

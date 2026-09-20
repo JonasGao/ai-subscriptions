@@ -111,15 +111,35 @@ describe("fangzhou-codingplan", () => {
     vi.restoreAllMocks();
   });
 
-  it("maps CodingPlan QuotaUsage (Percent only) to UsageResult", async () => {
+  it("maps CodingPlan QuotaUsage (Level, Percent, Cap) to UsageResult", async () => {
     const mockResponse = {
       Result: {
+        Status: "Running",
+        UpdateTimestamp: 1717000000,
         QuotaUsage: [
-          { Label: "session", Percent: 30, ResetTimestamp: 1717049200 },
-          { Label: "weekly", Percent: 45, ResetTimestamp: 1717625200 },
-          { Label: "monthly", Percent: 60, ResetTimestamp: 1719615600 },
+          {
+            Level: "session",
+            Percent: 30,
+            ResetTimestamp: 1717049200,
+            Cap: 100,
+            RewardTotalPercent: 0,
+          },
+          {
+            Level: "weekly",
+            Percent: 45,
+            ResetTimestamp: 1717625200,
+            Cap: 100,
+            RewardTotalPercent: 0,
+          },
+          {
+            Level: "monthly",
+            Percent: 60,
+            ResetTimestamp: 1719615600,
+            Cap: 100,
+            RewardTotalPercent: 0,
+          },
         ],
-        UpdateTimestamp: 1717000000000,
+        HasReward: false,
       },
     };
 
@@ -133,12 +153,12 @@ describe("fangzhou-codingplan", () => {
 
     expect(result.provider).toBe("fangzhou");
 
-    // session → fiveHour (percent → used, limit=100)
+    // session → fiveHour (percent → used, Cap → limit)
     expect(result.fiveHour).not.toBeNull();
     expect(result.fiveHour!.used).toBe("30");
     expect(result.fiveHour!.limit).toBe("100");
     expect(result.fiveHour!.remaining).toBe("70");
-    // session ResetTimestamp is in seconds → converted to ISO string
+    // ResetTimestamp is in seconds → converted to ISO string
     expect(result.fiveHour!.resetTime).toBe(
       new Date(1717049200 * 1000).toISOString()
     );
