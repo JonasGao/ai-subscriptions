@@ -270,6 +270,67 @@ export function getProviderCurrency(provider: string): string {
 
 export type ProgressTier = "normal" | "warning" | "danger";
 
+// ============ Reset urgency color ============
+
+export const RESET_URGENCY_THRESHOLDS = {
+  weekly: { redHours: 24, yellowHours: 72 },
+  monthly: { redHours: 120, yellowHours: 240 },
+} as const;
+
+/**
+ * Returns an HSL color string indicating urgency of an upcoming reset, or null
+ * when no coloring applies (resetTime is null, remaining time >= yellowHours).
+ *
+ * Color gradient within the (redHours, yellowHours) band uses a normalized
+ * exponential easing curve (front-slow, back-fast) so the color lingers near
+ * pale yellow on entry and rushes toward red near the threshold:
+ *   x  = (yellowMs - remaining) / (yellowMs - redMs)   ∈ [0,1] (elapsed ratio)
+ *   t' = 2^x - 1                                        (convex exponential easing)
+ *   H  = 48 * (1 - t')
+ *   S  = 95 - 30 * t'
+ *   L  = 72 - 17 * t'
+ *
+ * Endpoints:
+ *   At yellowHours (x=0, t'=0) → pale yellow  hsl(48, 95%, 72%)
+ *   At redHours    (x=1, t'=1) → soft red     hsl(0, 65%, 55%)
+ *   Below redHours (clamp)     → soft red     hsl(0, 65%, 55%)
+ */
+export function getResetUrgencyColor(
+  kind: "weekly" | "monthly",
+  resetTime: string | null,
+  now: number = Date.now()
+): string | null {
+  if (resetTime === null) return null;
+
+  const thresholds = RESET_URGENCY_THRESHOLDS[kind];
+  const redMs = thresholds.redHours * 3600_000;
+  const yellowMs = thresholds.yellowHours * 3600_000;
+
+  const resetMs = new Date(resetTime).getTime();
+  if (Number.isNaN(resetMs)) return null;
+
+  const remaining = resetMs - now;
+
+  // Beyond the yellow band → no coloring
+  if (remaining >= yellowMs) return null;
+
+  // Expired or within the red band → soft red clamp
+  if (remaining < redMs) return "hsl(0, 65%, 55%)";
+
+  // Exponential easing within the band (also covers remaining === redMs,
+  // yielding the soft red endpoint — continuous with the red clamp above)
+  // x=0 at yellowMs (yellow start), x=1 at redMs (red end)
+  const x = (yellowMs - remaining) / (yellowMs - redMs);
+  // Base 2: front-slow/back-fast — color lingers near pale yellow on entry,
+  // then rushes toward red as the reset threshold approaches.
+  const tp = Math.pow(2, x) - 1;
+  const h = 48 * (1 - tp);
+  const s = 95 - 30 * tp;
+  const l = 72 - 17 * tp;
+
+  return `hsl(${Math.round(h)}, ${Math.round(s * 10) / 10}%, ${Math.round(l * 10) / 10}%)`;
+}
+
 /** Map an exact usage ratio to a visual tier: normal, warning, danger. */
 export function getProgressTier(percent: number): ProgressTier {
   if (percent > PROGRESS_DANGER_THRESHOLD) return "danger";

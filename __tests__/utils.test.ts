@@ -7,6 +7,8 @@ import {
   getCurrencySymbol,
   formatBalance,
   getProviderCurrency,
+  getResetUrgencyColor,
+  RESET_URGENCY_THRESHOLDS,
 } from "@/lib/utils";
 
 describe("getUsagePercent", () => {
@@ -117,5 +119,154 @@ describe("getProviderCurrency", () => {
     expect(getProviderCurrency("openrouter")).toBe("USD");
     expect(getProviderCurrency("deepseek")).toBe("USD");
     expect(getProviderCurrency("unknown")).toBe("USD");
+  });
+});
+
+// ============ getResetUrgencyColor ============
+
+const HOUR = 3_600_000;
+
+describe("getResetUrgencyColor", () => {
+  describe("threshold constants", () => {
+    it("matches the spec values", () => {
+      expect(RESET_URGENCY_THRESHOLDS.weekly.redHours).toBe(24);
+      expect(RESET_URGENCY_THRESHOLDS.weekly.yellowHours).toBe(72);
+      expect(RESET_URGENCY_THRESHOLDS.monthly.redHours).toBe(120);
+      expect(RESET_URGENCY_THRESHOLDS.monthly.yellowHours).toBe(240);
+    });
+  });
+
+  describe("boundary points", () => {
+    it("weekly exactly 72h → null", () => {
+      const now = 1_000_000_000_000;
+      const resetTime = new Date(now + 72 * HOUR).toISOString();
+      expect(getResetUrgencyColor("weekly", resetTime, now)).toBeNull();
+    });
+
+    it("weekly exactly 24h → interpolation endpoint, soft red", () => {
+      const now = 1_000_000_000_000;
+      const resetTime = new Date(now + 24 * HOUR).toISOString();
+      expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
+        "hsl(0, 65%, 55%)"
+      );
+    });
+
+    it("monthly exactly 240h → null", () => {
+      const now = 1_000_000_000_000;
+      const resetTime = new Date(now + 240 * HOUR).toISOString();
+      expect(getResetUrgencyColor("monthly", resetTime, now)).toBeNull();
+    });
+
+    it("monthly exactly 120h → interpolation endpoint, soft red", () => {
+      const now = 1_000_000_000_000;
+      const resetTime = new Date(now + 120 * HOUR).toISOString();
+      expect(getResetUrgencyColor("monthly", resetTime, now)).toBe(
+        "hsl(0, 65%, 55%)"
+      );
+    });
+  });
+
+  describe("red clamp", () => {
+    it("weekly 1h remaining → soft red", () => {
+      const now = 1_000_000_000_000;
+      const resetTime = new Date(now + 1 * HOUR).toISOString();
+      expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
+        "hsl(0, 65%, 55%)"
+      );
+    });
+
+    it("monthly 24h remaining → soft red", () => {
+      const now = 1_000_000_000_000;
+      const resetTime = new Date(now + 24 * HOUR).toISOString();
+      expect(getResetUrgencyColor("monthly", resetTime, now)).toBe(
+        "hsl(0, 65%, 55%)"
+      );
+    });
+
+    it("expired (past resetTime) → soft red", () => {
+      const now = 1_000_000_000_000;
+      const resetTime = new Date(now - 1 * HOUR).toISOString();
+      expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
+        "hsl(0, 65%, 55%)"
+      );
+    });
+  });
+
+  describe("midpoint interpolation", () => {
+    it("weekly 48h remaining → hsl(28, 82.6%, 65%)", () => {
+      const now = 1_000_000_000_000;
+      const resetTime = new Date(now + 48 * HOUR).toISOString();
+      expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
+        "hsl(28, 82.6%, 65%)"
+      );
+    });
+
+    it("monthly 180h remaining → hsl(28, 82.6%, 65%)", () => {
+      const now = 1_000_000_000_000;
+      const resetTime = new Date(now + 180 * HOUR).toISOString();
+      expect(getResetUrgencyColor("monthly", resetTime, now)).toBe(
+        "hsl(28, 82.6%, 65%)"
+      );
+    });
+  });
+
+  describe("exponential easing", () => {
+    it("weekly 60h (x=0.25) → hue ≈ 39, slower than linear (36)", () => {
+      const now = 1_000_000_000_000;
+      const resetTime = new Date(now + 60 * HOUR).toISOString();
+      expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
+        "hsl(39, 89.3%, 68.8%)"
+      );
+    });
+
+    it("weekly 36h (x=0.75) → hue ≈ 15, steep catch-up vs linear (12)", () => {
+      const now = 1_000_000_000_000;
+      const resetTime = new Date(now + 36 * HOUR).toISOString();
+      expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
+        "hsl(15, 74.5%, 60.4%)"
+      );
+    });
+
+    it("weekly 30h (x≈0.875) → hue ≈ 8, accelerating toward red endpoint", () => {
+      const now = 1_000_000_000_000;
+      const resetTime = new Date(now + 30 * HOUR).toISOString();
+      expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
+        "hsl(8, 70%, 57.8%)"
+      );
+    });
+  });
+
+  describe("gradient monotonicity", () => {
+    it("hue decreases as remaining time decreases (weekly)", () => {
+      const now = 1_000_000_000_000;
+      const hours = [66, 60, 54, 48, 42, 36, 30];
+      const hues = hours.map((h) => {
+        const resetTime = new Date(now + h * HOUR).toISOString();
+        const color = getResetUrgencyColor("weekly", resetTime, now)!;
+        return parseInt(color.match(/hsl\((\d+)/)![1], 10);
+      });
+      for (let i = 1; i < hues.length; i++) {
+        expect(hues[i]).toBeLessThanOrEqual(hues[i - 1]);
+      }
+    });
+  });
+
+  describe("edge cases", () => {
+    it("null resetTime → null", () => {
+      expect(getResetUrgencyColor("weekly", null)).toBeNull();
+      expect(getResetUrgencyColor("monthly", null)).toBeNull();
+    });
+
+    it("now parameter injection produces deterministic results", () => {
+      const fixedNow = 1_700_000_000_000;
+      const resetTime = new Date(fixedNow + 48 * HOUR).toISOString();
+      expect(getResetUrgencyColor("weekly", resetTime, fixedNow)).toBe(
+        "hsl(28, 82.6%, 65%)"
+      );
+    });
+
+    it("invalid ISO string → null", () => {
+      expect(getResetUrgencyColor("weekly", "not-a-date")).toBeNull();
+    });
   });
 });

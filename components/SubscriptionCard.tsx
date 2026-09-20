@@ -39,6 +39,7 @@ import {
   getProgressTier,
   formatBalance,
   getProviderCurrency,
+  getResetUrgencyColor,
   type ProgressTier,
 } from "@/lib/utils";
 import { sortResetSchedules } from "@/lib/reset-schedule";
@@ -178,11 +179,28 @@ const PROGRESS_BAR_COLORS: Record<ProgressTier, string> = {
   danger: "bg-red-500",
 };
 
-function UsageProgressBar({ window }: { window: UsageWindow }) {
+function UsageProgressBar({
+  window,
+  kind,
+}: {
+  window: UsageWindow;
+  kind?: "fiveHour" | "weekly" | "monthly";
+}) {
   const percent = getUsagePercent(window.used, window.limit);
   const tier = percent === null ? null : getProgressTier(percent);
   const width = percent === null ? 0 : Math.round(percent);
   const percentLabel = percent === null ? null : `${percent.toFixed(1)}%`;
+
+  // Only weekly/monthly get urgency coloring; fiveHour/undefined → no color
+  const urgencyColor =
+    kind === "weekly" || kind === "monthly"
+      ? getResetUrgencyColor(kind, window.resetTime)
+      : null;
+  const clockColorStyle = urgencyColor ? { color: urgencyColor } : undefined;
+  const resetTextColorStyle = urgencyColor
+    ? { color: urgencyColor }
+    : undefined;
+
   return (
     <div className="mt-1 space-y-1">
       {tier !== null && (
@@ -194,11 +212,17 @@ function UsageProgressBar({ window }: { window: UsageWindow }) {
         </div>
       )}
       <div className="flex items-center gap-1">
-        <Clock className="h-3 w-3 text-muted-foreground" />
+        <Clock
+          className="h-3 w-3 text-muted-foreground"
+          style={clockColorStyle}
+        />
         {window.resetTime ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="cursor-default text-xs text-muted-foreground">
+              <span
+                className="cursor-default text-xs text-muted-foreground"
+                style={resetTextColorStyle}
+              >
                 {formatNextResetTime(window.resetTime)}
               </span>
             </TooltipTrigger>
@@ -219,14 +243,22 @@ function UsageProgressBar({ window }: { window: UsageWindow }) {
   );
 }
 
-function UsageBlock({ label, window }: { label: string; window: UsageWindow }) {
+function UsageBlock({
+  label,
+  window,
+  kind,
+}: {
+  label: string;
+  window: UsageWindow;
+  kind?: "fiveHour" | "weekly" | "monthly";
+}) {
   return (
     <div>
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">{label}</span>
         <UsageAmountText window={window} />
       </div>
-      <UsageProgressBar window={window} />
+      <UsageProgressBar window={window} kind={kind} />
     </div>
   );
 }
@@ -650,13 +682,21 @@ export function SubscriptionCard({
             {usage && (
               <div className="pt-2 space-y-2">
                 {usage.fiveHour && (
-                  <UsageBlock label="5小时" window={usage.fiveHour} />
+                  <UsageBlock
+                    label="5小时"
+                    window={usage.fiveHour}
+                    kind="fiveHour"
+                  />
                 )}
                 {usage.weekly && (
-                  <UsageBlock label="周" window={usage.weekly} />
+                  <UsageBlock label="周" window={usage.weekly} kind="weekly" />
                 )}
                 {usage.monthly && (
-                  <UsageBlock label="月" window={usage.monthly} />
+                  <UsageBlock
+                    label="月"
+                    window={usage.monthly}
+                    kind="monthly"
+                  />
                 )}
                 {usage.boosterWallet && (
                   <div>

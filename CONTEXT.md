@@ -72,6 +72,10 @@ _Avoid_: credit check
 The brief window after a successful Usage Query or Balance Query during which the quota query button remains clickable but requires an explicit confirmation before issuing another query. Confirming re-runs the query and restarts the window; failed queries neither start nor restart it.
 _Avoid_: Rate limit, throttle
 
+**Reset-Time Urgency Color**:
+The color of a usage window's next reset-time text, encoding how soon the quota resets: pale yellow at the warning threshold, continuously deepening through orange to deep red at the critical threshold. Weekly windows warn within 3 days and turn red within 1 day; monthly windows warn within 10 days and turn red within 5 days. Independent of the usage progress bar, which encodes consumption ratio.
+_Avoid_: Reset countdown, expiry warning
+
 **Offset-Based Schedule Creation**:
 A method of creating reset schedules where the user specifies a duration from the current time (e.g., "3d 5h"), and the system infers the schedule properties (dayOfWeek/dayOfMonth, timeOfDay) from that offset. The inferred values are stored permanently, and future resets follow the calculated schedule pattern.
 _Avoid_: Relative schedule creation, duration-based schedule
@@ -103,6 +107,7 @@ _Avoid_: Priority level, priority score
 - **Usage Query → Reset Schedule**: a fully-consumed usage bucket marks the matching reset schedule exhausted
 - **Subscription → Balance Query**: one-time subscriptions support balance queries
 - **Usage Query / Balance Query → Query Cooldown**: a successful query starts a query cooldown
+- **Usage Window → Reset-Time Urgency Color**: a usage window's reset-time text carries an urgency color derived from how soon it resets (weekly/monthly only)
 - **Priority Scene → Subscription**: a priority scene orders subscriptions by relative Priority Rank
 - **Subscription ↔ Tag**: a subscription may have zero or more Tags, and a Tag may describe zero or more subscriptions
 - **Category ⊥ Tag**: a subscription has one Category for primary grouping; Tags provide additional, flexible characterization
