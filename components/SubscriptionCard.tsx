@@ -757,7 +757,9 @@ export function SubscriptionCard({
             {subscription.notes && (
               <div className="pt-2">
                 <span className="text-sm text-muted-foreground">备注</span>
-                <p className="text-sm mt-1">{subscription.notes}</p>
+                <p className="text-sm mt-1 whitespace-pre-wrap break-words">
+                  {subscription.notes}
+                </p>
               </div>
             )}
             {subscription.resetSchedules &&
