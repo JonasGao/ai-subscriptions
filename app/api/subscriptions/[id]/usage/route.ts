@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSubscriptionById, getProviders } from "@/lib/db";
+import { getSubscriptionById } from "@/lib/db";
 import { decryptCredentials } from "@/lib/encryption";
-import {
-  usageHandlers,
-  resolveUsageHandlerKey,
-  resolveUsageApiUrl,
-} from "@/lib/providers";
+import { resolveUsageHandler } from "@/lib/providers";
 
 export const dynamic = "force-dynamic";
 
@@ -23,34 +19,27 @@ export async function GET(
       );
     }
 
-    if (subscription.subscriptionType !== "recurring") {
-      return NextResponse.json(
-        { error: "Usage query is only supported for recurring subscriptions" },
-        { status: 400 }
-      );
-    }
-
-    const providers = getProviders();
-    const providerConfig = providers.find(
-      (p) => p.id === subscription.provider
-    );
-    const usageApiUrl = providerConfig
-      ? resolveUsageApiUrl(providerConfig, subscription.planId)
-      : undefined;
-    if (!usageApiUrl) {
-      return NextResponse.json(
-        { error: `Usage query not supported for ${subscription.provider}` },
-        { status: 400 }
-      );
-    }
-
-    const handlerKey = resolveUsageHandlerKey(subscription);
-    const handler = usageHandlers[handlerKey];
-    if (!handler) {
-      return NextResponse.json(
-        { error: "Unsupported provider" },
-        { status: 400 }
-      );
+    const resolved = resolveUsageHandler(subscription);
+    if (!resolved.ok) {
+      const errorMap: Record<
+        typeof resolved.reason,
+        { message: string; status: number }
+      > = {
+        "not-recurring": {
+          message: "Usage query is only supported for recurring subscriptions",
+          status: 400,
+        },
+        "no-usage-api-url": {
+          message: `Usage query not supported for ${subscription.provider}`,
+          status: 400,
+        },
+        "no-handler": {
+          message: "Unsupported provider",
+          status: 400,
+        },
+      };
+      const { message, status } = errorMap[resolved.reason];
+      return NextResponse.json({ error: message }, { status });
     }
 
     if (!subscription.credentials) {
@@ -63,7 +52,7 @@ export async function GET(
     const credentials = decryptCredentials(subscription.credentials);
 
     try {
-      const result = await handler.fetchUsage(credentials);
+      const result = await resolved.handler.fetchUsage(credentials);
       return NextResponse.json(result, {
         headers: { "Cache-Control": "no-store" },
       });

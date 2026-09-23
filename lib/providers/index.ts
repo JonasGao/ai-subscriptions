@@ -4,6 +4,7 @@ import {
   Provider,
   Subscription,
 } from "@/lib/types";
+import { getProviders } from "@/lib/db";
 import {
   fetchMoonshotUsage,
   fetchMoonshotBalance,
@@ -125,4 +126,45 @@ export function resolveUsageApiUrl(
     }
   }
   return provider.usageApiUrl;
+}
+
+/**
+ * Resolves the usage handler and API URL for a subscription in one call.
+ * Returns either a success result with the handler and URL, or a failure
+ * result with a reason code.
+ */
+export type ResolveUsageHandlerResult =
+  | { ok: true; handler: UsageHandler; usageApiUrl: string }
+  | {
+      ok: false;
+      reason: "not-recurring" | "no-usage-api-url" | "no-handler";
+    };
+
+export function resolveUsageHandler(
+  subscription: Subscription
+): ResolveUsageHandlerResult {
+  if (subscription.subscriptionType !== "recurring") {
+    return { ok: false, reason: "not-recurring" };
+  }
+
+  const providers = getProviders();
+  const providerConfig = providers.find(
+    (p: Provider) => p.id === subscription.provider
+  );
+  const usageApiUrl = providerConfig
+    ? resolveUsageApiUrl(providerConfig, subscription.planId)
+    : undefined;
+
+  if (!usageApiUrl) {
+    return { ok: false, reason: "no-usage-api-url" };
+  }
+
+  const handlerKey = resolveUsageHandlerKey(subscription);
+  const handler = usageHandlers[handlerKey];
+
+  if (!handler) {
+    return { ok: false, reason: "no-handler" };
+  }
+
+  return { ok: true, handler, usageApiUrl };
 }

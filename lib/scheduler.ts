@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import { processResetTick, getSubscriptions } from "./db";
 import { runNotificationTick } from "./notifications/dispatcher";
+import { alignResetTimes } from "./reset-alignment";
 import type { ResetTickTrigger } from "./types";
 
 let isInitialized = false;
@@ -33,6 +34,15 @@ export function initScheduler() {
       await runNotificationTick({ subscriptions, resetTriggers });
     } catch (error) {
       console.error("[Scheduler] Notification tick failed:", error);
+    }
+
+    // Reset-time alignment: query the provider for the real reset time and
+    // overwrite nextResetTime for every schedule on triggered subscriptions.
+    // Runs after notifications — alignment never blocks / changes them.
+    try {
+      await alignResetTimes(resetTriggers);
+    } catch (error) {
+      console.error("[Scheduler] Reset-time alignment failed:", error);
     }
   });
 

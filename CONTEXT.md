@@ -53,8 +53,12 @@ A configuration that defines when a subscription's quota window renews. A subscr
 _Avoid_: Renewal timer, refresh schedule
 
 **Reset Time**:
-The specific timestamp when a quota window renews and the subscription becomes available again.
+The specific timestamp when a quota window renews and the subscription becomes available again. Derived from the Reset Schedule's configuration, except where a Reset-Time Alignment has overwritten it with the provider-reported time.
 _Avoid_: Refresh time, renewal time
+
+**Reset-Time Alignment**:
+The correction of a Reset Schedule's Reset Time to the provider's reported reset time, performed when an exhausted schedule recovers: a Usage Query is issued for the subscription, and each valid future reset time overwrites the matching enabled schedule's Reset Time. Failed queries, missing reset times, or non-future timestamps leave the configured time standing (logged as info).
+_Avoid_: Reset-time sync, reset-time correction
 
 **Billing Cycle**:
 The frequency at which a subscription is charged (monthly or yearly). Independent from quota reset schedules.
@@ -104,7 +108,7 @@ _Avoid_: Priority level, priority score
 - **Reset Schedule → Reset Time**: Each schedule calculates and stores the next reset time
 - **Billing Cycle ⊥ Quota Reset**: These are independent concepts; a monthly subscription can have daily quota resets
 - **Subscription → Usage Query**: recurring subscriptions support usage queries
-- **Usage Query → Reset Schedule**: a fully-consumed usage bucket marks the matching reset schedule exhausted
+- **Usage Query → Reset Schedule**: a fully-consumed usage bucket marks the matching reset schedule exhausted; on exhaustion recovery, reported reset times realign the subscription's enabled schedules' Reset Times (Reset-Time Alignment)
 - **Subscription → Balance Query**: one-time subscriptions support balance queries
 - **Usage Query / Balance Query → Query Cooldown**: a successful query starts a query cooldown
 - **Usage Window → Reset-Time Urgency Color**: a usage window's reset-time text carries an urgency color derived from how soon it resets (weekly/monthly only)
