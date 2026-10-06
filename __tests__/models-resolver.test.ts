@@ -3,6 +3,7 @@ import {
   resolveModelsHandler,
   resolveModelsHandlerKey,
   normalizeModels,
+  modelsHandlers,
 } from "@/lib/providers";
 import { defaultProviders, type Provider } from "@/lib/types";
 
@@ -67,9 +68,7 @@ describe("resolveModelsHandler", () => {
     const result = resolveModelsHandler(provider, "kimi-code");
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.modelsApiUrl).toBe(
-        "https://api.kimi.com/coding/v1/models"
-      );
+      expect(result.modelsApiUrl).toBe("https://api.kimi.com/coding/v1/models");
     }
   });
 
@@ -133,6 +132,28 @@ describe("resolveModelsHandler", () => {
       // Should have a handler (the generic fallback)
       expect(result.handler).toBeDefined();
       expect(typeof result.handler.fetchModels).toBe("function");
+    }
+  });
+
+  it("falls back to the bare-provider exception handler when the plan key misses", () => {
+    // fangzhou subscriptions carry planId (codingplan/agentplan) but the
+    // exception registry only holds the bare "fangzhou" key — the two-step
+    // lookup must resolve the exception handler, not the generic fallback
+    // that would send a Bearer header to the signed endpoint.
+    const provider = findProvider("fangzhou");
+    const result = resolveModelsHandler(provider, "codingplan");
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.handler).toBe(modelsHandlers.fangzhou);
+    }
+  });
+
+  it("falls back to the bare-provider exception handler for alibaba token-plan", () => {
+    const provider = findProvider("alibaba");
+    const result = resolveModelsHandler(provider, "token-plan");
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.handler).toBe(modelsHandlers.alibaba);
     }
   });
 });

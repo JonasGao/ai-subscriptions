@@ -187,4 +187,48 @@ describe("fetchGithubModels", () => {
 
     expect(result).toEqual([]);
   });
+
+  it("does not reuse the cached Copilot token across different PATs", async () => {
+    const calls: Array<{ url: string; auth?: string }> = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      const headers = ((init?.headers ?? {}) as Record<string, string>) ?? {};
+      calls.push({ url, auth: headers["Authorization"] });
+      if (url.includes("copilot_internal/v2/token")) {
+        const pat = (headers["Authorization"] ?? "").replace(/^token /, "");
+        return mockResponse({
+          token: `copilot_for_${pat}`,
+          expires_at: Date.now() + 30 * 60 * 1000,
+          endpoints: { api: "https://api.githubcopilot.com" },
+        });
+      }
+      return mockResponse({
+        data: [
+          {
+            id: "claude-sonnet-4",
+            capabilities: { type: "chat" },
+            policy: { state: "enabled" },
+          },
+        ],
+      });
+    });
+
+    await fetchGithubModels({ token: "ghp_AAA" });
+    await fetchGithubModels({ token: "ghp_BBB" });
+
+    // A different PAT must re-exchange rather than reuse the other
+    // subscription's cached Copilot token.
+    const exchanges = calls.filter((c) =>
+      c.url.includes("copilot_internal/v2/token")
+    );
+    expect(exchanges).toHaveLength(2);
+    expect(exchanges[0].auth).toBe("token ghp_AAA");
+    expect(exchanges[1].auth).toBe("token ghp_BBB");
+
+    // Same PAT within the TTL reuses the cache — no third exchange.
+    await fetchGithubModels({ token: "ghp_BBB" });
+    expect(
+      calls.filter((c) => c.url.includes("copilot_internal/v2/token"))
+    ).toHaveLength(2);
+  });
 });
