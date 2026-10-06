@@ -46,6 +46,19 @@ export interface BalanceHandler {
   ): Promise<{ ok: boolean; message: string }>;
 }
 
+/**
+ * Model Query handler: normalizes a provider-specific model list
+ * response into plain model ids. Unlike Usage/BalanceHandler there is
+ * deliberately no testConnection — credential testing is unrelated to
+ * model queries. Only the non-OpenAI-shaped providers (github /
+ * fangzhou / alibaba) get bespoke handlers; everything else uses the
+ * generic OpenAI-compatible fallback driven by the resolved
+ * modelsApiUrl.
+ */
+export interface ModelsHandler {
+  fetchModels(credentials: Record<string, string>): Promise<string[]>;
+}
+
 export const usageHandlers: Record<string, UsageHandler> = {
   "moonshot:kimi-code": {
     fetchUsage: (creds) =>
