@@ -50,9 +50,11 @@ import {
   Loader2,
   Clock,
   AlertCircle,
+  Boxes,
 } from "lucide-react";
 import { Fragment } from "react";
 import { toast } from "sonner";
+import { ModelListDialog } from "@/components/ModelListDialog";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
@@ -121,6 +123,18 @@ function getPlanUsageApiUrl(
     if (plan?.usageApiUrl) return plan.usageApiUrl;
   }
   return provider.usageApiUrl;
+}
+
+function getPlanModelsApiUrl(
+  provider: (typeof defaultProviders)[number] | undefined,
+  planId?: string
+): string | undefined {
+  if (!provider) return undefined;
+  if (planId && provider.plans) {
+    const plan = provider.plans.find((p) => p.id === planId);
+    if (plan?.modelsApiUrl) return plan.modelsApiUrl;
+  }
+  return provider.modelsApiUrl;
 }
 
 function getTypeLabel(type: string): string {
@@ -285,6 +299,9 @@ export function SubscriptionCard({
   const [lastQueryAt, setLastQueryAt] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteConfirmStep, setDeleteConfirmStep] = useState<0 | 1 | 2>(0);
+  const [modelsDialogOpen, setModelsDialogOpen] = useState(false);
+  const [cachedModels, setCachedModels] = useState<string[] | null>(null);
+  const [modelsUpdatedAt, setModelsUpdatedAt] = useState<Date | null>(null);
   const isRecurring = subscription.subscriptionType === "recurring";
   const expiringSoon =
     isRecurring && subscription.renewalDate
@@ -316,6 +333,7 @@ export function SubscriptionCard({
     subscription.subscriptionType === "one-time"
       ? !!providerConfig?.balanceApiUrl
       : !!getPlanUsageApiUrl(providerConfig, subscription.planId);
+  const canQueryModels = !!getPlanModelsApiUrl(providerConfig, subscription.planId);
   const isOneTime = subscription.subscriptionType === "one-time";
   const canToggleStatus =
     subscription.status === "active" || subscription.status === "paused";
@@ -434,6 +452,15 @@ export function SubscriptionCard({
   const handleConfirmQuery = () => {
     setConfirmOpen(false);
     runQuery();
+  };
+
+  const handleModelsClick = () => {
+    // If credentials are not configured, open the edit dialog
+    if (!subscription.hasCredentials) {
+      onEdit(subscription);
+      return;
+    }
+    setModelsDialogOpen(true);
   };
 
   // Auto-trigger a single usage/balance query on mount for eligible active
@@ -835,6 +862,16 @@ export function SubscriptionCard({
                 额度
               </Button>
             )}
+            {canQueryModels && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleModelsClick}
+              >
+                <Boxes className="h-4 w-4 mr-1" />
+                模型
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -912,6 +949,17 @@ export function SubscriptionCard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {canQueryModels && (
+        <ModelListDialog
+          open={modelsDialogOpen}
+          onOpenChange={setModelsDialogOpen}
+          subscriptionId={subscription.id}
+          cachedModels={cachedModels}
+          onModelsUpdate={setCachedModels}
+          cachedUpdatedAt={modelsUpdatedAt}
+          onUpdatedAtChange={setModelsUpdatedAt}
+        />
+      )}
     </TooltipProvider>
   );
 }
