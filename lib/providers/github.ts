@@ -141,3 +141,117 @@ export async function testGithubConnection(
     };
   }
 }
+
+// ── Model Query ──────────────────────────────────────────────────────────────
+
+const TOKEN_EXCHANGE_URL =
+  "https://api.github.com/copilot_internal/v2/token";
+const MODELS_API_URL = "https://api.githubcopilot.com/models";
+
+// Module-level cache for the exchanged Copilot token
+let cachedCopilotToken: string | null = null;
+let tokenExpiresAt: number = 0;
+
+interface CopilotTokenResponse {
+  token: string;
+  expires_at: number;
+  endpoints?: {
+    api?: string;
+  };
+}
+
+interface CopilotModel {
+  id?: string;
+  name?: string;
+  capabilities?: {
+    type?: string;
+    limits?: Record<string, unknown>;
+    supports?: Record<string, unknown>;
+  };
+  model_picker_enabled?: boolean;
+  policy?: {
+    state?: string;
+  };
+}
+
+interface CopilotModelsResponse {
+  data?: CopilotModel[];
+}
+
+/**
+ * Exchange a GitHub PAT for a short-lived Copilot token.
+ * The token is cached at module level until ~5 minutes before expiry.
+ */
+async function exchangeCopilotToken(pat: string): Promise<string> {
+  // Check cache first
+  if (cachedCopilotToken && Date.now() < tokenExpiresAt - 5 * 60 * 1000) {
+    return cachedCopilotToken;
+  }
+
+  const response = await fetchWithTimeout(
+    TOKEN_EXCHANGE_URL,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `token ${pat}`,
+        Accept: "application/json",
+        "Editor-Version": "vscode/1.96.2",
+      },
+    },
+    DEFAULT_TIMEOUT
+  );
+
+  if (!response.ok) {
+    throw new Error(`Token exchange API returned ${response.status}`);
+  }
+
+  const payload = (await response.json()) as CopilotTokenResponse;
+  cachedCopilotToken = payload.token;
+  tokenExpiresAt = payload.expires_at;
+
+  return cachedCopilotToken;
+}
+
+/**
+ * Fetch the list of available models for GitHub Copilot.
+ * Exchanges the PAT for a short-lived Copilot token, then queries
+ * the models endpoint and filters for enabled chat models.
+ */
+export async function fetchGithubModels(
+  credentials: Record<string, string>
+): Promise<string[]> {
+  const token = credentials.token;
+  if (!token) {
+    throw new Error("Token 未配置");
+  }
+
+  // Exchange PAT for Copilot token
+  const copilotToken = await exchangeCopilotToken(token);
+
+  // Fetch models using the Copilot token
+  const response = await fetchWithTimeout(
+    MODELS_API_URL,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${copilotToken}`,
+        Accept: "application/json",
+      },
+    },
+    DEFAULT_TIMEOUT
+  );
+
+  if (!response.ok) {
+    throw new Error(`Copilot models API returned ${response.status}`);
+  }
+
+  const payload = (await response.json()) as CopilotModelsResponse;
+  const models = payload.data ?? [];
+
+  // Filter for enabled chat models (exclude embeddings)
+  return models
+    .filter((m) => m.policy?.state === "enabled")
+    .filter((m) => m.capabilities?.type === "chat")
+    .map((m) => m.id)
+    .filter((id): id is string => id !== undefined);
+}
