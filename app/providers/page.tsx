@@ -133,6 +133,9 @@ export default function ProvidersPage() {
                   {provider.supportsUsageQuery && (
                     <Badge variant="secondary">支持用量查询</Badge>
                   )}
+                  {provider.supportsModelsQuery && (
+                    <Badge variant="outline">支持模型查询</Badge>
+                  )}
                 </div>
                 {provider.description && (
                   <CardDescription>{provider.description}</CardDescription>
@@ -160,6 +163,7 @@ export default function ProvidersPage() {
 
                 <UrlRow label="余额查询 API" url={provider.balanceApiUrl} />
                 <UrlRow label="用量查询 API" url={provider.usageApiUrl} />
+                <UrlRow label="模型查询 API" url={provider.modelsApiUrl} />
 
                 {provider.credentialFields &&
                   provider.credentialFields.length > 0 && (
@@ -197,6 +201,11 @@ export default function ProvidersPage() {
                           {plan.usageApiUrl && (
                             <div className="break-all pl-2">
                               {plan.usageApiUrl}
+                            </div>
+                          )}
+                          {plan.modelsApiUrl && (
+                            <div className="break-all pl-2">
+                              {plan.modelsApiUrl}
                             </div>
                           )}
                         </div>
