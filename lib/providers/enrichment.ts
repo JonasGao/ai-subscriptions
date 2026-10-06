@@ -9,6 +9,7 @@ import { usageHandlers, balanceHandlers } from "./index";
 export interface EnrichedProvider extends Provider {
   supportsBalanceQuery: boolean;
   supportsUsageQuery: boolean;
+  supportsModelsQuery: boolean;
   subscriptionCount: number;
   toolCount: number;
 }
@@ -34,6 +35,17 @@ export function supportsBalanceQuery(providerId: string): boolean {
   return Object.keys(balanceHandlers).some(
     (key) => key === providerId || key.startsWith(`${providerId}:`)
   );
+}
+
+/**
+ * A provider supports models query if modelsApiUrl is configured at the
+ * provider level OR on any plan. Unlike supportsUsageQuery / supportsBalanceQuery,
+ * this is derived from URL existence, NOT from the modelsHandlers registry
+ * (the generic fallback handler is not registered there).
+ */
+export function supportsModelsQuery(provider: Provider): boolean {
+  if (provider.modelsApiUrl) return true;
+  return provider.plans?.some((plan) => plan.modelsApiUrl) ?? false;
 }
 
 /**
@@ -63,6 +75,7 @@ export function enrichProviders(
     ...provider,
     supportsBalanceQuery: supportsBalanceQuery(provider.id),
     supportsUsageQuery: supportsUsageQuery(provider.id),
+    supportsModelsQuery: supportsModelsQuery(provider),
     subscriptionCount: subscriptionCounts.get(provider.id) ?? 0,
     toolCount: toolCounts.get(provider.id) ?? 0,
   }));

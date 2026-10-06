@@ -3,6 +3,7 @@ import type { Provider, Subscription, Tool } from "@/lib/types";
 import {
   supportsUsageQuery,
   supportsBalanceQuery,
+  supportsModelsQuery,
   enrichProviders,
   getUnregisteredProviderNames,
 } from "@/lib/providers/enrichment";
@@ -49,6 +50,81 @@ describe("supportsBalanceQuery", () => {
   });
 });
 
+// ============ supportsModelsQuery ============
+
+describe("supportsModelsQuery", () => {
+  it("deepseek: provider-level modelsApiUrl → true", () => {
+    const provider: Provider = {
+      id: "deepseek",
+      name: "DeepSeek",
+      modelsApiUrl: "https://api.deepseek.com/models",
+    };
+    expect(supportsModelsQuery(provider)).toBe(true);
+  });
+
+  it("moonshot: provider-level + plan-level modelsApiUrl → true", () => {
+    const provider: Provider = {
+      id: "moonshot",
+      name: "Moonshot",
+      modelsApiUrl: "https://api.moonshot.cn/v1/models",
+      plans: [
+        {
+          id: "kimi-code",
+          name: "Kimi Code",
+          modelsApiUrl: "https://api.kimi.com/coding/v1/models",
+        },
+      ],
+    };
+    expect(supportsModelsQuery(provider)).toBe(true);
+  });
+
+  it("zhipu: plan-level modelsApiUrl only (no provider-level) → true", () => {
+    const provider: Provider = {
+      id: "zhipu",
+      name: "Zhipu",
+      plans: [
+        {
+          id: "coding-plan",
+          name: "Coding Plan",
+          modelsApiUrl: "https://open.bigmodel.cn/api/coding/paas/v4/models",
+        },
+      ],
+    };
+    expect(supportsModelsQuery(provider)).toBe(true);
+  });
+
+  it("openai: no modelsApiUrl anywhere → false", () => {
+    const provider: Provider = {
+      id: "openai",
+      name: "OpenAI",
+    };
+    expect(supportsModelsQuery(provider)).toBe(false);
+  });
+
+  it("provider with modelsApiUrl but NOT in handler registry → still true (key difference from usage/balance)", () => {
+    // This is the critical test: supportsModelsQuery derives from URL existence,
+    // NOT from handler registry. Generic fallback handlers aren't in the registry.
+    const provider: Provider = {
+      id: "siliconflow",
+      name: "SiliconFlow",
+      modelsApiUrl: "https://api.siliconflow.cn/v1/models",
+    };
+    expect(supportsModelsQuery(provider)).toBe(true);
+  });
+
+  it("provider with plans but none have modelsApiUrl → false", () => {
+    const provider: Provider = {
+      id: "alibaba",
+      name: "Alibaba",
+      plans: [
+        { id: "coding-plan", name: "Coding Plan" },
+        { id: "token-plan", name: "Token Plan" },
+      ],
+    };
+    expect(supportsModelsQuery(provider)).toBe(false);
+  });
+});
+
 // ============ enrichProviders ============
 
 function makeProvider(id: string): Provider {
@@ -88,12 +164,36 @@ function makeTool(overrides: Partial<Tool> = {}): Tool {
 }
 
 describe("enrichProviders", () => {
-  it("derives capability flags from handler registries", () => {
+  it("derives capability flags from handler registries and modelsApiUrl", () => {
     const providers: Provider[] = [
-      makeProvider("deepseek"),
-      makeProvider("moonshot"),
-      makeProvider("fangzhou"),
-      makeProvider("openai"),
+      {
+        id: "deepseek",
+        name: "DeepSeek",
+        modelsApiUrl: "https://api.deepseek.com/models",
+      },
+      {
+        id: "moonshot",
+        name: "Moonshot",
+        modelsApiUrl: "https://api.moonshot.cn/v1/models",
+        plans: [
+          {
+            id: "kimi-code",
+            name: "Kimi Code",
+            modelsApiUrl: "https://api.kimi.com/coding/v1/models",
+          },
+        ],
+      },
+      {
+        id: "fangzhou",
+        name: "Fangzhou",
+        modelsApiUrl:
+          "https://ark.cn-beijing.volcengineapi.com/?Action=ListFoundationModels&Version=2024-01-01",
+        plans: [
+          { id: "codingplan", name: "Coding Plan" },
+          { id: "agentplan", name: "Agent Plan" },
+        ],
+      },
+      { id: "openai", name: "OpenAI" },
     ];
 
     const result = enrichProviders(providers, [], []);
@@ -102,21 +202,25 @@ describe("enrichProviders", () => {
       id: "deepseek",
       supportsBalanceQuery: true,
       supportsUsageQuery: false,
+      supportsModelsQuery: true,
     });
     expect(result[1]).toMatchObject({
       id: "moonshot",
       supportsBalanceQuery: true,
       supportsUsageQuery: true,
+      supportsModelsQuery: true,
     });
     expect(result[2]).toMatchObject({
       id: "fangzhou",
       supportsBalanceQuery: false,
       supportsUsageQuery: true,
+      supportsModelsQuery: true,
     });
     expect(result[3]).toMatchObject({
       id: "openai",
       supportsBalanceQuery: false,
       supportsUsageQuery: false,
+      supportsModelsQuery: false,
     });
   });
 
