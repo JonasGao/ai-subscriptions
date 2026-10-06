@@ -118,6 +118,14 @@ export interface PlanDefinition {
   id: string;
   name: string;
   usageApiUrl?: string;
+  /**
+   * Plan-level model list endpoint, overriding the provider-level
+   * modelsApiUrl (resolved the same way as usageApiUrl: plan first,
+   * provider fallback). Required when a plan's endpoint differs from
+   * the provider's platform key endpoint (e.g. moonshot kimi-code,
+   * zhipu coding-plan).
+   */
+  modelsApiUrl?: string;
 }
 
 export interface Provider {
@@ -127,6 +135,14 @@ export interface Provider {
   website?: string;
   balanceApiUrl?: string;
   usageApiUrl?: string;
+  /**
+   * OpenAI-compatible model list endpoint driving Model Query. Its
+   * presence (here or on any plan) is what marks a provider as
+   * models-capable; the resolved URL feeds the generic fetch fallback
+   * (exception handlers — github / fangzhou / alibaba — use it for
+   * display only).
+   */
+  modelsApiUrl?: string;
   credentialFields?: CredentialField[];
   plans?: PlanDefinition[];
 }
@@ -156,6 +172,7 @@ export const defaultProviders: Provider[] = [
     description: "GitHub Copilot",
     website: "https://github.com",
     usageApiUrl: "https://api.github.com/copilot_internal/user",
+    modelsApiUrl: "https://api.githubcopilot.com/models",
     credentialFields: [{ key: "token", label: "Token", type: "password" }],
   },
   {
@@ -178,6 +195,8 @@ export const defaultProviders: Provider[] = [
         name: "Token Plan",
         usageApiUrl:
           "https://modelstudio.cn-beijing.aliyuncs.com/tokenplan/subscription/seat-detail",
+        modelsApiUrl:
+          "https://modelstudio.cn-beijing.aliyuncs.com/modelstudio/models",
       },
     ],
   },
@@ -187,12 +206,14 @@ export const defaultProviders: Provider[] = [
     description: "Kimi 系列",
     website: "https://kimi.moonshot.cn",
     balanceApiUrl: "https://api.moonshot.cn/v1/users/me/balance",
+    modelsApiUrl: "https://api.moonshot.cn/v1/models",
     credentialFields: [{ key: "apiKey", label: "API Key", type: "password" }],
     plans: [
       {
         id: "kimi-code",
         name: "Kimi Code",
         usageApiUrl: "https://api.kimi.com/coding/v1/usages",
+        modelsApiUrl: "https://api.kimi.com/coding/v1/models",
       },
     ],
   },
@@ -202,6 +223,7 @@ export const defaultProviders: Provider[] = [
     description: "DeepSeek 系列",
     website: "https://deepseek.com",
     balanceApiUrl: "https://api.deepseek.com/user/balance",
+    modelsApiUrl: "https://api.deepseek.com/models",
     credentialFields: [{ key: "apiKey", label: "API Key", type: "password" }],
   },
   {
@@ -215,6 +237,7 @@ export const defaultProviders: Provider[] = [
         id: "coding-plan",
         name: "Coding Plan",
         usageApiUrl: "https://open.bigmodel.cn/api/monitor/usage/quota/limit",
+        modelsApiUrl: "https://open.bigmodel.cn/api/coding/paas/v4/models",
       },
     ],
   },
@@ -224,6 +247,7 @@ export const defaultProviders: Provider[] = [
     description: "模型托管平台",
     website: "https://siliconflow.cn",
     balanceApiUrl: "https://api.siliconflow.cn/v1/user/info",
+    modelsApiUrl: "https://api.siliconflow.cn/v1/models",
     credentialFields: [{ key: "apiKey", label: "API Key", type: "password" }],
   },
   {
@@ -232,6 +256,7 @@ export const defaultProviders: Provider[] = [
     description: "多模型统一 API",
     website: "https://openrouter.ai",
     balanceApiUrl: "https://openrouter.ai/api/v1/credits",
+    modelsApiUrl: "https://openrouter.ai/api/v1/models",
     credentialFields: [{ key: "apiKey", label: "API Key", type: "password" }],
   },
   {
@@ -251,6 +276,13 @@ export const defaultProviders: Provider[] = [
     name: "火山方舟",
     description: "火山方舟模型服务",
     website: "https://www.volcengine.com/product/ark",
+    /**
+     * Control-plane ListFoundationModels (AK-signed) — no plan-specific
+     * models Action exists, and both plans share the same Ark account
+     * directory. Bespoke handler (V4 signature + paging) lands later.
+     */
+    modelsApiUrl:
+      "https://ark.cn-beijing.volcengineapi.com/?Action=ListFoundationModels&Version=2024-01-01",
     credentialFields: [
       { key: "ak", label: "Access Key", type: "text" },
       { key: "sk", label: "Secret Key", type: "password" },
@@ -279,6 +311,7 @@ export const defaultProviders: Provider[] = [
         id: "go",
         name: "Go",
         usageApiUrl: "https://opencode.ai/zen/go/v1/usage",
+        modelsApiUrl: "https://opencode.ai/zen/go/v1/models",
       },
       {
         id: "zen",
@@ -433,6 +466,15 @@ export interface BalanceResult {
   provider: string;
   isAvailable: boolean;
   balanceInfos: BalanceInfo[];
+}
+
+/**
+ * Response of GET /api/subscriptions/[id]/models: deduplicated,
+ * locale-sorted model ids (handlers normalize provider-specific shapes
+ * — data[].id / Result.Items[].Name / models[].model — before this).
+ */
+export interface ModelsResult {
+  models: string[];
 }
 
 export interface UsageWindow {
