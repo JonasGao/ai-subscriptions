@@ -25,11 +25,8 @@ async function getMigrations() {
 }
 
 import type { Subscription, SubscriptionData, Provider } from "@/lib/types";
-import {
-  resolveUsageHandlerKey,
-  resolveUsageApiUrl,
-  usageHandlers,
-} from "@/lib/providers";
+import { resolveUsageHandlerKey, usageHandlers } from "@/lib/providers";
+import { resolveUsageApiUrl } from "@/lib/api-url-resolver";
 
 function makeSubscription(overrides: Partial<Subscription> = {}): Subscription {
   return {

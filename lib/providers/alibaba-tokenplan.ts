@@ -1,6 +1,7 @@
 import { createHmac, createHash, randomUUID } from "crypto";
 import { UsageResult, UsageWindow } from "@/lib/types";
 import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
+import { paginateAll } from "./pagination";
 
 // ── ACS3 signing ─────────────────────────────────────────────────────────────
 
@@ -375,12 +376,9 @@ export async function fetchAlibabaModels(
   const { ak, sk } = credentials;
   if (!ak || !sk) throw new Error("AK/SK not configured");
 
-  const host = credentials.host || MODELS_HOST;
-  const allModels: string[] = [];
   let nextToken: string | undefined;
-  let hasMore = true;
 
-  while (hasMore && allModels.length < MAX_ITEMS) {
+  return paginateAll<string>(async () => {
     const queryParams: Record<string, string | number | undefined> = {
       maxResults: DEFAULT_MAX_RESULTS,
     };
@@ -395,13 +393,13 @@ export async function fetchAlibabaModels(
       action: MODELS_ACTION,
       version: MODELS_VERSION,
       body: "",
-      host,
+      host: MODELS_HOST,
       pathname: MODELS_PATH,
       method: "GET",
       queryString,
     });
 
-    const endpoint = `https://${host}${MODELS_PATH}?${queryString}`;
+    const endpoint = `https://${MODELS_HOST}${MODELS_PATH}?${queryString}`;
     const response = await fetchWithTimeout(
       endpoint,
       { method: "GET", headers },
@@ -416,20 +414,14 @@ export async function fetchAlibabaModels(
 
     const data = (await response.json()) as ListModelsResponse;
     const models = data.models ?? [];
+    const modelIds = models
+      .map((m) => m.model)
+      .filter((id): id is string => !!id);
 
-    for (const model of models) {
-      if (model.model && allModels.length < MAX_ITEMS) {
-        allModels.push(model.model);
-      }
-    }
-
-    // Check if we've reached the end
     nextToken = data.nextToken ?? undefined;
-    if (!nextToken || models.length === 0) {
-      hasMore = false;
-    }
-  }
+    const hasMore = !!nextToken && models.length > 0;
 
-  return allModels;
+    return { items: modelIds, hasMore };
+  }, MAX_ITEMS);
 }
 

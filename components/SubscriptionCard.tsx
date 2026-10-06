@@ -44,6 +44,10 @@ import {
 } from "@/lib/utils";
 import { sortResetSchedules } from "@/lib/reset-schedule";
 import {
+  resolveUsageApiUrl,
+  resolveModelsApiUrl,
+} from "@/lib/api-url-resolver";
+import {
   Edit,
   Trash2,
   Wallet,
@@ -111,30 +115,6 @@ function getPlanName(provider: string, planId?: string): string | null {
   const found = defaultProviders.find((p) => p.id === provider);
   const plan = found?.plans?.find((p) => p.id === planId);
   return plan?.name ?? null;
-}
-
-function getPlanUsageApiUrl(
-  provider: (typeof defaultProviders)[number] | undefined,
-  planId?: string
-): string | undefined {
-  if (!provider) return undefined;
-  if (planId && provider.plans) {
-    const plan = provider.plans.find((p) => p.id === planId);
-    if (plan?.usageApiUrl) return plan.usageApiUrl;
-  }
-  return provider.usageApiUrl;
-}
-
-function getPlanModelsApiUrl(
-  provider: (typeof defaultProviders)[number] | undefined,
-  planId?: string
-): string | undefined {
-  if (!provider) return undefined;
-  if (planId && provider.plans) {
-    const plan = provider.plans.find((p) => p.id === planId);
-    if (plan?.modelsApiUrl) return plan.modelsApiUrl;
-  }
-  return provider.modelsApiUrl;
 }
 
 function getTypeLabel(type: string): string {
@@ -300,8 +280,6 @@ export function SubscriptionCard({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteConfirmStep, setDeleteConfirmStep] = useState<0 | 1 | 2>(0);
   const [modelsDialogOpen, setModelsDialogOpen] = useState(false);
-  const [cachedModels, setCachedModels] = useState<string[] | null>(null);
-  const [modelsUpdatedAt, setModelsUpdatedAt] = useState<Date | null>(null);
   const isRecurring = subscription.subscriptionType === "recurring";
   const expiringSoon =
     isRecurring && subscription.renewalDate
@@ -332,8 +310,12 @@ export function SubscriptionCard({
   const canQuery =
     subscription.subscriptionType === "one-time"
       ? !!providerConfig?.balanceApiUrl
-      : !!getPlanUsageApiUrl(providerConfig, subscription.planId);
-  const canQueryModels = !!getPlanModelsApiUrl(providerConfig, subscription.planId);
+      : providerConfig
+        ? !!resolveUsageApiUrl(providerConfig, subscription.planId)
+        : false;
+  const canQueryModels = providerConfig
+    ? !!resolveModelsApiUrl(providerConfig, subscription.planId)
+    : false;
   const isOneTime = subscription.subscriptionType === "one-time";
   const canToggleStatus =
     subscription.status === "active" || subscription.status === "paused";
@@ -954,10 +936,6 @@ export function SubscriptionCard({
           open={modelsDialogOpen}
           onOpenChange={setModelsDialogOpen}
           subscriptionId={subscription.id}
-          cachedModels={cachedModels}
-          onModelsUpdate={setCachedModels}
-          cachedUpdatedAt={modelsUpdatedAt}
-          onUpdatedAtChange={setModelsUpdatedAt}
         />
       )}
     </TooltipProvider>

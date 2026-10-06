@@ -148,7 +148,9 @@ const TOKEN_EXCHANGE_URL =
   "https://api.github.com/copilot_internal/v2/token";
 const MODELS_API_URL = "https://api.githubcopilot.com/models";
 
-// Module-level cache for the exchanged Copilot token
+// Module-level cache for the exchanged Copilot token, keyed by PAT
+// to prevent token sharing between different GitHub subscriptions.
+let cachedPat: string | null = null;
 let cachedCopilotToken: string | null = null;
 let tokenExpiresAt: number = 0;
 
@@ -162,13 +164,9 @@ interface CopilotTokenResponse {
 
 interface CopilotModel {
   id?: string;
-  name?: string;
   capabilities?: {
     type?: string;
-    limits?: Record<string, unknown>;
-    supports?: Record<string, unknown>;
   };
-  model_picker_enabled?: boolean;
   policy?: {
     state?: string;
   };
@@ -181,10 +179,15 @@ interface CopilotModelsResponse {
 /**
  * Exchange a GitHub PAT for a short-lived Copilot token.
  * The token is cached at module level until ~5 minutes before expiry.
+ * Cache is keyed by PAT to prevent token sharing between subscriptions.
  */
 async function exchangeCopilotToken(pat: string): Promise<string> {
-  // Check cache first
-  if (cachedCopilotToken && Date.now() < tokenExpiresAt - 5 * 60 * 1000) {
+  // Check cache first — invalidate if PAT changed
+  if (
+    cachedPat === pat &&
+    cachedCopilotToken &&
+    Date.now() < tokenExpiresAt - 5 * 60 * 1000
+  ) {
     return cachedCopilotToken;
   }
 
@@ -206,6 +209,7 @@ async function exchangeCopilotToken(pat: string): Promise<string> {
   }
 
   const payload = (await response.json()) as CopilotTokenResponse;
+  cachedPat = pat;
   cachedCopilotToken = payload.token;
   tokenExpiresAt = payload.expires_at;
 

@@ -198,16 +198,8 @@ export default function ProvidersPage() {
                           </span>
                           <span className="mx-1">·</span>
                           {plan.id}
-                          {plan.usageApiUrl && (
-                            <div className="break-all pl-2">
-                              {plan.usageApiUrl}
-                            </div>
-                          )}
-                          {plan.modelsApiUrl && (
-                            <div className="break-all pl-2">
-                              {plan.modelsApiUrl}
-                            </div>
-                          )}
+                          <UrlRow label="用量查询 API" url={plan.usageApiUrl} />
+                          <UrlRow label="模型查询 API" url={plan.modelsApiUrl} />
                         </div>
                       ))}
                     </div>

@@ -33,17 +33,10 @@ export async function GET(
 
     const resolved = resolveModelsHandler(providerConfig, subscription.planId);
     if (!resolved.ok) {
-      const errorMap: Record<
-        typeof resolved.reason,
-        { message: string; status: number }
-      > = {
-        "no-models-api-url": {
-          message: `Model query not supported for ${subscription.provider}`,
-          status: 400,
-        },
-      };
-      const { message, status } = errorMap[resolved.reason];
-      return NextResponse.json({ error: message }, { status });
+      return NextResponse.json(
+        { error: `Model query not supported for ${subscription.provider}` },
+        { status: 400 }
+      );
     }
 
     if (!subscription.credentials) {
