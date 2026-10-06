@@ -18,41 +18,19 @@ interface ModelListDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   subscriptionId: string;
-  cachedModels?: string[] | null;
-  onModelsUpdate?: (models: string[]) => void;
-  cachedUpdatedAt?: Date | null;
-  onUpdatedAtChange?: (date: Date) => void;
 }
 
 export function ModelListDialog({
   open,
   onOpenChange,
   subscriptionId,
-  cachedModels = null,
-  onModelsUpdate,
-  cachedUpdatedAt = null,
-  onUpdatedAtChange,
 }: ModelListDialogProps) {
-  const [models, setModels] = useState<string[] | null>(cachedModels);
+  // Cache state lives inside the dialog per ADR-0015
+  const [models, setModels] = useState<string[] | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(
-    cachedUpdatedAt
-  );
-
-  // Sync with cache from parent
-  useEffect(() => {
-    if (cachedModels !== undefined) {
-      setModels(cachedModels);
-    }
-  }, [cachedModels]);
-
-  useEffect(() => {
-    if (cachedUpdatedAt !== undefined) {
-      setLastUpdatedAt(cachedUpdatedAt);
-    }
-  }, [cachedUpdatedAt]);
 
   const fetchModels = async (forceRefresh = false) => {
     // If we have cached models and not forcing refresh, skip fetch
@@ -77,10 +55,6 @@ export function ModelListDialog({
       setModels(data.models);
       const now = new Date();
       setLastUpdatedAt(now);
-
-      // Update parent cache
-      onModelsUpdate?.(data.models);
-      onUpdatedAtChange?.(now);
     } catch (err) {
       const message = err instanceof Error ? err.message : "查询失败";
       setError(message);

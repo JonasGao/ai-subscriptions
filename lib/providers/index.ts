@@ -6,6 +6,10 @@ import {
 } from "@/lib/types";
 import { getProviders } from "@/lib/db";
 import {
+  resolveUsageApiUrl,
+  resolveModelsApiUrl,
+} from "@/lib/api-url-resolver";
+import {
   fetchMoonshotUsage,
   fetchMoonshotBalance,
   testMoonshotConnection,
@@ -150,25 +154,6 @@ export function resolveUsageHandlerKey(subscription: Subscription): string {
 }
 
 /**
- * Resolves the usage API URL for a subscription.
- * If the subscription has a planId and the provider has plans,
- * returns the plan-level usageApiUrl; otherwise returns the
- * provider-level usageApiUrl.
- */
-export function resolveUsageApiUrl(
-  provider: Provider,
-  planId?: string
-): string | undefined {
-  if (planId && provider.plans) {
-    const plan = provider.plans.find((p) => p.id === planId);
-    if (plan?.usageApiUrl) {
-      return plan.usageApiUrl;
-    }
-  }
-  return provider.usageApiUrl;
-}
-
-/**
  * Resolves the usage handler and API URL for a subscription in one call.
  * Returns either a success result with the handler and URL, or a failure
  * result with a reason code.
@@ -222,25 +207,6 @@ export function resolveModelsHandlerKey(
     return `${provider}:${planId}`;
   }
   return provider;
-}
-
-/**
- * Resolves the models API URL for a provider/plan.
- * If planId is provided and the provider has plans,
- * returns the plan-level modelsApiUrl; otherwise returns the
- * provider-level modelsApiUrl.
- */
-export function resolveModelsApiUrl(
-  provider: Provider,
-  planId?: string
-): string | undefined {
-  if (planId && provider.plans) {
-    const plan = provider.plans.find((p) => p.id === planId);
-    if (plan?.modelsApiUrl) {
-      return plan.modelsApiUrl;
-    }
-  }
-  return provider.modelsApiUrl;
 }
 
 /**
@@ -310,8 +276,15 @@ export function resolveModelsHandler(
     return { ok: false, reason: "no-models-api-url" };
   }
 
-  const handlerKey = resolveModelsHandlerKey(provider.id, planId);
-  const exceptionHandler = modelsHandlers[handlerKey];
+  // Try plan-specific key first, then fall back to bare provider key.
+  // This allows exception handlers to be registered at either level:
+  // - "fangzhou:codingplan" for plan-specific handlers
+  // - "fangzhou" for provider-wide handlers (like the current three)
+  const planKey = resolveModelsHandlerKey(provider.id, planId);
+  const bareKey = provider.id;
+
+  const exceptionHandler =
+    modelsHandlers[planKey] || modelsHandlers[bareKey];
 
   // Use exception handler if registered; otherwise use generic fallback.
   const handler: ModelsHandler = exceptionHandler || {

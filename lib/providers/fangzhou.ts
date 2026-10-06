@@ -1,5 +1,6 @@
 import { signVolcengineRequest } from "@/lib/volcengine-signer";
 import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
+import { paginateAll } from "./pagination";
 
 const LIST_MODELS_URL =
   "https://ark.cn-beijing.volcengineapi.com/?Action=ListFoundationModels&Version=2024-01-01";
@@ -9,20 +10,11 @@ const MAX_ITEMS = 1000;
 const DEFAULT_PAGE_SIZE = 100;
 
 interface ListModelsResponse {
-  ResponseMetadata?: {
-    RequestId?: string;
-    Action?: string;
-  };
   Result?: {
     Items?: Array<{
       Name?: string;
-      DisplayName?: string;
-      Description?: string;
-      VendorName?: string;
     }>;
     TotalCount?: number;
-    PageNumber?: number;
-    PageSize?: number;
   };
 }
 
@@ -38,11 +30,7 @@ export async function fetchFangzhouModels(
   const { ak, sk } = credentials;
   if (!ak || !sk) throw new Error("AK/SK not configured");
 
-  const allModels: string[] = [];
-  let pageNumber = 1;
-  let hasMore = true;
-
-  while (hasMore && allModels.length < MAX_ITEMS) {
+  return paginateAll<string>(async (pageNumber, totalCollected) => {
     const url = `${LIST_MODELS_URL}&PageNumber=${pageNumber}&PageSize=${DEFAULT_PAGE_SIZE}`;
     const body = JSON.stringify({});
 
@@ -72,21 +60,12 @@ export async function fetchFangzhouModels(
 
     const data = (await response.json()) as ListModelsResponse;
     const items = data.Result?.Items ?? [];
+    const names = items.map((item) => item.Name).filter((n): n is string => !!n);
 
-    for (const item of items) {
-      if (item.Name && allModels.length < MAX_ITEMS) {
-        allModels.push(item.Name);
-      }
-    }
-
-    // Check if we've reached the end
     const totalCount = data.Result?.TotalCount ?? 0;
-    if (allModels.length >= totalCount || items.length === 0) {
-      hasMore = false;
-    } else {
-      pageNumber++;
-    }
-  }
+    // Continue if we haven't reached totalCount AND we got items
+    const hasMore = totalCollected + names.length < totalCount && items.length > 0;
 
-  return allModels;
+    return { items: names, hasMore };
+  }, MAX_ITEMS);
 }
