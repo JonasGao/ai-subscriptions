@@ -31,6 +31,7 @@ import {
 import { fetchGithubUsage, testGithubConnection } from "./github";
 import { fetchOpencodeGoUsage, testOpencodeConnection } from "./opencode";
 import { fetchZhipuUsage, testZhipuConnection } from "./zhipu";
+import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
 
 export interface UsageHandler {
   fetchUsage(credentials: Record<string, string>): Promise<UsageResult>;
@@ -111,6 +112,14 @@ export const balanceHandlers: Record<string, BalanceHandler> = {
 };
 
 /**
+ * Exception registry for non-OpenAI-shaped providers (github / fangzhou /
+ * alibaba). Currently empty — bespoke handlers land in later tickets. The
+ * generic OpenAI-compatible fallback (driven by the resolved modelsApiUrl)
+ * covers every other provider.
+ */
+export const modelsHandlers: Record<string, ModelsHandler> = {};
+
+/**
  * Resolves the handler key for a subscription's usage query.
  * If the subscription has a planId, returns "providerId:planId";
  * otherwise returns the bare provider id.
@@ -180,4 +189,116 @@ export function resolveUsageHandler(
   }
 
   return { ok: true, handler, usageApiUrl };
+}
+
+/**
+ * Resolves the handler key for a provider/plan's models query.
+ * If planId is provided (and non-empty), returns "providerId:planId";
+ * otherwise returns the bare provider id.
+ */
+export function resolveModelsHandlerKey(
+  provider: string,
+  planId?: string
+): string {
+  if (planId) {
+    return `${provider}:${planId}`;
+  }
+  return provider;
+}
+
+/**
+ * Resolves the models API URL for a provider/plan.
+ * If planId is provided and the provider has plans,
+ * returns the plan-level modelsApiUrl; otherwise returns the
+ * provider-level modelsApiUrl.
+ */
+export function resolveModelsApiUrl(
+  provider: Provider,
+  planId?: string
+): string | undefined {
+  if (planId && provider.plans) {
+    const plan = provider.plans.find((p) => p.id === planId);
+    if (plan?.modelsApiUrl) {
+      return plan.modelsApiUrl;
+    }
+  }
+  return provider.modelsApiUrl;
+}
+
+/**
+ * Generic OpenAI-compatible models fetcher. Extracts data[].id from
+ * the response. Works for any provider with an OpenAI-shaped models
+ * endpoint (deepseek / siliconflow / openrouter / moonshot / zhipu /
+ * opencode / etc.). Exception handlers (github / fangzhou / alibaba)
+ * override this in later tickets.
+ */
+async function fetchGenericModels(
+  modelsApiUrl: string,
+  credentials: Record<string, string>
+): Promise<string[]> {
+  const headers: Record<string, string> = {};
+  // Some providers (openrouter, opencode) have public endpoints; others
+  // need a Bearer token. apiKey is the common credential field.
+  if (credentials.apiKey) {
+    headers["Authorization"] = `Bearer ${credentials.apiKey}`;
+  }
+
+  const response = await fetchWithTimeout(
+    modelsApiUrl,
+    { method: "GET", headers },
+    DEFAULT_TIMEOUT
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Models query failed: ${response.status} ${response.statusText}`
+    );
+  }
+
+  const data = await response.json();
+  // OpenAI shape: { data: [{ id: "..." }, ...] }
+  if (!data.data || !Array.isArray(data.data)) {
+    throw new Error("Invalid models response: missing data array");
+  }
+
+  return data.data.map((item: { id: string }) => item.id).filter(Boolean);
+}
+
+/**
+ * Pure function: deduplicates and sorts model ids by localeCompare.
+ * Reused by the API route after handler-specific normalization.
+ */
+export function normalizeModels(models: string[]): string[] {
+  const unique = Array.from(new Set(models));
+  return unique.sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Resolves the models handler and API URL for a provider/plan in one call.
+ * Returns either a success result with the handler and URL, or a failure
+ * result with a reason code.
+ */
+export type ResolveModelsHandlerResult =
+  | { ok: true; handler: ModelsHandler; modelsApiUrl: string }
+  | { ok: false; reason: "no-models-api-url" };
+
+export function resolveModelsHandler(
+  provider: Provider,
+  planId?: string
+): ResolveModelsHandlerResult {
+  const modelsApiUrl = resolveModelsApiUrl(provider, planId);
+
+  if (!modelsApiUrl) {
+    return { ok: false, reason: "no-models-api-url" };
+  }
+
+  const handlerKey = resolveModelsHandlerKey(provider.id, planId);
+  const exceptionHandler = modelsHandlers[handlerKey];
+
+  // Use exception handler if registered; otherwise use generic fallback.
+  const handler: ModelsHandler = exceptionHandler || {
+    fetchModels: (creds) => fetchGenericModels(modelsApiUrl, creds),
+  };
+
+  return { ok: true, handler, modelsApiUrl };
 }
