@@ -28,10 +28,16 @@ import {
   fetchTokenPlanUsage,
   testTokenPlanConnection,
 } from "./alibaba-tokenplan";
-import { fetchGithubUsage, testGithubConnection } from "./github";
+import {
+  fetchGithubUsage,
+  testGithubConnection,
+  fetchGithubModels,
+} from "./github";
 import { fetchOpencodeGoUsage, testOpencodeConnection } from "./opencode";
 import { fetchZhipuUsage, testZhipuConnection } from "./zhipu";
 import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
+import { fetchFangzhouModels } from "./fangzhou";
+import { fetchAlibabaModels } from "./alibaba-tokenplan";
 
 export interface UsageHandler {
   fetchUsage(credentials: Record<string, string>): Promise<UsageResult>;
@@ -112,12 +118,24 @@ export const balanceHandlers: Record<string, BalanceHandler> = {
 };
 
 /**
- * Exception registry for non-OpenAI-shaped providers (github / fangzhou /
- * alibaba). Currently empty — bespoke handlers land in later tickets. The
- * generic OpenAI-compatible fallback (driven by the resolved modelsApiUrl)
- * covers every other provider.
+ * Exception handlers for non-OpenAI-shaped providers.
+ * These providers require bespoke API calls (token exchange, V4 signing, ACS3 signing)
+ * rather than the generic OpenAI-compatible fetch.
+ * Registration keys follow the same pattern as usage/balance handlers:
+ * - Bare provider id (e.g. "github", "fangzhou", "alibaba")
+ * - Or "provider:planId" when plans need different handlers (not needed for these three)
  */
-export const modelsHandlers: Record<string, ModelsHandler> = {};
+export const modelsHandlers: Record<string, ModelsHandler> = {
+  github: {
+    fetchModels: (creds) => fetchGithubModels(creds),
+  },
+  fangzhou: {
+    fetchModels: (creds) => fetchFangzhouModels(creds),
+  },
+  alibaba: {
+    fetchModels: (creds) => fetchAlibabaModels(creds),
+  },
+};
 
 /**
  * Resolves the handler key for a subscription's usage query.

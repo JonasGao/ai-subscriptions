@@ -340,3 +340,96 @@ function sha256Hex(data: string): string {
 function hmacSHA256Hex(key: string, data: string): string {
   return createHmac("sha256", key).update(data, "utf8").digest("hex");
 }
+
+// ── Model Query ──────────────────────────────────────────────────────────────
+
+const MODELS_HOST = "modelstudio.cn-beijing.aliyuncs.com";
+const MODELS_PATH = "/modelstudio/models";
+const MODELS_ACTION = "ListModels";
+const MODELS_VERSION = "2026-02-10";
+
+// Defensive limit to prevent infinite pagination loops
+const MAX_ITEMS = 1000;
+const DEFAULT_MAX_RESULTS = 100;
+
+interface ListModelsResponse {
+  totalCount?: number;
+  nextToken?: string | null;
+  models?: Array<{
+    model?: string;
+    name?: string;
+    provider?: string;
+    capabilities?: Array<Record<string, unknown>>;
+  }>;
+}
+
+/**
+ * Fetch the list of available models from Alibaba Cloud ModelStudio (Bailian).
+ * Uses ACS3 signature with AK/SK credentials and paginates through all
+ * available models using nextToken.
+ * Defensive limit of 1000 items prevents infinite loops.
+ */
+export async function fetchAlibabaModels(
+  credentials: Record<string, string>
+): Promise<string[]> {
+  const { ak, sk } = credentials;
+  if (!ak || !sk) throw new Error("AK/SK not configured");
+
+  const host = credentials.host || MODELS_HOST;
+  const allModels: string[] = [];
+  let nextToken: string | undefined;
+  let hasMore = true;
+
+  while (hasMore && allModels.length < MAX_ITEMS) {
+    const queryParams: Record<string, string | number | undefined> = {
+      maxResults: DEFAULT_MAX_RESULTS,
+    };
+    if (nextToken) {
+      queryParams.nextToken = nextToken;
+    }
+    const queryString = buildAcsCanonicalQuery(queryParams);
+
+    const headers = signAcsRequest({
+      accessKeyId: ak,
+      accessKeySecret: sk,
+      action: MODELS_ACTION,
+      version: MODELS_VERSION,
+      body: "",
+      host,
+      pathname: MODELS_PATH,
+      method: "GET",
+      queryString,
+    });
+
+    const endpoint = `https://${host}${MODELS_PATH}?${queryString}`;
+    const response = await fetchWithTimeout(
+      endpoint,
+      { method: "GET", headers },
+      DEFAULT_TIMEOUT
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("ListModels API error:", response.status, errorText);
+      throw new Error(`ListModels API returned ${response.status}`);
+    }
+
+    const data = (await response.json()) as ListModelsResponse;
+    const models = data.models ?? [];
+
+    for (const model of models) {
+      if (model.model && allModels.length < MAX_ITEMS) {
+        allModels.push(model.model);
+      }
+    }
+
+    // Check if we've reached the end
+    nextToken = data.nextToken ?? undefined;
+    if (!nextToken || models.length === 0) {
+      hasMore = false;
+    }
+  }
+
+  return allModels;
+}
+
