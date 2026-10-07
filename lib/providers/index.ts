@@ -61,7 +61,7 @@ export interface BalanceHandler {
  * response into plain model ids. Unlike Usage/BalanceHandler there is
  * deliberately no testConnection — credential testing is unrelated to
  * model queries. Only the non-OpenAI-shaped providers (github /
- * fangzhou / alibaba) get bespoke handlers; everything else uses the
+ * fangzhou) get bespoke handlers; everything else uses the
  * generic OpenAI-compatible fallback driven by the resolved
  * modelsApiUrl.
  */

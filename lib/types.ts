@@ -139,7 +139,7 @@ export interface Provider {
    * OpenAI-compatible model list endpoint driving Model Query. Its
    * presence (here or on any plan) is what marks a provider as
    * models-capable; the resolved URL feeds the generic fetch fallback
-   * (exception handlers — github / fangzhou / alibaba — use it for
+   * (exception handlers — github / fangzhou — use it for
    * display only).
    */
   modelsApiUrl?: string;

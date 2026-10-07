@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { resolveModelsHandler } from "@/lib/providers";
+import { resolveModelsHandler, normalizeModels } from "@/lib/providers";
 import { defaultProviders, type Provider } from "@/lib/types";
 
 function findProvider(id: string): Provider {
@@ -198,6 +198,13 @@ describe("generic OpenAI-compatible fetchModels", () => {
           },
         })
       );
+
+      // Should not paginate (has_more: false means only 1 fetch call)
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+      // After normalizeModels: dedup + locale sort
+      const normalized = normalizeModels(models);
+      expect(normalized).toEqual(["deepseek-v3.2", "qwen3.7"]);
     }
   });
 });

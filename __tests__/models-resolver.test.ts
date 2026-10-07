@@ -157,6 +157,8 @@ describe("resolveModelsHandler", () => {
     if (result.ok) {
       // Should NOT be in the modelsHandlers registry
       expect(modelsHandlers["alibaba"]).toBeUndefined();
+      // Should NOT be any registered exception handler
+      expect(Object.values(modelsHandlers)).not.toContain(result.handler);
       // Should have a handler (the generic fallback)
       expect(result.handler).toBeDefined();
       expect(typeof result.handler.fetchModels).toBe("function");
