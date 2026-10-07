@@ -81,12 +81,22 @@ describe("defaultProviders modelsApiUrl (plan level)", () => {
     expect(findProvider("zhipu").modelsApiUrl).toBeUndefined();
   });
 
-  it("alibaba token-plan uses modelstudio ListModels (plan level only)", () => {
+  it("alibaba token-plan uses OpenAI-compatible endpoint (plan level only)", () => {
     expect(planModelsApiUrl("alibaba", "token-plan")).toBe(
-      "https://modelstudio.cn-beijing.aliyuncs.com/modelstudio/models"
+      "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/models"
     );
     expect(planModelsApiUrl("alibaba", "coding-plan")).toBeUndefined();
     expect(findProvider("alibaba").modelsApiUrl).toBeUndefined();
+  });
+
+  it("alibaba has apiKey credential field for models query (alongside ak/sk/workspaceId for usage)", () => {
+    const credentialFields = findProvider("alibaba").credentialFields ?? [];
+    expect(credentialFields).toHaveLength(4);
+    expect(credentialFields.map((f) => f.key)).toEqual(
+      expect.arrayContaining(["ak", "sk", "workspaceId", "apiKey"])
+    );
+    const apiKeyField = credentialFields.find((f) => f.key === "apiKey");
+    expect(apiKeyField?.type).toBe("password");
   });
 
   it("opencode go plan uses the zen go models endpoint", () => {
