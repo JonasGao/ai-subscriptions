@@ -110,7 +110,7 @@ describe("resolveModelsHandler", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.modelsApiUrl).toBe(
-        "https://modelstudio.cn-beijing.aliyuncs.com/modelstudio/models"
+        "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/models"
       );
     }
   });
@@ -148,12 +148,18 @@ describe("resolveModelsHandler", () => {
     }
   });
 
-  it("falls back to the bare-provider exception handler for alibaba token-plan", () => {
+  it("resolves alibaba token-plan to generic fallback handler (no exception handler)", () => {
+    // After removing the alibaba exception handler, token-plan should resolve
+    // to the generic OpenAI-compatible fallback, not a registered exception handler
     const provider = findProvider("alibaba");
     const result = resolveModelsHandler(provider, "token-plan");
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.handler).toBe(modelsHandlers.alibaba);
+      // Should NOT be in the modelsHandlers registry
+      expect(modelsHandlers["alibaba"]).toBeUndefined();
+      // Should have a handler (the generic fallback)
+      expect(result.handler).toBeDefined();
+      expect(typeof result.handler.fetchModels).toBe("function");
     }
   });
 });

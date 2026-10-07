@@ -41,7 +41,6 @@ import { fetchOpencodeGoUsage, testOpencodeConnection } from "./opencode";
 import { fetchZhipuUsage, testZhipuConnection } from "./zhipu";
 import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
 import { fetchFangzhouModels } from "./fangzhou";
-import { fetchAlibabaModels } from "./alibaba-tokenplan";
 
 export interface UsageHandler {
   fetchUsage(credentials: Record<string, string>): Promise<UsageResult>;
@@ -123,11 +122,11 @@ export const balanceHandlers: Record<string, BalanceHandler> = {
 
 /**
  * Exception handlers for non-OpenAI-shaped providers.
- * These providers require bespoke API calls (token exchange, V4 signing, ACS3 signing)
+ * These providers require bespoke API calls (token exchange, V4 signing)
  * rather than the generic OpenAI-compatible fetch.
  * Registration keys follow the same pattern as usage/balance handlers:
- * - Bare provider id (e.g. "github", "fangzhou", "alibaba")
- * - Or "provider:planId" when plans need different handlers (not needed for these three)
+ * - Bare provider id (e.g. "github", "fangzhou")
+ * - Or "provider:planId" when plans need different handlers (not needed for these two)
  */
 export const modelsHandlers: Record<string, ModelsHandler> = {
   github: {
@@ -135,9 +134,6 @@ export const modelsHandlers: Record<string, ModelsHandler> = {
   },
   fangzhou: {
     fetchModels: (creds) => fetchFangzhouModels(creds),
-  },
-  alibaba: {
-    fetchModels: (creds) => fetchAlibabaModels(creds),
   },
 };
 
@@ -213,7 +209,7 @@ export function resolveModelsHandlerKey(
  * Generic OpenAI-compatible models fetcher. Extracts data[].id from
  * the response. Works for any provider with an OpenAI-shaped models
  * endpoint (deepseek / siliconflow / openrouter / moonshot / zhipu /
- * opencode / etc.). Exception handlers (github / fangzhou / alibaba)
+ * opencode / alibaba / etc.). Exception handlers (github / fangzhou)
  * override this in later tickets.
  */
 async function fetchGenericModels(

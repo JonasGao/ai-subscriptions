@@ -184,6 +184,7 @@ export const defaultProviders: Provider[] = [
       { key: "ak", label: "Access Key ID", type: "text" },
       { key: "sk", label: "Access Key Secret", type: "password" },
       { key: "workspaceId", label: "Workspace ID", type: "text" },
+      { key: "apiKey", label: "API Key", type: "password" },
     ],
     plans: [
       {
@@ -196,7 +197,7 @@ export const defaultProviders: Provider[] = [
         usageApiUrl:
           "https://modelstudio.cn-beijing.aliyuncs.com/tokenplan/subscription/seat-detail",
         modelsApiUrl:
-          "https://modelstudio.cn-beijing.aliyuncs.com/modelstudio/models",
+          "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/models",
       },
     ],
   },
