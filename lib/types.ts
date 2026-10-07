@@ -190,6 +190,9 @@ export const defaultProviders: Provider[] = [
       {
         id: "coding-plan",
         name: "Coding Plan",
+        // Public OpenAI-compatible endpoint: no auth required (verified —
+        // returns the plan's entitled model list even with a bogus Bearer).
+        modelsApiUrl: "https://coding.dashscope.aliyuncs.com/v1/models",
       },
       {
         id: "token-plan",

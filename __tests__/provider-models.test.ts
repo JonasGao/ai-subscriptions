@@ -81,11 +81,13 @@ describe("defaultProviders modelsApiUrl (plan level)", () => {
     expect(findProvider("zhipu").modelsApiUrl).toBeUndefined();
   });
 
-  it("alibaba token-plan uses OpenAI-compatible endpoint (plan level only)", () => {
+  it("alibaba plans use their own OpenAI-compatible endpoints (plan level only)", () => {
     expect(planModelsApiUrl("alibaba", "token-plan")).toBe(
       "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/models"
     );
-    expect(planModelsApiUrl("alibaba", "coding-plan")).toBeUndefined();
+    expect(planModelsApiUrl("alibaba", "coding-plan")).toBe(
+      "https://coding.dashscope.aliyuncs.com/v1/models"
+    );
     expect(findProvider("alibaba").modelsApiUrl).toBeUndefined();
   });
 
@@ -166,9 +168,10 @@ describe("ModelsHandler contract", () => {
         return Promise.resolve(["model-b", "model-a"]);
       },
     };
-    await expect(
-      handler.fetchModels({ apiKey: "test-key" })
-    ).resolves.toEqual(["model-b", "model-a"]);
+    await expect(handler.fetchModels({ apiKey: "test-key" })).resolves.toEqual([
+      "model-b",
+      "model-a",
+    ]);
   });
 });
 

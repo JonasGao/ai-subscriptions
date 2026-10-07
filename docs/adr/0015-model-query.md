@@ -26,7 +26,19 @@
 **原因**：Token Plan 自身暴露的 OpenAI 兼容端点返回的是**套餐实际授权的模型集**（26 个），而非百炼平台级 `ListModels` 的全量目录。前者与通用兜底的响应形状逐字节吻合（`data[].id`），使得 alibaba 不再需要专用 handler，例外 handler 由 3 个（github / fangzhou / alibaba）减为 2 个（github / fangzhou）。
 
 **影响**：
+
 - alibaba token-plan 订阅需补填 API Key 才能查模型；未填时行为与"未配凭据"一致（点「模型」按钮打开编辑弹窗）。
 - 用量查询链路（`fetchTokenPlanUsage` / `testTokenPlanConnection` 及其 ACS3 签名工具）保持不动。
 - `supportsModelsQuery` 仍由 `modelsApiUrl` 存在性推导，与 handler 注册表无关——alibaba 依然为真。
 - alibaba `coding-plan` 未探明兼容端点，本次保持无 `modelsApiUrl`。
+
+### 2026-10-07: 阿里云 Coding Plan 接入公开模型端点
+
+**变更**：alibaba `coding-plan` 配置 `modelsApiUrl: https://coding.dashscope.aliyuncs.com/v1/models`。未注册任何例外 handler，直接落进通用 OpenAI 兼容兜底。
+
+**原因**：实测该端点公开可用——无 Authorization 返回 200，携带伪造 Bearer 亦返回 200（鉴权被忽略）；响应为 OpenAI 形状 `data[].id`（另带 `firstId`/`lastId`/`hasMore` 字段，但 `limit`/`pageSize` 参数被忽略、始终全量返回，单次 fetch 即完整）。返回的是套餐授权模型清单（qwen3-coder 系列等 10 个），与 Token Plan 端点各自独立。
+
+**影响**：
+
+- coding-plan 订阅即使只配 ak/sk（用量查询用）、没有 apiKey，模型查询也可用——通用兜底仅在 apiKey 存在时附带 Authorization，此处直接省略。
+- 两个 plan 的模型端点域名不同（`coding.dashscope` vs `token-plan.cn-beijing.maas`），各自 plan 级配置，provider 级保持空。

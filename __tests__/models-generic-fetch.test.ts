@@ -163,9 +163,24 @@ describe("generic OpenAI-compatible fetchModels", () => {
     const mockResponse = {
       object: "list",
       data: [
-        { id: "qwen3.7", object: "model", created: 1234567890, owned_by: "alibaba" },
-        { id: "deepseek-v3.2", object: "model", created: 1234567890, owned_by: "deepseek" },
-        { id: "qwen3.7", object: "model", created: 1234567890, owned_by: "alibaba" }, // duplicate
+        {
+          id: "qwen3.7",
+          object: "model",
+          created: 1234567890,
+          owned_by: "alibaba",
+        },
+        {
+          id: "deepseek-v3.2",
+          object: "model",
+          created: 1234567890,
+          owned_by: "deepseek",
+        },
+        {
+          id: "qwen3.7",
+          object: "model",
+          created: 1234567890,
+          owned_by: "alibaba",
+        }, // duplicate
       ],
       first_id: "qwen3.7",
       last_id: "qwen3.7",
@@ -183,7 +198,9 @@ describe("generic OpenAI-compatible fetchModels", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      const models = await result.handler.fetchModels({ apiKey: "test-api-key" });
+      const models = await result.handler.fetchModels({
+        apiKey: "test-api-key",
+      });
 
       // Should extract ids from data[].id (normalizeModels will dedup later)
       expect(models).toEqual(["qwen3.7", "deepseek-v3.2", "qwen3.7"]);
@@ -205,6 +222,60 @@ describe("generic OpenAI-compatible fetchModels", () => {
       // After normalizeModels: dedup + locale sort
       const normalized = normalizeModels(models);
       expect(normalized).toEqual(["deepseek-v3.2", "qwen3.7"]);
+    }
+  });
+
+  it("alibaba coding-plan works without any auth (ak/sk-only credentials)", async () => {
+    // The coding.dashscope endpoint is public: a subscription configured with
+    // only ak/sk (for usage query) must not block model listing on a missing
+    // apiKey — the generic fallback omits the Authorization header entirely.
+    const mockResponse = {
+      object: "list",
+      data: [
+        {
+          id: "qwen3-coder-plus",
+          object: "model",
+          created: 1772196763,
+          ownedBy: "system",
+        },
+        {
+          id: "glm-5",
+          object: "model",
+          created: 1781449043,
+          ownedBy: "system",
+        },
+      ],
+      firstId: "model-id-0",
+      lastId: "model-id-9",
+      hasMore: false,
+    };
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+      text: async () => JSON.stringify(mockResponse),
+    } as Response);
+
+    const provider = findProvider("alibaba");
+    const result = resolveModelsHandler(provider, "coding-plan");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const models = await result.handler.fetchModels({
+        ak: "test-ak",
+        sk: "test-sk",
+      });
+
+      expect(models).toEqual(["qwen3-coder-plus", "glm-5"]);
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "https://coding.dashscope.aliyuncs.com/v1/models",
+        expect.objectContaining({
+          method: "GET",
+          headers: {}, // no Authorization header — endpoint is public
+        })
+      );
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
     }
   });
 });

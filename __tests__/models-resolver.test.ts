@@ -115,12 +115,14 @@ describe("resolveModelsHandler", () => {
     }
   });
 
-  it("returns no-models-api-url for alibaba coding-plan (no modelsApiUrl)", () => {
+  it("resolves plan-level modelsApiUrl for alibaba coding-plan", () => {
     const provider = findProvider("alibaba");
     const result = resolveModelsHandler(provider, "coding-plan");
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.reason).toBe("no-models-api-url");
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.modelsApiUrl).toBe(
+        "https://coding.dashscope.aliyuncs.com/v1/models"
+      );
     }
   });
 
