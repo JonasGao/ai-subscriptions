@@ -72,6 +72,10 @@ _Avoid_: usage window (a result bucket is a snapshot of usage, not the Quota Win
 An on-demand request to a provider's API for a one-time subscription's remaining balance (e.g., API credits). One-time subscriptions support balance queries; recurring subscriptions support usage queries.
 _Avoid_: credit check
 
+**Model Query**:
+An on-demand request to a provider's API for the list of model identifiers returned for a subscription's credentials. Orthogonal to subscription type: both recurring and one-time subscriptions support model queries when the provider (or its plan) declares a models endpoint and credentials exist. Results live only for the session and are never persisted; a Model Query does not start a Query Cooldown.
+_Avoid_: Model list query, catalog query
+
 **Query Cooldown**:
 The brief window after a successful Usage Query or Balance Query during which the quota query button remains clickable but requires an explicit confirmation before issuing another query. Confirming re-runs the query and restarts the window; failed queries neither start nor restart it.
 _Avoid_: Rate limit, throttle
@@ -110,6 +114,9 @@ _Avoid_: Priority level, priority score
 - **Subscription → Usage Query**: recurring subscriptions support usage queries
 - **Usage Query → Reset Schedule**: a fully-consumed usage bucket marks the matching reset schedule exhausted; on exhaustion recovery, reported reset times realign the subscription's enabled schedules' Reset Times (Reset-Time Alignment)
 - **Subscription → Balance Query**: one-time subscriptions support balance queries
+- **Subscription → Model Query**: any subscription supports model queries when a models endpoint is configured and credentials exist (orthogonal to the Usage/Balance type split)
+- **Provider/Plan → Model Query**: the provider declares the models endpoint, optionally overridden per plan
+- **Model Query ⊥ Query Cooldown**: a model query never starts a query cooldown
 - **Usage Query / Balance Query → Query Cooldown**: a successful query starts a query cooldown
 - **Usage Window → Reset-Time Urgency Color**: a usage window's reset-time text carries an urgency color derived from how soon it resets (weekly/monthly only)
 - **Priority Scene → Subscription**: a priority scene orders subscriptions by relative Priority Rank
