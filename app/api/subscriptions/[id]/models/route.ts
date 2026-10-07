@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSubscriptionById, getProviders } from "@/lib/db";
 import { decryptCredentials } from "@/lib/encryption";
 import { resolveModelsHandler, normalizeModels } from "@/lib/providers";
+import { resolveModelsRequireCredentials } from "@/lib/api-url-resolver";
 
 export const dynamic = "force-dynamic";
 
@@ -39,14 +40,22 @@ export async function GET(
       );
     }
 
-    if (!subscription.credentials) {
+    // Public endpoints (modelsRequireCredentials: false, e.g. alibaba
+    // coding-plan) answer without any stored credentials; everything else
+    // requires them and routes the user to the edit dialog client-side.
+    if (
+      resolveModelsRequireCredentials(providerConfig, subscription.planId) &&
+      !subscription.credentials
+    ) {
       return NextResponse.json(
         { error: "Credentials are not configured for this subscription" },
         { status: 400 }
       );
     }
 
-    const credentials = decryptCredentials(subscription.credentials);
+    const credentials = subscription.credentials
+      ? decryptCredentials(subscription.credentials)
+      : {};
 
     try {
       const models = await resolved.handler.fetchModels(credentials);

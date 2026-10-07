@@ -86,6 +86,46 @@ describe("SubscriptionCard model button", () => {
     expect(onEdit).toHaveBeenCalledOnce();
   });
 
+  it("clicking model button without credentials opens dialog for public endpoints (alibaba coding-plan)", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ models: ["qwen3-coder-plus", "glm-5"] }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { onEdit, result } = renderCard(
+      makeSubscription({
+        provider: "alibaba",
+        planId: "coding-plan",
+        subscriptionType: "recurring",
+        hasCredentials: false,
+      })
+    );
+
+    fireEvent.click(result.getByRole("button", { name: /模型/ }));
+
+    expect(onEdit).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/subscriptions/sub-1/models",
+        expect.any(Object)
+      );
+    });
+  });
+
+  it("clicking model button without credentials still triggers onEdit for alibaba token-plan (auth required)", () => {
+    const { onEdit, result } = renderCard(
+      makeSubscription({
+        provider: "alibaba",
+        planId: "token-plan",
+        subscriptionType: "recurring",
+        hasCredentials: false,
+      })
+    );
+    fireEvent.click(result.getByRole("button", { name: /模型/ }));
+    expect(onEdit).toHaveBeenCalledOnce();
+  });
+
   it("clicking model button with credentials opens dialog and fetches models", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -390,6 +430,8 @@ describe("ModelListDialog", () => {
 
     // Fetch should not be called significantly more times
     // (allowing for some React rendering variations)
-    expect(mockFetch.mock.calls.length).toBeLessThanOrEqual(firstFetchCount + 1);
+    expect(mockFetch.mock.calls.length).toBeLessThanOrEqual(
+      firstFetchCount + 1
+    );
   });
 });

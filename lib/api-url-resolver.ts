@@ -39,3 +39,23 @@ export function resolveModelsApiUrl(
   }
   return provider.modelsApiUrl;
 }
+
+/**
+ * Resolves whether the models query needs stored credentials.
+ * Plan-level flag overrides the provider-level flag; defaults to true
+ * when neither is configured. Public endpoints (alibaba coding-plan)
+ * opt out with false so the models button works credential-free.
+ * Client-safe: no fs/db dependencies.
+ */
+export function resolveModelsRequireCredentials(
+  provider: Provider,
+  planId?: string
+): boolean {
+  if (planId && provider.plans) {
+    const plan = provider.plans.find((p) => p.id === planId);
+    if (plan?.modelsRequireCredentials !== undefined) {
+      return plan.modelsRequireCredentials;
+    }
+  }
+  return provider.modelsRequireCredentials ?? true;
+}

@@ -126,6 +126,12 @@ export interface PlanDefinition {
    * zhipu coding-plan).
    */
   modelsApiUrl?: string;
+  /**
+   * Whether the models endpoint needs stored credentials (default true).
+   * Set to false for public endpoints (e.g. alibaba coding-plan) so the
+   * models button works without any credentials configured.
+   */
+  modelsRequireCredentials?: boolean;
 }
 
 export interface Provider {
@@ -143,6 +149,11 @@ export interface Provider {
    * display only).
    */
   modelsApiUrl?: string;
+  /**
+   * Provider-level default for whether the models endpoint needs stored
+   * credentials; a plan-level flag overrides this. Defaults to true.
+   */
+  modelsRequireCredentials?: boolean;
   credentialFields?: CredentialField[];
   plans?: PlanDefinition[];
 }
@@ -193,6 +204,10 @@ export const defaultProviders: Provider[] = [
         // Public OpenAI-compatible endpoint: no auth required (verified —
         // returns the plan's entitled model list even with a bogus Bearer).
         modelsApiUrl: "https://coding.dashscope.aliyuncs.com/v1/models",
+        // Coding-plan subscriptions carry no credentials of their own
+        // (usage query is not configured for this plan), yet the models
+        // endpoint answers without them.
+        modelsRequireCredentials: false,
       },
       {
         id: "token-plan",

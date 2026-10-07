@@ -46,6 +46,7 @@ import { sortResetSchedules } from "@/lib/reset-schedule";
 import {
   resolveUsageApiUrl,
   resolveModelsApiUrl,
+  resolveModelsRequireCredentials,
 } from "@/lib/api-url-resolver";
 import {
   Edit,
@@ -316,6 +317,9 @@ export function SubscriptionCard({
   const canQueryModels = providerConfig
     ? !!resolveModelsApiUrl(providerConfig, subscription.planId)
     : false;
+  const modelsRequireCredentials = providerConfig
+    ? resolveModelsRequireCredentials(providerConfig, subscription.planId)
+    : true;
   const isOneTime = subscription.subscriptionType === "one-time";
   const canToggleStatus =
     subscription.status === "active" || subscription.status === "paused";
@@ -437,8 +441,10 @@ export function SubscriptionCard({
   };
 
   const handleModelsClick = () => {
-    // If credentials are not configured, open the edit dialog
-    if (!subscription.hasCredentials) {
+    // If the endpoint needs credentials and none are configured, open the
+    // edit dialog. Public endpoints (modelsRequireCredentials: false) skip
+    // this and open the model list directly.
+    if (modelsRequireCredentials && !subscription.hasCredentials) {
       onEdit(subscription);
       return;
     }
@@ -845,11 +851,7 @@ export function SubscriptionCard({
               </Button>
             )}
             {canQueryModels && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleModelsClick}
-              >
+              <Button variant="outline" size="sm" onClick={handleModelsClick}>
                 <Boxes className="h-4 w-4 mr-1" />
                 模型
               </Button>

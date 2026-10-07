@@ -5,6 +5,7 @@ import {
   normalizeModels,
   modelsHandlers,
 } from "@/lib/providers";
+import { resolveModelsRequireCredentials } from "@/lib/api-url-resolver";
 import { defaultProviders, type Provider } from "@/lib/types";
 
 function findProvider(id: string): Provider {
@@ -165,6 +166,44 @@ describe("resolveModelsHandler", () => {
       expect(result.handler).toBeDefined();
       expect(typeof result.handler.fetchModels).toBe("function");
     }
+  });
+});
+
+// ============ resolveModelsRequireCredentials ============
+
+describe("resolveModelsRequireCredentials", () => {
+  it("defaults to true when neither plan nor provider configures the flag", () => {
+    expect(resolveModelsRequireCredentials(findProvider("deepseek"))).toBe(
+      true
+    );
+  });
+
+  it("returns false for alibaba coding-plan (public endpoint)", () => {
+    expect(
+      resolveModelsRequireCredentials(findProvider("alibaba"), "coding-plan")
+    ).toBe(false);
+  });
+
+  it("returns true for alibaba token-plan (flag absent falls back to default)", () => {
+    expect(
+      resolveModelsRequireCredentials(findProvider("alibaba"), "token-plan")
+    ).toBe(true);
+  });
+
+  it("plan-level flag overrides the provider-level flag", () => {
+    const provider: Provider = {
+      id: "synthetic",
+      name: "Synthetic",
+      modelsApiUrl: "https://example.com/v1/models",
+      modelsRequireCredentials: false,
+      plans: [
+        { id: "auth-plan", name: "Auth", modelsRequireCredentials: true },
+        { id: "anon-plan", name: "Anon" },
+      ],
+    };
+    expect(resolveModelsRequireCredentials(provider, "auth-plan")).toBe(true);
+    expect(resolveModelsRequireCredentials(provider, "anon-plan")).toBe(false);
+    expect(resolveModelsRequireCredentials(provider)).toBe(false);
   });
 });
 

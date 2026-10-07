@@ -42,3 +42,14 @@
 
 - coding-plan 订阅即使只配 ak/sk（用量查询用）、没有 apiKey，模型查询也可用——通用兜底仅在 apiKey 存在时附带 Authorization，此处直接省略。
 - 两个 plan 的模型端点域名不同（`coding.dashscope` vs `token-plan.cn-beijing.maas`），各自 plan 级配置，provider 级保持空。
+
+### 2026-10-07: 凭据门控改为可按 plan 关闭
+
+**变更**：新增 `Plan.modelsRequireCredentials` / `Provider.modelsRequireCredentials`（缺省 `true`），`resolveModelsRequireCredentials` 镜像 URL 解析（plan 覆盖 provider）。alibaba `coding-plan` 设为 `false`；前端 `handleModelsClick` 与 models route 的"无凭据 → 编辑弹窗/400"门控仅在旗标为真时生效。
+
+**原因**：coding-plan 的模型端点公开，而该 plan 未配置用量查询，订阅本身完全可以没有凭据——全局凭据门控会把这类订阅挡进编辑弹窗，公开端点形同虚设。
+
+**影响**：
+
+- 需鉴权端点的行为不变（deepseek 等无凭据仍进编辑弹窗 / route 400）。
+- 公开端点订阅零凭据即可查询；route 对无凭据请求传空凭据对象，通用兜底省略 Authorization 头。
