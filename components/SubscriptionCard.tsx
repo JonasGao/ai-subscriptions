@@ -4,12 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -31,18 +26,9 @@ import {
   formatDate,
   isExpiringSoon,
   getDaysUntilRenewal,
-  formatNextResetTime,
-  getScheduleTypeLabel,
   getStatusReason,
-  formatResetTimeTooltip,
-  getUsagePercent,
-  getProgressTier,
-  formatBalance,
   getProviderCurrency,
-  getResetUrgencyColor,
-  type ProgressTier,
 } from "@/lib/utils";
-import { sortResetSchedules } from "@/lib/reset-schedule";
 import {
   resolveUsageApiUrl,
   resolveModelsApiUrl,
@@ -53,13 +39,24 @@ import {
   Trash2,
   Wallet,
   Loader2,
-  Clock,
   AlertCircle,
   Boxes,
 } from "lucide-react";
-import { Fragment } from "react";
 import { toast } from "sonner";
 import { ModelListDialog } from "@/components/ModelListDialog";
+import {
+  getStatusBadgeVariant,
+  getStatusLabel,
+  getProviderName,
+  getPlanName,
+  getTypeLabel,
+} from "@/components/subscription-card/card-labels";
+import { UsageSection } from "@/components/subscription-card/usage-display";
+import {
+  BalanceInfoRows,
+  OneTimeBalanceRow,
+} from "@/components/subscription-card/balance-display";
+import { ResetScheduleGrid } from "@/components/subscription-card/reset-schedule-grid";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
@@ -73,189 +70,6 @@ interface SubscriptionCardProps {
     exhausted: boolean
   ) => Promise<void> | void;
   onBalanceUpdate?: (id: string, balance: number, currency: string) => void;
-}
-
-function getStatusBadgeVariant(
-  status: Subscription["status"]
-): "success" | "warning" | "outline" {
-  switch (status) {
-    case "active":
-      return "success";
-    case "paused":
-      return "warning";
-    case "cancelled":
-      return "outline";
-    default:
-      return "outline";
-  }
-}
-
-function getStatusLabel(status: Subscription["status"]): string {
-  switch (status) {
-    case "active":
-      return "活跃";
-    case "paused":
-      return "暂停";
-    case "cancelled":
-      return "已取消";
-    default:
-      return status;
-  }
-}
-
-function getProviderName(provider: string, providerCustom?: string): string {
-  if (provider === "other" && providerCustom) {
-    return providerCustom;
-  }
-  const found = defaultProviders.find((p) => p.id === provider);
-  return found?.name || provider;
-}
-
-function getPlanName(provider: string, planId?: string): string | null {
-  if (!planId) return null;
-  const found = defaultProviders.find((p) => p.id === provider);
-  const plan = found?.plans?.find((p) => p.id === planId);
-  return plan?.name ?? null;
-}
-
-function getTypeLabel(type: string): string {
-  return type === "recurring" ? "周期性" : "一次性";
-}
-
-function formatUsageAmount(value: string): string {
-  if (value.trim() === "") return value;
-  const num = Number(value);
-  return Number.isFinite(num) ? num.toLocaleString() : value;
-}
-
-function getUsageUnitLabel(unit: string): string {
-  return unit === "UNIT_CURRENCY" ? "单位" : unit;
-}
-
-function formatPriceFromCents(priceInCents: string): string {
-  const num = parseInt(priceInCents, 10);
-  return Number.isNaN(num) ? priceInCents : `¥${(num / 100).toFixed(2)}`;
-}
-
-function formatMembershipLevel(level: string): string {
-  const clean = level.startsWith("LEVEL_")
-    ? level.slice("LEVEL_".length)
-    : level;
-  switch (clean) {
-    case "BASIC":
-      return "基础版";
-    case "PLUS":
-      return "增强版";
-    case "PRO":
-      return "专业版";
-    case "MAX":
-      return "旗舰版";
-    default:
-      return clean;
-  }
-}
-
-function UsageAmountText({ window }: { window: UsageWindow }) {
-  return (
-    <span className="text-xs font-medium">
-      已用{" "}
-      <span className="tabular-nums">{formatUsageAmount(window.used)}</span> ·
-      剩余{" "}
-      <span className="tabular-nums text-green-600">
-        {formatUsageAmount(window.remaining)}
-      </span>
-    </span>
-  );
-}
-
-const PROGRESS_BAR_COLORS: Record<ProgressTier, string> = {
-  normal: "bg-primary",
-  warning: "bg-amber-500",
-  danger: "bg-red-500",
-};
-
-function UsageProgressBar({
-  window,
-  kind,
-}: {
-  window: UsageWindow;
-  kind?: "fiveHour" | "weekly" | "monthly";
-}) {
-  const percent = getUsagePercent(window.used, window.limit);
-  const tier = percent === null ? null : getProgressTier(percent);
-  const width = percent === null ? 0 : Math.round(percent);
-  const percentLabel = percent === null ? null : `${percent.toFixed(1)}%`;
-
-  // Only weekly/monthly get urgency coloring; fiveHour/undefined → no color
-  const urgencyColor =
-    kind === "weekly" || kind === "monthly"
-      ? getResetUrgencyColor(kind, window.resetTime)
-      : null;
-  const clockColorStyle = urgencyColor ? { color: urgencyColor } : undefined;
-  const resetTextColorStyle = urgencyColor
-    ? { color: urgencyColor }
-    : undefined;
-
-  return (
-    <div className="mt-1 space-y-1">
-      {tier !== null && (
-        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className={`h-full rounded-full transition-all ${PROGRESS_BAR_COLORS[tier]}`}
-            style={{ width: `${width}%` }}
-          />
-        </div>
-      )}
-      <div className="flex items-center gap-1">
-        <Clock
-          className="h-3 w-3 text-muted-foreground"
-          style={clockColorStyle}
-        />
-        {window.resetTime ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span
-                className="cursor-default text-xs text-muted-foreground"
-                style={resetTextColorStyle}
-              >
-                {formatNextResetTime(window.resetTime)}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              {formatResetTimeTooltip(window.resetTime)}
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <span className="text-xs text-muted-foreground">—</span>
-        )}
-        {percentLabel !== null && (
-          <span className="ml-auto text-xs tabular-nums text-muted-foreground">
-            {percentLabel}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function UsageBlock({
-  label,
-  window,
-  kind,
-}: {
-  label: string;
-  window: UsageWindow;
-  kind?: "fiveHour" | "weekly" | "monthly";
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">{label}</span>
-        <UsageAmountText window={window} />
-      </div>
-      <UsageProgressBar window={window} kind={kind} />
-    </div>
-  );
 }
 
 export function SubscriptionCard({
@@ -477,19 +291,6 @@ export function SubscriptionCard({
     }
   };
 
-  const getStatusDisplay = () => {
-    if (statusReason.kind === "manual-cancelled") {
-      return { label: "已取消", color: "text-gray-500" };
-    }
-    if (statusReason.kind === "schedule-exhausted") {
-      return { label: "已用尽", color: "text-red-500" };
-    }
-    if (statusReason.kind === "manual-paused") {
-      return { label: "手动暂停", color: "text-yellow-500" };
-    }
-    return { label: "可用", color: "text-green-500" };
-  };
-
   return (
     <TooltipProvider>
       <Card
@@ -569,50 +370,11 @@ export function SubscriptionCard({
               <span className="text-sm font-medium">{priceLabel}</span>
             </div>
             {isOneTime && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">余额</span>
-                <span className="text-sm font-medium text-green-600">
-                  {(() => {
-                    const currency =
-                      balance?.balanceInfos[0]?.currency ??
-                      subscription.balanceCurrency ??
-                      getProviderCurrency(subscription.provider);
-                    if (balance && balance.balanceInfos[0]) {
-                      const newAmount = balance.balanceInfos[0].available;
-                      const oldAmountStr = previousBalance
-                        ? formatBalance(
-                            previousBalance.amount,
-                            previousBalance.currency
-                          )
-                        : subscription.balance != null
-                          ? formatBalance(subscription.balance, currency)
-                          : null;
-                      const newNum = parseFloat(newAmount);
-                      const oldNum = previousBalance
-                        ? previousBalance.amount
-                        : (subscription.balance ?? NaN);
-                      const showParen =
-                        oldAmountStr &&
-                        Number.isFinite(oldNum) &&
-                        Number.isFinite(newNum) &&
-                        newNum !== oldNum;
-                      return (
-                        <>
-                          <span>{formatBalance(newAmount, currency)}</span>
-                          {showParen && (
-                            <span className="ml-1 text-gray-500 font-normal">
-                              ({oldAmountStr})
-                            </span>
-                          )}
-                        </>
-                      );
-                    }
-                    return subscription.balance != null
-                      ? formatBalance(subscription.balance, currency)
-                      : "-";
-                  })()}
-                </span>
-              </div>
+              <OneTimeBalanceRow
+                subscription={subscription}
+                balance={balance}
+                previousBalance={previousBalance}
+              />
             )}
             {isRecurring && subscription.renewalDate && (
               <div className="flex items-center justify-between">
@@ -627,145 +389,10 @@ export function SubscriptionCard({
                 </span>
               </div>
             )}
-            {canQuery &&
-              balance &&
-              balance.balanceInfos.map((info) => (
-                <Fragment key={info.currency}>
-                  {info.total !== null && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        总额度
-                      </span>
-                      <span className="text-sm font-medium">
-                        {formatBalance(info.total, info.currency)}
-                      </span>
-                    </div>
-                  )}
-                  {info.toppedUp !== null && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        充值余额
-                      </span>
-                      <span className="text-sm font-medium">
-                        {formatBalance(info.toppedUp, info.currency)}
-                      </span>
-                    </div>
-                  )}
-                  {info.granted !== null && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        赠送额度
-                      </span>
-                      <span className="text-sm font-medium">
-                        {formatBalance(info.granted, info.currency)}
-                      </span>
-                    </div>
-                  )}
-                  {info.used !== null && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        已使用
-                      </span>
-                      <span className="text-sm font-medium">
-                        {formatBalance(info.used, info.currency)}
-                      </span>
-                    </div>
-                  )}
-                  {info.frozen !== null && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        冻结金额
-                      </span>
-                      <span className="text-sm font-medium">
-                        {formatBalance(info.frozen, info.currency)}
-                      </span>
-                    </div>
-                  )}
-                  {info.extras?.map((extra) => (
-                    <div
-                      key={extra.label}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="text-sm text-muted-foreground">
-                        {extra.label}
-                      </span>
-                      <span className="text-sm font-medium">{extra.value}</span>
-                    </div>
-                  ))}
-                </Fragment>
-              ))}
-            {usage && (
-              <div className="pt-2 space-y-2">
-                {usage.fiveHour && (
-                  <UsageBlock
-                    label="5小时"
-                    window={usage.fiveHour}
-                    kind="fiveHour"
-                  />
-                )}
-                {usage.weekly && (
-                  <UsageBlock label="周" window={usage.weekly} kind="weekly" />
-                )}
-                {usage.monthly && (
-                  <UsageBlock
-                    label="月"
-                    window={usage.monthly}
-                    kind="monthly"
-                  />
-                )}
-                {usage.boosterWallet && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">
-                      加速包
-                    </span>
-                    <div className="mt-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          剩余额度
-                        </span>
-                        <span className="text-sm font-medium">
-                          {usage.boosterWallet.balance
-                            ? `${formatUsageAmount(usage.boosterWallet.balance.amountLeft)} ${getUsageUnitLabel(usage.boosterWallet.balance.unit)}`
-                            : "-"}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          本月已用
-                        </span>
-                        <span className="text-sm font-medium">
-                          {usage.boosterWallet.monthlyUsed
-                            ? formatPriceFromCents(
-                                usage.boosterWallet.monthlyUsed.priceInCents
-                              )
-                            : "-"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {usage.parallel && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      并行上限
-                    </span>
-                    <span className="text-sm font-medium">
-                      {usage.parallel.limit}
-                    </span>
-                  </div>
-                )}
-                {usage.membership && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      会员等级
-                    </span>
-                    <span className="text-sm font-medium">
-                      {formatMembershipLevel(usage.membership.level)}
-                    </span>
-                  </div>
-                )}
-              </div>
+            {canQuery && balance && (
+              <BalanceInfoRows balanceInfos={balance.balanceInfos} />
             )}
+            {usage && <UsageSection usage={usage} />}
             {balanceError && (
               <div className="text-sm text-red-500">{balanceError}</div>
             )}
@@ -779,54 +406,10 @@ export function SubscriptionCard({
             )}
             {subscription.resetSchedules &&
               subscription.resetSchedules.length > 0 && (
-                <div className="pt-2">
-                  <span className="text-sm text-muted-foreground">
-                    额度重置计划
-                  </span>
-                  <div
-                    className="mt-1 grid gap-y-1 text-xs"
-                    style={{ gridTemplateColumns: "auto 3.5rem 1fr auto" }}
-                  >
-                    {sortResetSchedules(subscription.resetSchedules)
-                      .filter((s) => s.enabled)
-                      .map((schedule) => (
-                        <div key={schedule.id} className="contents">
-                          <Clock className="h-3 w-3 text-muted-foreground self-center" />
-                          <span className="font-medium self-center">
-                            {getScheduleTypeLabel(schedule.type)}
-                          </span>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="text-muted-foreground self-center">
-                                {formatNextResetTime(schedule.nextResetTime)}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              {formatResetTimeTooltip(
-                                schedule.nextResetTime,
-                                schedule.timezone
-                              )}
-                            </TooltipContent>
-                          </Tooltip>
-                          <Button
-                            variant={
-                              schedule.exhausted ? "destructive" : "outline"
-                            }
-                            size="sm"
-                            className="h-5 px-2 text-xs"
-                            onClick={() =>
-                              handleScheduleToggle(
-                                schedule.id,
-                                !schedule.exhausted
-                              )
-                            }
-                          >
-                            {schedule.exhausted ? "已用尽" : "可用"}
-                          </Button>
-                        </div>
-                      ))}
-                  </div>
-                </div>
+                <ResetScheduleGrid
+                  schedules={subscription.resetSchedules}
+                  onToggle={handleScheduleToggle}
+                />
               )}
           </div>
           <div className="flex gap-2 pt-4 mt-auto">
