@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { resolveModelsHandler } from "@/lib/providers";
+import { resolveModelsHandler, normalizeModels } from "@/lib/providers";
 import { defaultProviders, type Provider } from "@/lib/types";
 
 function findProvider(id: string): Provider {
@@ -156,6 +156,55 @@ describe("generic OpenAI-compatible fetchModels", () => {
     if (result.ok) {
       const models = await result.handler.fetchModels({ apiKey: "test-key" });
       expect(models).toEqual(["model-1", "model-2"]);
+    }
+  });
+
+  it("alibaba token-plan uses generic OpenAI fallback with Bearer token", async () => {
+    const mockResponse = {
+      object: "list",
+      data: [
+        { id: "qwen3.7", object: "model", created: 1234567890, owned_by: "alibaba" },
+        { id: "deepseek-v3.2", object: "model", created: 1234567890, owned_by: "deepseek" },
+        { id: "qwen3.7", object: "model", created: 1234567890, owned_by: "alibaba" }, // duplicate
+      ],
+      first_id: "qwen3.7",
+      last_id: "qwen3.7",
+      has_more: false,
+    };
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+      text: async () => JSON.stringify(mockResponse),
+    } as Response);
+
+    const provider = findProvider("alibaba");
+    const result = resolveModelsHandler(provider, "token-plan");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const models = await result.handler.fetchModels({ apiKey: "test-api-key" });
+
+      // Should extract ids from data[].id (normalizeModels will dedup later)
+      expect(models).toEqual(["qwen3.7", "deepseek-v3.2", "qwen3.7"]);
+
+      // Should call the OpenAI-compatible endpoint
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/models",
+        expect.objectContaining({
+          method: "GET",
+          headers: {
+            Authorization: "Bearer test-api-key",
+          },
+        })
+      );
+
+      // Should not paginate (has_more: false means only 1 fetch call)
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+      // After normalizeModels: dedup + locale sort
+      const normalized = normalizeModels(models);
+      expect(normalized).toEqual(["deepseek-v3.2", "qwen3.7"]);
     }
   });
 });
