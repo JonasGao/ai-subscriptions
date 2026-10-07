@@ -6,14 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Subscription,
   defaultProviders,
   BalanceResult,
@@ -57,6 +49,10 @@ import {
   OneTimeBalanceRow,
 } from "@/components/subscription-card/balance-display";
 import { ResetScheduleGrid } from "@/components/subscription-card/reset-schedule-grid";
+import {
+  ReQueryConfirmDialog,
+  DeleteConfirmDialog,
+} from "@/components/subscription-card/dialogs";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
@@ -93,7 +89,7 @@ export function SubscriptionCard({
   } | null>(null);
   const [lastQueryAt, setLastQueryAt] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleteConfirmStep, setDeleteConfirmStep] = useState<0 | 1 | 2>(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [modelsDialogOpen, setModelsDialogOpen] = useState(false);
   const isRecurring = subscription.subscriptionType === "recurring";
   const expiringSoon =
@@ -450,7 +446,7 @@ export function SubscriptionCard({
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => setDeleteConfirmStep(1)}
+              onClick={() => setDeleteDialogOpen(true)}
             >
               <Trash2 className="h-4 w-4 mr-1" />
               删除
@@ -458,64 +454,17 @@ export function SubscriptionCard({
           </div>
         </CardContent>
       </Card>
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>再次查询确认</DialogTitle>
-            <DialogDescription>
-              距上次查询不足 60 秒，确定要再次查询吗？
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-              取消
-            </Button>
-            <Button onClick={handleConfirmQuery}>确认查询</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={deleteConfirmStep > 0}
-        onOpenChange={(open) => {
-          if (!open) setDeleteConfirmStep(0);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {deleteConfirmStep === 1 ? "确认删除订阅" : "再次确认删除"}
-            </DialogTitle>
-            <DialogDescription>
-              {deleteConfirmStep === 1
-                ? `确定要删除订阅「${subscription.name}」吗？`
-                : `删除后无法恢复「${subscription.name}」，确定继续吗？`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirmStep(0)}>
-              取消
-            </Button>
-            {deleteConfirmStep === 1 ? (
-              <Button
-                variant="destructive"
-                onClick={() => setDeleteConfirmStep(2)}
-              >
-                继续删除
-              </Button>
-            ) : (
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  setDeleteConfirmStep(0);
-                  onDelete(subscription.id);
-                }}
-              >
-                确认删除
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ReQueryConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        onConfirm={handleConfirmQuery}
+      />
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        subscriptionName={subscription.name}
+        onDelete={() => onDelete(subscription.id)}
+      />
       {canQueryModels && (
         <ModelListDialog
           open={modelsDialogOpen}
