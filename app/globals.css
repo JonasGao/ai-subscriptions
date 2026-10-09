@@ -50,6 +50,20 @@
 }
 
 @layer components {
+  /* Card is a size container so action buttons can respond to card width */
+  .subscription-card {
+    container-type: inline-size;
+  }
+
+  /* Narrow cards (e.g. 4-column grid near 1280px viewport): collapse the
+     action buttons to icon-only so the row never overflows. Full labels
+     need ~312px of row width, i.e. a ~360px card including p-6 padding. */
+  @container (max-width: 359px) {
+    .subscription-card .card-action-label {
+      display: none;
+    }
+  }
+
   .priority-row {
     background-color: rgb(59 130 246 / var(--priority-bg-opacity-light));
     border: 1px solid rgb(37 99 235 / var(--priority-border-opacity-light));

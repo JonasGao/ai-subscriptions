@@ -157,7 +157,7 @@ export function SubscriptionCard({
   return (
     <TooltipProvider>
       <Card
-        className={`flex flex-col w-full ${expiringSoon ? "border-orange-500 border-2" : ""}`}
+        className={`subscription-card flex flex-col w-full ${expiringSoon ? "border-orange-500 border-2" : ""}`}
       >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-lg font-medium">
@@ -285,38 +285,45 @@ export function SubscriptionCard({
                 title={
                   inCooldown && !balanceLoading
                     ? "60 秒内已查询过，再次点击需确认"
-                    : undefined
+                    : "查询额度"
                 }
               >
                 {balanceLoading ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Wallet className="h-4 w-4 mr-1" />
+                  <Wallet className="h-4 w-4" />
                 )}
-                额度
+                <span className="card-action-label ml-1">额度</span>
               </Button>
             )}
             {canQueryModels && (
-              <Button variant="outline" size="sm" onClick={handleModelsClick}>
-                <Boxes className="h-4 w-4 mr-1" />
-                模型
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleModelsClick}
+                title="模型列表"
+              >
+                <Boxes className="h-4 w-4" />
+                <span className="card-action-label ml-1">模型</span>
               </Button>
             )}
             <Button
               variant="outline"
               size="sm"
               onClick={() => onEdit(subscription)}
+              title="编辑"
             >
-              <Edit className="h-4 w-4 mr-1" />
-              编辑
+              <Edit className="h-4 w-4" />
+              <span className="card-action-label ml-1">编辑</span>
             </Button>
             <Button
               variant="destructive"
               size="sm"
               onClick={() => setDeleteDialogOpen(true)}
+              title="删除"
             >
-              <Trash2 className="h-4 w-4 mr-1" />
-              删除
+              <Trash2 className="h-4 w-4" />
+              <span className="card-action-label ml-1">删除</span>
             </Button>
           </div>
         </CardContent>
