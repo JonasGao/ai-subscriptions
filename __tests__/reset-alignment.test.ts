@@ -514,11 +514,20 @@ describe("alignResetTimes", () => {
         },
       })
     );
+    // Fixture matches the derived config exactly (2024-06-15 00:00 UTC →
+    // dayOfMonth 15, timeOfDay "00:00"), so calibration is a true no-op.
     db.writeData(
       makeData({
         subscriptions: [
           makeSubscription({
-            resetSchedules: [makeSchedule({ nextResetTime: currentNext })],
+            resetSchedules: [
+              makeSchedule({
+                nextResetTime: currentNext,
+                timezone: "UTC",
+                dayOfMonth: 15,
+                timeOfDay: "00:00",
+              }),
+            ],
           }),
         ],
       })
@@ -650,5 +659,251 @@ describe("alignResetTimes", () => {
     const nowIso = new Date("2024-06-01T01:00:00Z").toISOString();
     expect(saved[0].updatedAt).toBe(nowIso);
     expect(saved[0].resetSchedules![0].updatedAt).toBe(nowIso);
+  });
+
+  it("reverse-derives weekly dayOfWeek and timeOfDay from the API resetTime", async () => {
+    const db = await getDb();
+    const { alignResetTimes } = await getAlignment();
+    // 2024-07-15 is a Monday; 12:34:56 UTC truncates to "12:34".
+    const newReset = "2024-07-15T12:34:56Z";
+    handlerState.fetchUsage.mockResolvedValue(
+      makeUsageResult({
+        weekly: {
+          limit: "100",
+          used: "0",
+          remaining: "100",
+          resetTime: newReset,
+        },
+      })
+    );
+    db.writeData(
+      makeData({
+        subscriptions: [
+          makeSubscription({
+            resetSchedules: [
+              makeSchedule({
+                id: "sched-weekly",
+                type: "weekly",
+                timezone: "UTC",
+                dayOfWeek: 0,
+                timeOfDay: "00:00",
+              }),
+            ],
+          }),
+        ],
+      })
+    );
+
+    await alignResetTimes([makeTrigger("sub-1", "weekly")]);
+
+    const saved = db.getSubscriptions();
+    const schedule = saved[0].resetSchedules![0];
+    expect(schedule.nextResetTime).toBe(newReset);
+    expect(schedule.dayOfWeek).toBe(1);
+    expect(schedule.timeOfDay).toBe("12:34");
+  });
+
+  it("reverse-derives monthly dayOfMonth and timeOfDay from the API resetTime", async () => {
+    const db = await getDb();
+    const { alignResetTimes } = await getAlignment();
+    const newReset = "2024-07-15T08:05:30Z";
+    handlerState.fetchUsage.mockResolvedValue(
+      makeUsageResult({
+        monthly: {
+          limit: "100",
+          used: "0",
+          remaining: "100",
+          resetTime: newReset,
+        },
+      })
+    );
+    db.writeData(
+      makeData({
+        subscriptions: [
+          makeSubscription({
+            resetSchedules: [
+              makeSchedule({
+                timezone: "UTC",
+                dayOfMonth: 1,
+                timeOfDay: "00:00",
+              }),
+            ],
+          }),
+        ],
+      })
+    );
+
+    await alignResetTimes([makeTrigger("sub-1")]);
+
+    const saved = db.getSubscriptions();
+    const schedule = saved[0].resetSchedules![0];
+    expect(schedule.nextResetTime).toBe(newReset);
+    expect(schedule.dayOfMonth).toBe(15);
+    expect(schedule.timeOfDay).toBe("08:05");
+  });
+
+  it("derives config in the schedule's own timezone", async () => {
+    const db = await getDb();
+    const { alignResetTimes } = await getAlignment();
+    // 2024-07-15T16:30:00Z is 2024-07-16 00:30 in Asia/Shanghai (UTC+8).
+    const newReset = "2024-07-15T16:30:00Z";
+    handlerState.fetchUsage.mockResolvedValue(
+      makeUsageResult({
+        monthly: {
+          limit: "100",
+          used: "0",
+          remaining: "100",
+          resetTime: newReset,
+        },
+      })
+    );
+    db.writeData(
+      makeData({
+        subscriptions: [
+          makeSubscription({
+            resetSchedules: [
+              makeSchedule({
+                timezone: "Asia/Shanghai",
+                dayOfMonth: 1,
+                timeOfDay: "00:00",
+              }),
+            ],
+          }),
+        ],
+      })
+    );
+
+    await alignResetTimes([makeTrigger("sub-1")]);
+
+    const saved = db.getSubscriptions();
+    const schedule = saved[0].resetSchedules![0];
+    expect(schedule.nextResetTime).toBe(newReset);
+    expect(schedule.dayOfMonth).toBe(16);
+    expect(schedule.timeOfDay).toBe("00:30");
+  });
+
+  it("only updates nextResetTime for fiveHour schedules (no config fields)", async () => {
+    const db = await getDb();
+    const { alignResetTimes } = await getAlignment();
+    const newReset = "2024-06-01T06:00:00Z";
+    handlerState.fetchUsage.mockResolvedValue(
+      makeUsageResult({
+        fiveHour: {
+          limit: "100",
+          used: "0",
+          remaining: "100",
+          resetTime: newReset,
+        },
+      })
+    );
+    db.writeData(
+      makeData({
+        subscriptions: [
+          makeSubscription({
+            resetSchedules: [
+              makeSchedule({ id: "sched-fiveHour", type: "fiveHour" }),
+            ],
+          }),
+        ],
+      })
+    );
+
+    await alignResetTimes([makeTrigger("sub-1", "fiveHour")]);
+
+    const saved = db.getSubscriptions();
+    const schedule = saved[0].resetSchedules![0];
+    expect(schedule.nextResetTime).toBe(newReset);
+    expect(schedule.timeOfDay).toBeUndefined();
+    expect(schedule.dayOfWeek).toBeUndefined();
+    expect(schedule.dayOfMonth).toBeUndefined();
+  });
+});
+
+describe("calibrateSubscriptionFromUsage", () => {
+  beforeEach(() => {
+    handlerState.fetchUsage.mockReset();
+  });
+
+  it("calibrates, persists, and returns the updated subscription", async () => {
+    const db = await getDb();
+    const { calibrateSubscriptionFromUsage } = await getAlignment();
+    const newReset = "2099-07-15T12:00:00Z";
+    db.writeData(
+      makeData({
+        subscriptions: [
+          makeSubscription({
+            resetSchedules: [
+              makeSchedule({
+                timezone: "UTC",
+                dayOfMonth: 1,
+                timeOfDay: "00:00",
+              }),
+            ],
+          }),
+        ],
+      })
+    );
+
+    const updated = calibrateSubscriptionFromUsage(
+      "sub-1",
+      makeUsageResult({
+        monthly: {
+          limit: "100",
+          used: "0",
+          remaining: "100",
+          resetTime: newReset,
+        },
+      })
+    );
+
+    expect(updated).not.toBeNull();
+    const schedule = updated!.resetSchedules![0];
+    expect(schedule.nextResetTime).toBe(newReset);
+    expect(schedule.dayOfMonth).toBe(15);
+    expect(schedule.timeOfDay).toBe("12:00");
+
+    const saved = db.getSubscriptions();
+    expect(saved[0].resetSchedules![0].nextResetTime).toBe(newReset);
+    expect(saved[0].resetSchedules![0].dayOfMonth).toBe(15);
+    // No fetchUsage inside — the result is supplied by the caller.
+    expect(handlerState.fetchUsage).not.toHaveBeenCalled();
+  });
+
+  it("returns null when the subscription does not exist", async () => {
+    const db = await getDb();
+    const { calibrateSubscriptionFromUsage } = await getAlignment();
+    db.writeData(makeData());
+
+    const result = calibrateSubscriptionFromUsage(
+      "missing-sub",
+      makeUsageResult({
+        monthly: {
+          limit: "100",
+          used: "0",
+          remaining: "100",
+          resetTime: FUTURE_ISO,
+        },
+      })
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it("returns the subscription unchanged (no write) when no bucket has resetTime", async () => {
+    const db = await getDb();
+    const { calibrateSubscriptionFromUsage } = await getAlignment();
+    db.writeData(makeData({ subscriptions: [makeSubscription()] }));
+
+    const writeSpy = vi.spyOn(db, "writeData");
+    const writesBefore = writeSpy.mock.calls.length;
+
+    const result = calibrateSubscriptionFromUsage("sub-1", makeUsageResult());
+
+    expect(result).not.toBeNull();
+    expect(result!.resetSchedules![0].nextResetTime).toBe(
+      "2024-01-01T00:00:00Z"
+    );
+    expect(writeSpy.mock.calls.length).toBe(writesBefore);
+    writeSpy.mockRestore();
   });
 });

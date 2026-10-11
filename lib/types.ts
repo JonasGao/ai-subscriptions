@@ -533,6 +533,13 @@ export interface UsageResult {
   warnings?: string[];
 }
 
+/**
+ * Response of GET /api/subscriptions/[id]/usage: the usage result plus the
+ * subscription AFTER server-side reset-time calibration (ADR-0016), with
+ * credentials stripped. Lets the frontend update the card without a refetch.
+ */
+export type UsageQueryResponse = UsageResult & { subscription: Subscription };
+
 // ============ Notification ============
 
 export type NotificationChannelType =

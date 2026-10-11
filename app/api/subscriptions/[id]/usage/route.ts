@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSubscriptionById } from "@/lib/db";
 import { decryptCredentials } from "@/lib/encryption";
 import { resolveUsageHandler } from "@/lib/providers";
+import { calibrateSubscriptionFromUsage } from "@/lib/reset-alignment";
+import { stripCredentials } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -53,9 +55,22 @@ export async function GET(
 
     try {
       const result = await resolved.handler.fetchUsage(credentials);
-      return NextResponse.json(result, {
-        headers: { "Cache-Control": "no-store" },
-      });
+      // Calibrate the subscription's reset schedules from the queried reset
+      // times (ADR-0016) and echo the freshest copy back so the frontend can
+      // stay consistent without a refetch. Credentials are stripped.
+      const calibrated = calibrateSubscriptionFromUsage(
+        subscription.id,
+        result
+      );
+      return NextResponse.json(
+        {
+          ...result,
+          subscription: stripCredentials(calibrated ?? subscription),
+        },
+        {
+          headers: { "Cache-Control": "no-store" },
+        }
+      );
     } catch (handlerError) {
       const message =
         handlerError instanceof Error
