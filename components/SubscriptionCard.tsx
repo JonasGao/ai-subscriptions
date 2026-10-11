@@ -58,6 +58,7 @@ interface SubscriptionCardProps {
     exhausted: boolean
   ) => Promise<void> | void;
   onBalanceUpdate?: (id: string, balance: number, currency: string) => void;
+  onSubscriptionUpdate?: (subscription: Subscription) => void;
 }
 
 export function SubscriptionCard({
@@ -68,6 +69,7 @@ export function SubscriptionCard({
   onStatusChange,
   onScheduleToggle,
   onBalanceUpdate,
+  onSubscriptionUpdate,
 }: SubscriptionCardProps) {
   // Re-render periodically so formatNextResetTime (which uses new Date()) updates
   useNow();
@@ -135,6 +137,7 @@ export function SubscriptionCard({
     onEdit,
     onScheduleToggle,
     onBalanceUpdate,
+    onSubscriptionUpdate,
   });
 
   const handleModelsClick = () => {

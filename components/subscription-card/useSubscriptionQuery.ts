@@ -4,6 +4,7 @@ import {
   Subscription,
   BalanceResult,
   UsageResult,
+  UsageQueryResponse,
   UsageWindow,
 } from "@/lib/types";
 import { getProviderCurrency } from "@/lib/utils";
@@ -23,6 +24,7 @@ export function useSubscriptionQuery({
   onEdit,
   onScheduleToggle,
   onBalanceUpdate,
+  onSubscriptionUpdate,
 }: {
   subscription: Subscription;
   canQuery: boolean;
@@ -33,6 +35,7 @@ export function useSubscriptionQuery({
     exhausted: boolean
   ) => Promise<void> | void;
   onBalanceUpdate?: (id: string, balance: number, currency: string) => void;
+  onSubscriptionUpdate?: (subscription: Subscription) => void;
 }) {
   const [balance, setBalance] = useState<BalanceResult | null>(null);
   const [usage, setUsage] = useState<UsageResult | null>(null);
@@ -60,9 +63,16 @@ export function useSubscriptionQuery({
           setBalanceError(err.error || "查询失败");
           return;
         }
-        const data: UsageResult = await res.json();
+        const data: UsageQueryResponse = await res.json();
         setUsage(data);
         setLastQueryAt(Date.now());
+
+        // The server calibrated reset schedules from the queried reset times
+        // (ADR-0016) and echoed the freshest subscription back — push it up so
+        // the card reflects the calibrated config without a refetch.
+        if (data.subscription) {
+          onSubscriptionUpdate?.(data.subscription);
+        }
 
         // Surface server-side parse warnings (e.g. skipped quota rows) as a toast
         if (data.warnings && data.warnings.length > 0) {

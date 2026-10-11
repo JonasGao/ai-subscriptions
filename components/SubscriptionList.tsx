@@ -15,6 +15,7 @@ interface SubscriptionListProps {
     exhausted: boolean
   ) => Promise<void> | void;
   onBalanceUpdate?: (id: string, balance: number, currency: string) => void;
+  onSubscriptionUpdate?: (subscription: Subscription) => void;
 }
 
 export function SubscriptionList({
@@ -25,6 +26,7 @@ export function SubscriptionList({
   onStatusChange,
   onScheduleToggle,
   onBalanceUpdate,
+  onSubscriptionUpdate,
 }: SubscriptionListProps) {
   if (subscriptions.length === 0) {
     return (
@@ -46,6 +48,7 @@ export function SubscriptionList({
           onStatusChange={onStatusChange}
           onScheduleToggle={onScheduleToggle}
           onBalanceUpdate={onBalanceUpdate}
+          onSubscriptionUpdate={onSubscriptionUpdate}
         />
       ))}
     </div>

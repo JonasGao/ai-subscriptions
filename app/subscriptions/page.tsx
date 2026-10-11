@@ -305,6 +305,15 @@ export default function SubscriptionsPage() {
     );
   };
 
+  // Server-calibrated subscription echoed back by the usage query route
+  // (ADR-0016): replace the stale copy so cards show the calibrated reset
+  // schedule config immediately.
+  const handleSubscriptionUpdate = (updated: Subscription) => {
+    setSubscriptions((prev) =>
+      prev.map((s) => (s.id === updated.id ? updated : s))
+    );
+  };
+
   if (loading) {
     return (
       <MainPageShell activePage="subscriptions">
@@ -357,6 +366,7 @@ export default function SubscriptionsPage() {
             onStatusChange={handleSubscriptionStatusChange}
             onScheduleToggle={handleScheduleToggle}
             onBalanceUpdate={handleBalanceUpdate}
+            onSubscriptionUpdate={handleSubscriptionUpdate}
           />
         </div>
 
