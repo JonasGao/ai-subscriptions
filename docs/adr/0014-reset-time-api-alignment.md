@@ -1,5 +1,7 @@
 # 重置时间 API 对齐（Reset-Time Alignment）
 
+> ⚠️ 部分结论已被 [ADR-0016](./0016-query-driven-schedule-calibration.md) 修订：反推调度属性由否决改为采纳，触发面从「仅耗尽恢复」扩展到「任何额度查询成功后」。
+
 订阅的 `nextResetTime` 原本完全由调度属性（`dayOfWeek`/`dayOfMonth`/`timeOfDay`/`timezone`）计算得出，与供应商真实的重置时间可能错位。我们决定：当一个耗尽（exhausted）的 schedule 到达重置时间恢复时，由调度器在通知 tick 之后异步调用该订阅的用量查询接口，把返回的合法未来重置时间覆写到该订阅**所有 enabled schedule** 的 `nextResetTime` 上——查询失败、桶缺失或时间戳非未来时不更新、仅打 info 日志。`nextResetTime` 的语义由此从"纯计算值"变为"API 校正值优先、计算值兜底"。
 
 ## Considered Options
