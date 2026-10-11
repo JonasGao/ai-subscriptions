@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fetchFangzhouModels } from "@/lib/providers/fangzhou";
+import {
+  fetchFangzhouModels,
+  fetchAgentPlanModels,
+  fetchCodingPlanModels,
+} from "@/lib/providers/fangzhou";
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -22,7 +26,9 @@ describe("fetchFangzhouModels", () => {
   });
 
   it("throws when AK/SK is missing", async () => {
-    await expect(fetchFangzhouModels({})).rejects.toThrow("AK/SK not configured");
+    await expect(fetchFangzhouModels({})).rejects.toThrow(
+      "AK/SK not configured"
+    );
     await expect(fetchFangzhouModels({ ak: "", sk: "x" })).rejects.toThrow(
       "AK/SK not configured"
     );
@@ -45,9 +51,7 @@ describe("fetchFangzhouModels", () => {
       },
     };
 
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      mockResponse(listResponse)
-    );
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(mockResponse(listResponse));
 
     const result = await fetchFangzhouModels(baseCreds);
 
@@ -141,9 +145,7 @@ describe("fetchFangzhouModels", () => {
       Result: {},
     };
 
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      mockResponse(listResponse)
-    );
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(mockResponse(listResponse));
 
     const result = await fetchFangzhouModels(baseCreds);
 
@@ -155,9 +157,7 @@ describe("fetchFangzhouModels", () => {
       ResponseMetadata: { RequestId: "1" },
     };
 
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      mockResponse(listResponse)
-    );
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(mockResponse(listResponse));
 
     const result = await fetchFangzhouModels(baseCreds);
 
@@ -185,14 +185,12 @@ describe("fetchFangzhouModels", () => {
       },
     };
 
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      mockResponse(listResponse)
-    );
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(mockResponse(listResponse));
 
     await fetchFangzhouModels(baseCreds);
 
     const fetchSpy = vi.mocked(globalThis.fetch);
-    const [url, opts] = fetchSpy.mock.calls[0];
+    const [_url, opts] = fetchSpy.mock.calls[0];
     const headers = opts!.headers as Record<string, string>;
 
     // Verify V4 signature headers
@@ -200,5 +198,123 @@ describe("fetchFangzhouModels", () => {
     expect(headers["X-Content-Sha256"]).toBeDefined();
     expect(headers["X-Date"]).toBeDefined();
     expect(headers.Authorization).toMatch(/HMAC-SHA256 Credential=test-ak/);
+  });
+});
+
+// ── plan-specific model fetchers ───────────────────────────────────────────
+
+function planModelResponse(
+  models: Array<{ ModelId: string; ModelName?: string; Enabled?: boolean }>
+) {
+  return {
+    ResponseMetadata: { RequestId: "test-req" },
+    Result: { Data: models },
+  };
+}
+
+describe("fetchAgentPlanModels", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("throws when AK/SK is missing", async () => {
+    await expect(fetchAgentPlanModels({})).rejects.toThrow(
+      "AK/SK not configured"
+    );
+  });
+
+  it("calls ListAgentPlanLatestModel and extracts ModelNames (falling back to ModelId)", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockResponse(
+        planModelResponse([
+          {
+            ModelId: "doubao-seed-2-1-pro-260915",
+            ModelName: "doubao-seed-2-1-pro",
+            Enabled: true,
+          },
+          { ModelId: "auto-id", ModelName: "", Enabled: false },
+          { ModelId: "auto", ModelName: "auto", Enabled: false },
+        ])
+      )
+    );
+
+    const result = await fetchAgentPlanModels(baseCreds);
+
+    expect(result).toEqual(["doubao-seed-2-1-pro", "auto-id", "auto"]);
+
+    const [url, opts] = vi.mocked(globalThis.fetch).mock.calls[0];
+    expect(url).toContain("Action=ListAgentPlanLatestModel");
+    expect(url).toContain("Version=2024-01-01");
+    expect(url).toContain("open.volcengineapi.com");
+    expect(opts!.method).toBe("POST");
+  });
+
+  it("returns empty array when Data is missing", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockResponse({ ResponseMetadata: { RequestId: "1" }, Result: {} })
+    );
+
+    const result = await fetchAgentPlanModels(baseCreds);
+    expect(result).toEqual([]);
+  });
+
+  it("throws on non-2xx response", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockResponse({ message: "forbidden" }, 403)
+    );
+
+    await expect(fetchAgentPlanModels(baseCreds)).rejects.toThrow(
+      "ListAgentPlanLatestModel API returned 403"
+    );
+  });
+});
+
+describe("fetchCodingPlanModels", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("throws when AK/SK is missing", async () => {
+    await expect(fetchCodingPlanModels({})).rejects.toThrow(
+      "AK/SK not configured"
+    );
+  });
+
+  it("calls ListArkCodeLatestModel and extracts ModelNames (falling back to ModelId)", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockResponse(
+        planModelResponse([
+          {
+            ModelId: "doubao-seed-2-1-pro-260915",
+            ModelName: "doubao-seed-2-1-pro",
+            Enabled: true,
+          },
+          {
+            ModelId: "deepseek-v4-1-flash-260910",
+            ModelName: "deepseek-v4-1-flash",
+          },
+        ])
+      )
+    );
+
+    const result = await fetchCodingPlanModels(baseCreds);
+
+    expect(result).toEqual(["doubao-seed-2-1-pro", "deepseek-v4-1-flash"]);
+
+    const [url, opts] = vi.mocked(globalThis.fetch).mock.calls[0];
+    expect(url).toContain("Action=ListArkCodeLatestModel");
+    expect(url).toContain("Version=2024-01-01");
+    expect(url).toContain("open.volcengineapi.com");
+    expect(opts!.method).toBe("POST");
+  });
+
+  it("throws on non-2xx response", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockResponse({ message: "error" }, 500)
+    );
+
+    await expect(fetchCodingPlanModels(baseCreds)).rejects.toThrow(
+      "ListArkCodeLatestModel API returned 500"
+    );
   });
 });

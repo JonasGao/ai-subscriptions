@@ -138,16 +138,14 @@ describe("resolveModelsHandler", () => {
     }
   });
 
-  it("falls back to the bare-provider exception handler when the plan key misses", () => {
-    // fangzhou subscriptions carry planId (codingplan/agentplan) but the
-    // exception registry only holds the bare "fangzhou" key — the two-step
-    // lookup must resolve the exception handler, not the generic fallback
-    // that would send a Bearer header to the signed endpoint.
+  it("resolves fangzhou codingplan to the plan-specific exception handler", () => {
+    // fangzhou:codingplan is registered as a plan-specific handler that calls
+    // ListArkCodeLatestModel instead of the bare fangzhou ListFoundationModels.
     const provider = findProvider("fangzhou");
     const result = resolveModelsHandler(provider, "codingplan");
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.handler).toBe(modelsHandlers.fangzhou);
+      expect(result.handler).toBe(modelsHandlers["fangzhou:codingplan"]);
     }
   });
 

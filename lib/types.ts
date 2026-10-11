@@ -295,13 +295,8 @@ export const defaultProviders: Provider[] = [
     name: "火山方舟",
     description: "火山方舟模型服务",
     website: "https://www.volcengine.com/product/ark",
-    /**
-     * Control-plane ListFoundationModels (AK-signed) — no plan-specific
-     * models Action exists, and both plans share the same Ark account
-     * directory. Bespoke handler (V4 signature + paging) lands later.
-     */
     modelsApiUrl:
-      "https://ark.cn-beijing.volcengineapi.com/?Action=ListFoundationModels&Version=2024-01-01",
+      "https://open.volcengineapi.com/?Action=ListFoundationModels&Version=2024-01-01",
     credentialFields: [
       { key: "ak", label: "Access Key", type: "text" },
       { key: "sk", label: "Secret Key", type: "password" },
@@ -311,11 +306,15 @@ export const defaultProviders: Provider[] = [
         id: "codingplan",
         name: "Coding Plan",
         usageApiUrl: "https://open.volcengineapi.com/open/GetCodingPlanUsage",
+        modelsApiUrl:
+          "https://open.volcengineapi.com/?Action=ListArkCodeLatestModel&Version=2024-01-01",
       },
       {
         id: "agentplan",
         name: "Agent Plan",
         usageApiUrl: "https://open.volcengineapi.com/open/GetAFPUsage",
+        modelsApiUrl:
+          "https://open.volcengineapi.com/?Action=ListAgentPlanLatestModel&Version=2024-01-01",
       },
     ],
   },

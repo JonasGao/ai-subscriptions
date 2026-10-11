@@ -49,12 +49,13 @@ describe("defaultProviders modelsApiUrl (provider level)", () => {
   it("fangzhou uses the shared control-plane ListFoundationModels endpoint (both plans)", () => {
     const provider = findProvider("fangzhou");
     expect(provider.modelsApiUrl).toBe(
-      "https://ark.cn-beijing.volcengineapi.com/?Action=ListFoundationModels&Version=2024-01-01"
+      "https://open.volcengineapi.com/?Action=ListFoundationModels&Version=2024-01-01"
     );
-    // Provider-level URL covers both plans (same Ark account directory).
-    for (const plan of provider.plans ?? []) {
-      expect(plan.modelsApiUrl).toBeUndefined();
-    }
+    // Plans have their own modelsApiUrl for plan-specific model list APIs.
+    const codingPlan = provider.plans?.find((p) => p.id === "codingplan");
+    expect(codingPlan?.modelsApiUrl).toContain("ListArkCodeLatestModel");
+    const agentPlan = provider.plans?.find((p) => p.id === "agentplan");
+    expect(agentPlan?.modelsApiUrl).toContain("ListAgentPlanLatestModel");
   });
 
   it("moonshot platform key uses the platform models endpoint", () => {

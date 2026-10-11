@@ -74,3 +74,66 @@ export async function fetchFangzhouModels(
     return { items: names, hasMore };
   }, MAX_ITEMS);
 }
+
+// ── Plan-specific model lists ──────────────────────────────────────────────
+
+interface PlanModelItem {
+  ModelId?: string;
+  ModelName?: string;
+  OutputName?: string;
+  Enabled?: boolean;
+}
+
+interface PlanModelsResponse {
+  Result?: {
+    Data?: PlanModelItem[];
+  };
+}
+
+async function fetchPlanModels(
+  credentials: Record<string, string>,
+  action: string
+): Promise<string[]> {
+  const { ak, sk } = credentials;
+  if (!ak || !sk) throw new Error("AK/SK not configured");
+
+  const url = `https://open.volcengineapi.com/?Action=${action}&Version=2024-01-01`;
+  const body = JSON.stringify({});
+
+  const headers = signVolcengineRequest({
+    method: "POST",
+    url,
+    body,
+    ak,
+    sk,
+  });
+
+  const response = await fetchWithTimeout(
+    url,
+    { method: "POST", headers, body },
+    DEFAULT_TIMEOUT
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`${action} API error:`, response.status, errorText);
+    throw new Error(`${action} API returned ${response.status}`);
+  }
+
+  const data = (await response.json()) as PlanModelsResponse;
+  return (data.Result?.Data ?? [])
+    .map((m) => m.ModelName || m.ModelId)
+    .filter((id): id is string => !!id);
+}
+
+export async function fetchAgentPlanModels(
+  credentials: Record<string, string>
+): Promise<string[]> {
+  return fetchPlanModels(credentials, "ListAgentPlanLatestModel");
+}
+
+export async function fetchCodingPlanModels(
+  credentials: Record<string, string>
+): Promise<string[]> {
+  return fetchPlanModels(credentials, "ListArkCodeLatestModel");
+}

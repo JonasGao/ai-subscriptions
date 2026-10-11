@@ -40,7 +40,11 @@ import {
 import { fetchOpencodeGoUsage, testOpencodeConnection } from "./opencode";
 import { fetchZhipuUsage, testZhipuConnection } from "./zhipu";
 import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
-import { fetchFangzhouModels } from "./fangzhou";
+import {
+  fetchFangzhouModels,
+  fetchAgentPlanModels,
+  fetchCodingPlanModels,
+} from "./fangzhou";
 
 export interface UsageHandler {
   fetchUsage(credentials: Record<string, string>): Promise<UsageResult>;
@@ -134,6 +138,12 @@ export const modelsHandlers: Record<string, ModelsHandler> = {
   },
   fangzhou: {
     fetchModels: (creds) => fetchFangzhouModels(creds),
+  },
+  "fangzhou:agentplan": {
+    fetchModels: (creds) => fetchAgentPlanModels(creds),
+  },
+  "fangzhou:codingplan": {
+    fetchModels: (creds) => fetchCodingPlanModels(creds),
   },
 };
 
@@ -279,8 +289,7 @@ export function resolveModelsHandler(
   const planKey = resolveModelsHandlerKey(provider.id, planId);
   const bareKey = provider.id;
 
-  const exceptionHandler =
-    modelsHandlers[planKey] || modelsHandlers[bareKey];
+  const exceptionHandler = modelsHandlers[planKey] || modelsHandlers[bareKey];
 
   // Use exception handler if registered; otherwise use generic fallback.
   const handler: ModelsHandler = exceptionHandler || {
