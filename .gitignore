@@ -44,3 +44,4 @@ next-env.d.ts
 # pnpm 本地产物（仓库以 package-lock.json 为准，见 README）
 pnpm-lock.yaml
 pnpm-workspace.yaml
+.env.volcengine

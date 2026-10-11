@@ -3,7 +3,7 @@ import { fetchWithTimeout, DEFAULT_TIMEOUT } from "./fetch-utils";
 import { paginateAll } from "./pagination";
 
 const LIST_MODELS_URL =
-  "https://ark.cn-beijing.volcengineapi.com/?Action=ListFoundationModels&Version=2024-01-01";
+  "https://open.volcengineapi.com/?Action=ListFoundationModels&Version=2024-01-01";
 
 // Defensive limit to prevent infinite pagination loops
 const MAX_ITEMS = 1000;
@@ -31,20 +31,22 @@ export async function fetchFangzhouModels(
   if (!ak || !sk) throw new Error("AK/SK not configured");
 
   return paginateAll<string>(async (pageNumber, totalCollected) => {
-    const url = `${LIST_MODELS_URL}&PageNumber=${pageNumber}&PageSize=${DEFAULT_PAGE_SIZE}`;
-    const body = JSON.stringify({});
+    const body = JSON.stringify({
+      PageNumber: pageNumber,
+      PageSize: DEFAULT_PAGE_SIZE,
+    });
 
     const headers = signVolcengineRequest({
-      method: "GET",
-      url,
+      method: "POST",
+      url: LIST_MODELS_URL,
       body,
       ak,
       sk,
     });
 
     const response = await fetchWithTimeout(
-      url,
-      { method: "GET", headers },
+      LIST_MODELS_URL,
+      { method: "POST", headers, body },
       DEFAULT_TIMEOUT
     );
 
@@ -60,11 +62,14 @@ export async function fetchFangzhouModels(
 
     const data = (await response.json()) as ListModelsResponse;
     const items = data.Result?.Items ?? [];
-    const names = items.map((item) => item.Name).filter((n): n is string => !!n);
+    const names = items
+      .map((item) => item.Name)
+      .filter((n): n is string => !!n);
 
     const totalCount = data.Result?.TotalCount ?? 0;
     // Continue if we haven't reached totalCount AND we got items
-    const hasMore = totalCollected + names.length < totalCount && items.length > 0;
+    const hasMore =
+      totalCollected + names.length < totalCount && items.length > 0;
 
     return { items: names, hasMore };
   }, MAX_ITEMS);
