@@ -28,6 +28,27 @@ interface OpenCodeUsageResponse {
   };
 }
 
+/**
+ * Maps a 401 response to a human-readable message. Upstream distinguishes
+ * an expired key (error.code "api_key_expired") from an invalid one, so
+ * surface that difference: expired tells the user to create a new key in
+ * OpenCode Console, invalid tells them to fix the stored credential.
+ * Falls back to the generic message when the body is missing or unparsable.
+ */
+async function describeAuthError(response: Response): Promise<string> {
+  try {
+    const data = (await response.json()) as {
+      error?: { code?: string };
+    };
+    if (data.error?.code === "api_key_expired") {
+      return "API Key 已过期，请到 OpenCode Console 创建新 Key 并更新订阅凭据（重新登录不会续期）";
+    }
+  } catch {
+    // non-JSON body — fall through to the generic message
+  }
+  return "API Key 无效或未配置";
+}
+
 function synthesizeWindow(w: OpenCodeUsageWindow): UsageWindow {
   const pct = typeof w.percent === "number" ? w.percent : 0;
   const usedNum = w.status === "rate-limited" ? Math.max(pct, 100) : pct;
@@ -60,7 +81,7 @@ export async function fetchOpencodeGoUsage(
   );
 
   if (response.status === 401) {
-    throw new Error("API Key 无效或未配置");
+    throw new Error(await describeAuthError(response));
   }
   if (!response.ok) {
     throw new Error(`API 返回 ${response.status}`);
@@ -106,7 +127,7 @@ export async function testOpencodeConnection(
     );
 
     if (response.status === 401) {
-      return { ok: false, message: "API Key 无效或未配置" };
+      return { ok: false, message: await describeAuthError(response) };
     }
     if (!response.ok) {
       return { ok: false, message: `API 返回 ${response.status}` };

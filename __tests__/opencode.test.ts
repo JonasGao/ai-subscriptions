@@ -230,6 +230,25 @@ describe("fetchOpencodeGoUsage", () => {
     );
   });
 
+  it("throws expired-key message on 401 with api_key_expired code", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockResponse(
+        {
+          error: {
+            type: "authentication_error",
+            code: "api_key_expired",
+            message: "This API key has expired.",
+          },
+        },
+        401
+      )
+    );
+
+    await expect(fetchOpencodeGoUsage(baseCreds)).rejects.toThrow(
+      "API Key 已过期，请到 OpenCode Console 创建新 Key 并更新订阅凭据"
+    );
+  });
+
   it("throws on other non-2xx status", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(mockResponse({}, 500));
 
@@ -285,6 +304,27 @@ describe("testOpencodeConnection", () => {
 
     const result = await testOpencodeConnection(baseCreds);
     expect(result).toEqual({ ok: false, message: "API Key 无效或未配置" });
+  });
+
+  it("returns expired-key message on 401 with api_key_expired code", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockResponse(
+        {
+          error: {
+            type: "authentication_error",
+            code: "api_key_expired",
+          },
+        },
+        401
+      )
+    );
+
+    const result = await testOpencodeConnection(baseCreds);
+    expect(result).toEqual({
+      ok: false,
+      message:
+        "API Key 已过期，请到 OpenCode Console 创建新 Key 并更新订阅凭据（重新登录不会续期）",
+    });
   });
 
   it("returns failure on other non-2xx status", async () => {
