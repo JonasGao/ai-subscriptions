@@ -34,7 +34,7 @@ npm run test:watch  # Run vitest in watch mode
 
 ## Deployment
 
-Docker on the local machine. Image is built locally from this repo; deployment lives in `~/docker/ai-subscriptions/` (compose file, `.env`, `data/` volume):
+Docker on the local machine. Image is built locally from this repo (root `Dockerfile`). Deployment config lives in `deploy/docker/` (`Makefile`, `docker-compose.yml`); the root `Makefile` only proxies to it. Runtime state lives in `~/docker/ai-subscriptions/` (only `.env` + `data/` volume — no compose file there).
 
 ```bash
 make deploy    # Build image + compose up
@@ -43,7 +43,9 @@ make up/down/restart/status/logs
 make uninstall # Remove container (image and ~/docker data kept)
 ```
 
-Container runs non-root (user 1000:1000), limited to 1.0 CPU / 512M memory, port 3000, data at `~/docker/ai-subscriptions/data` mounted as `/data` (`DATA_DIR`).
+Container runs non-root (user 1000:1000), limited to 1.0 CPU / 512M memory, port 3000, data at `~/docker/ai-subscriptions/data` mounted as `/data` (`DATA_DIR`). Compose always runs with `--project-directory ~/docker/ai-subscriptions`, so relative `./data` / `.env` in the compose file resolve into the runtime dir — never run bare `docker compose` from `deploy/docker/`. See `deploy/docker/README.md`.
+
+`deploy/systemd/` holds the previous systemd user-service deployment as a fallback only (revoked on this machine); it must not run alongside the container.
 
 ## Import Convention
 

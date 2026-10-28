@@ -1,35 +1,30 @@
 PROJECT_NAME := ai-subscriptions
-PROJECT_DIR := $(shell pwd)
-IMAGE := ${PROJECT_NAME}:latest
-DEPLOY_DIR := ~/docker/${PROJECT_NAME}
-COMPOSE := docker compose --project-directory ${DEPLOY_DIR} -f ${DEPLOY_DIR}/docker-compose.yml
 
-.PHONY: image deploy up down restart status logs uninstall build help
+.PHONY: deploy image up down restart status logs uninstall build help
+
+deploy: ## Build image and (re)start the deployment (see deploy/docker)
+	@$(MAKE) -C deploy/docker $@
 
 image: ## Build docker image locally
-	docker build -t ${IMAGE} ${PROJECT_DIR}
+	@$(MAKE) -C deploy/docker $@
 
-deploy: ## Build image and (re)start the deployment
-	@${MAKE} image
-	@${MAKE} up
-
-up: ## Start the container (docker compose up -d)
-	${COMPOSE} up -d
+up: ## Start the container
+	@$(MAKE) -C deploy/docker $@
 
 down: ## Stop and remove the container
-	${COMPOSE} down
+	@$(MAKE) -C deploy/docker $@
 
 restart: ## Restart the container
-	${COMPOSE} restart
+	@$(MAKE) -C deploy/docker $@
 
 status: ## Show container status
-	${COMPOSE} ps
+	@$(MAKE) -C deploy/docker $@
 
 logs: ## Follow container logs
-	${COMPOSE} logs -f
+	@$(MAKE) -C deploy/docker $@
 
-uninstall: down ## Remove the container (image and ~/docker data are kept)
-	@echo "Container removed. Image '${IMAGE}' and data in ${DEPLOY_DIR} are kept."
+uninstall: ## Remove the container (image and ~/docker data are kept)
+	@$(MAKE) -C deploy/docker $@
 
 build: ## Production build check (npm, local)
 	npm run build

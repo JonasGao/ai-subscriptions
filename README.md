@@ -131,8 +131,11 @@ ai-subscriptions/
 ├── data/
 │   ├── subscriptions.json     # 订阅数据文件（自动生成）
 │   └── priorities.json        # 优先级数据文件（自动生成）
-├── Dockerfile                 # Docker 镜像构建
-├── Makefile                   # Docker 部署管理脚本
+├── Dockerfile                 # Docker 镜像构建（构建上下文为仓库根）
+├── Makefile                   # 瘦代理，转发到 deploy/docker
+├── deploy/
+│   ├── docker/                # 日常部署真源：Makefile + docker-compose.yml
+│   └── systemd/               # 备用部署方案（本机已撤销）
 └── package.json
 ```
 
@@ -161,9 +164,9 @@ npm start
 
 ### Docker 部署
 
-项目通过本地构建的 Docker 镜像部署，部署文件位于 `~/docker/ai-subscriptions/`（compose 文件、`.env`、`data/` 数据卷）。容器以非 root 用户（1000:1000）运行，CPU 限制 1.0 核、内存限制 512M。
+项目通过本地构建的 Docker 镜像部署。部署配置在仓库的 `deploy/docker/`（`Makefile` 与 `docker-compose.yml`），根目录 `Makefile` 只是转发代理，命令用法不变。运行时目录 `~/docker/ai-subscriptions/` 只放 `data/` 与 `.env`（含 `NEXTAUTH_SECRET`），不再放 compose 文件。容器以非 root 用户（1000:1000）运行，CPU 限制 1.0 核、内存限制 512M，数据卷 `~/docker/ai-subscriptions/data` 挂载为 `/data`。
 
-**构建镜像并部署：**
+**日常更新（构建镜像并重启容器）：**
 
 ```bash
 make deploy
@@ -200,6 +203,10 @@ make uninstall
 ```bash
 make help
 ```
+
+**部署细节：** 见 `deploy/docker/README.md`（compose 关键字段、路径解析说明）。
+
+**备用方案：** `deploy/systemd/` 保留了迁移前的 systemd 用户服务部署（本机已撤销），恢复用 `make -C deploy/systemd install`；与 Docker 部署不可同时启用（同占 3000 端口）。
 
 ## 开发命令
 
