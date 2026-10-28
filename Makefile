@@ -1,68 +1,37 @@
 PROJECT_NAME := ai-subscriptions
 PROJECT_DIR := $(shell pwd)
-SERVICE_FILE := ~/.config/systemd/user/${PROJECT_NAME}.service
-NODE_PATH := $(shell which node || echo ~/.nvm/versions/node/v24.13.0/bin/node)
-PORT := 3000
+IMAGE := ${PROJECT_NAME}:latest
+DEPLOY_DIR := ~/docker/${PROJECT_NAME}
+COMPOSE := docker compose --project-directory ${DEPLOY_DIR} -f ${DEPLOY_DIR}/docker-compose.yml
 
-.PHONY: install uninstall start stop restart status logs enable disable build
+.PHONY: image deploy up down restart status logs uninstall build help
 
-install: ## Install systemd user service
-	@echo "Installing ${PROJECT_NAME} service..."
-	@mkdir -p ~/.config/systemd/user
-	@echo "[Unit]" > ${SERVICE_FILE}
-	@echo "Description=AI Subscriptions Management Tool" >> ${SERVICE_FILE}
-	@echo "After=network.target" >> ${SERVICE_FILE}
-	@echo "StartLimitBurst=3" >> ${SERVICE_FILE}
-	@echo "StartLimitIntervalSec=60" >> ${SERVICE_FILE}
-	@echo "" >> ${SERVICE_FILE}
-	@echo "[Service]" >> ${SERVICE_FILE}
-	@echo "Type=simple" >> ${SERVICE_FILE}
-	@echo "WorkingDirectory=${PROJECT_DIR}" >> ${SERVICE_FILE}
-	@echo "EnvironmentFile=${PROJECT_DIR}/.env" >> ${SERVICE_FILE}
-	@echo "Environment=\"PATH=${PROJECT_DIR}/node_modules/.bin:${HOME}/.nvm/versions/node/v24.13.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"" >> ${SERVICE_FILE}
-	@echo "ExecStart=${NODE_PATH} ${PROJECT_DIR}/node_modules/next/dist/bin/next start -H 0.0.0.0 -p ${PORT}" >> ${SERVICE_FILE}
-	@echo "Restart=on-failure" >> ${SERVICE_FILE}
-	@echo "RestartSec=10" >> ${SERVICE_FILE}
-	@echo "" >> ${SERVICE_FILE}
-	@echo "[Install]" >> ${SERVICE_FILE}
-	@echo "WantedBy=default.target" >> ${SERVICE_FILE}
-	@systemctl --user daemon-reload
-	@systemctl --user enable ${PROJECT_NAME}.service
-	@echo "Service installed and enabled for auto-start on login"
+image: ## Build docker image locally
+	docker build -t ${IMAGE} ${PROJECT_DIR}
 
-uninstall: stop disable ## Uninstall systemd user service
-	@echo "Uninstalling ${PROJECT_NAME} service..."
-	@rm -f ${SERVICE_FILE}
-	@systemctl --user daemon-reload
-	@echo "Service uninstalled successfully"
+deploy: ## Build image and (re)start the deployment
+	@${MAKE} image
+	@${MAKE} up
 
-start: ## Start the service
-	@echo "Starting ${PROJECT_NAME}..."
-	@systemctl --user start ${PROJECT_NAME}.service
+up: ## Start the container (docker compose up -d)
+	${COMPOSE} up -d
 
-stop: ## Stop the service
-	@echo "Stopping ${PROJECT_NAME}..."
-	@systemctl --user stop ${PROJECT_NAME}.service
+down: ## Stop and remove the container
+	${COMPOSE} down
 
-restart: ## Restart the service
-	@echo "Restarting ${PROJECT_NAME}..."
-	@systemctl --user restart ${PROJECT_NAME}.service
+restart: ## Restart the container
+	${COMPOSE} restart
 
-status: ## Show service status
-	@systemctl --user status ${PROJECT_NAME}.service
+status: ## Show container status
+	${COMPOSE} ps
 
-logs: ## Show service logs
-	@journalctl --user -u ${PROJECT_NAME}.service -f
+logs: ## Follow container logs
+	${COMPOSE} logs -f
 
-enable: ## Enable service to start on boot
-	@echo "Enabling ${PROJECT_NAME} to start on boot..."
-	@systemctl --user enable ${PROJECT_NAME}.service
+uninstall: down ## Remove the container (image and ~/docker data are kept)
+	@echo "Container removed. Image '${IMAGE}' and data in ${DEPLOY_DIR} are kept."
 
-disable: ## Disable service from starting on boot
-	@echo "Disabling ${PROJECT_NAME} from starting on boot..."
-	@systemctl --user disable ${PROJECT_NAME}.service
-
-build: ## Build for production
+build: ## Production build check (npm, local)
 	npm run build
 
 help: ## Show this help message

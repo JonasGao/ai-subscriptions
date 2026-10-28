@@ -32,17 +32,20 @@
 ### 安装步骤
 
 1. 克隆项目仓库:
+
 ```bash
 git clone <repository-url>
 cd ai-subscriptions
 ```
 
 2. 安装依赖:
+
 ```bash
 npm install
 ```
 
 3. 启动开发服务器:
+
 ```bash
 npm run dev
 ```
@@ -128,7 +131,8 @@ ai-subscriptions/
 ├── data/
 │   ├── subscriptions.json     # 订阅数据文件（自动生成）
 │   └── priorities.json        # 优先级数据文件（自动生成）
-├── Makefile                   # systemd 服务管理脚本
+├── Dockerfile                 # Docker 镜像构建
+├── Makefile                   # Docker 部署管理脚本
 └── package.json
 ```
 
@@ -155,56 +159,44 @@ npm run build
 npm start
 ```
 
-### systemd 服务管理
+### Docker 部署
 
-项目支持安装为用户级 systemd 服务，实现后台运行和开机自启。
+项目通过本地构建的 Docker 镜像部署，部署文件位于 `~/docker/ai-subscriptions/`（compose 文件、`.env`、`data/` 数据卷）。容器以非 root 用户（1000:1000）运行，CPU 限制 1.0 核、内存限制 512M。
 
-**安装服务：**
+**构建镜像并部署：**
+
 ```bash
-make install
+make deploy
 ```
 
-**启动服务：**
-```bash
-make start
-```
+**启动/停止/重启容器：**
 
-**停止服务：**
 ```bash
-make stop
-```
-
-**重启服务：**
-```bash
+make up
+make down
 make restart
 ```
 
 **查看状态：**
+
 ```bash
 make status
 ```
 
 **查看日志：**
+
 ```bash
 make logs
 ```
 
-**设置开机自启：**
-```bash
-make enable
-```
+**卸载容器（镜像与 ~/docker 数据保留）：**
 
-**取消开机自启：**
-```bash
-make disable
-```
-
-**卸载服务：**
 ```bash
 make uninstall
 ```
 
 **查看所有命令：**
+
 ```bash
 make help
 ```

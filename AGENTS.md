@@ -34,18 +34,16 @@ npm run test:watch  # Run vitest in watch mode
 
 ## Deployment
 
-Systemd service via Makefile:
+Docker on the local machine. Image is built locally from this repo; deployment lives in `~/docker/ai-subscriptions/` (compose file, `.env`, `data/` volume):
 
 ```bash
-make install    # Create user service
-make start      # Start service
-make stop       # Stop service
-make status     # Check status
-make logs       # View logs (journalctl)
-make enable     # Enable on boot
+make deploy    # Build image + compose up
+make image     # Build image only
+make up/down/restart/status/logs
+make uninstall # Remove container (image and ~/docker data kept)
 ```
 
-Service runs on port 3000, uses Node v24.13.0 from NVM.
+Container runs non-root (user 1000:1000), limited to 1.0 CPU / 512M memory, port 3000, data at `~/docker/ai-subscriptions/data` mounted as `/data` (`DATA_DIR`).
 
 ## Import Convention
 
