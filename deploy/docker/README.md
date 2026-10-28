@@ -1,6 +1,6 @@
 # Docker 部署
 
-本目录是本机日常部署的**真源**：`Makefile`（docker 目标实现）、`docker-compose.yml`（编排定义）、本说明。
+本目录是 Docker 部署（默认方式）的配置目录：`Makefile`（docker 目标实现）、`docker-compose.yml`（编排定义）、本说明。
 
 根目录 `Makefile` 只是瘦代理，`make deploy` 会转发到本目录执行，命令用法不变。
 
@@ -13,12 +13,20 @@ deploy/docker/
 └── README.md
 ```
 
-运行时目录 `~/docker/ai-subscriptions/` 只保留两样东西，**不放 compose 文件**（避免与仓库双份漂移）：
+运行时目录 `~/docker/ai-subscriptions/` 只保留三样东西，**不放 compose 文件**（避免与仓库双份漂移）：
 
 - `data/` —— 应用数据卷（`subscriptions.json` 等，含用户数据，勿入 git）
 - `.env` —— 运行时环境变量（`NEXTAUTH_SECRET`）
+- `build.env` —— 可选，机器级构建配置（如 `NODE_IMAGE=z.my/node:24-alpine`）
 
 镜像仍由仓库根 `Dockerfile` 构建，构建上下文为仓库根。
+
+## 基础镜像（NODE_IMAGE）
+
+`Dockerfile` 的基础镜像不写死，由构建参数 `NODE_IMAGE` 决定，默认 `node:24-alpine`：
+
+- `deploy/docker/Makefile` 会读取 `~/docker/ai-subscriptions/build.env`（存在则覆盖默认值）——机器无 docker.io 直连时，在这里配置本地镜像源（如 `NODE_IMAGE=z.my/node:24-alpine`），配置留在机器上、不入 git；
+- 也可临时覆盖：`make image NODE_IMAGE=<registry>/node:24-alpine`（注意：build.env 存在时优先于 shell 环境变量）。
 
 ## 常用命令
 

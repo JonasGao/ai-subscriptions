@@ -1,10 +1,8 @@
-# systemd 用户服务部署（备用方案）
+# systemd 用户服务部署
 
-**当前本机不使用此方案**：部署已迁移到 Docker（见 `deploy/docker/`），systemd 用户服务（unit 文件 `~/.config/systemd/user/ai-subscriptions.service`）已从本机撤销。
+两种部署方式之一（另一种是 Docker，见 `deploy/docker/`）。不依赖 Docker，直接用 systemd 用户服务跑 `next start`，unit 文件为 `~/.config/systemd/user/ai-subscriptions.service`。
 
-保留此目录仅为备用/回退参考：不依赖 Docker 时，可直接用 systemd 用户服务跑 `next start`。
-
-## 恢复方式
+## 安装方式
 
 ```bash
 make -C deploy/systemd install   # 写入 unit 并 enable（登录自启）

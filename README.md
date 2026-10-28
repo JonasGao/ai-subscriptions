@@ -134,8 +134,8 @@ ai-subscriptions/
 ├── Dockerfile                 # Docker 镜像构建（构建上下文为仓库根）
 ├── Makefile                   # 瘦代理，转发到 deploy/docker
 ├── deploy/
-│   ├── docker/                # 日常部署真源：Makefile + docker-compose.yml
-│   └── systemd/               # 备用部署方案（本机已撤销）
+│   ├── docker/                # Docker 部署（默认）：Makefile + docker-compose.yml
+│   └── systemd/               # systemd 部署
 └── package.json
 ```
 
@@ -162,9 +162,13 @@ npm run build
 npm start
 ```
 
-### Docker 部署
+### 部署方式
 
-项目通过本地构建的 Docker 镜像部署。部署配置在仓库的 `deploy/docker/`（`Makefile` 与 `docker-compose.yml`），根目录 `Makefile` 只是转发代理，命令用法不变。运行时目录 `~/docker/ai-subscriptions/` 只放 `data/` 与 `.env`（含 `NEXTAUTH_SECRET`），不再放 compose 文件。容器以非 root 用户（1000:1000）运行，CPU 限制 1.0 核、内存限制 512M，数据卷 `~/docker/ai-subscriptions/data` 挂载为 `/data`。
+项目提供两种部署方式：**Docker（默认）** 与 systemd 用户服务。二者同占 3000 端口，任选其一，不可同时启用。
+
+#### Docker（默认）
+
+部署配置在仓库的 `deploy/docker/`（`Makefile` 与 `docker-compose.yml`），根目录 `Makefile` 只是转发代理，命令用法不变。运行时目录 `~/docker/ai-subscriptions/` 只放 `data/`、`.env`（含 `NEXTAUTH_SECRET`）与可选的 `build.env`。容器以非 root 用户（1000:1000）运行，CPU 限制 1.0 核、内存限制 512M，数据卷 `~/docker/ai-subscriptions/data` 挂载为 `/data`。基础镜像默认 `node:24-alpine`，可通过 `NODE_IMAGE` 覆盖（见 `deploy/docker/README.md`）。
 
 **日常更新（构建镜像并重启容器）：**
 
@@ -204,9 +208,17 @@ make uninstall
 make help
 ```
 
-**部署细节：** 见 `deploy/docker/README.md`（compose 关键字段、路径解析说明）。
+**部署细节：** 见 `deploy/docker/README.md`（compose 关键字段、路径解析与基础镜像覆盖说明）。
 
-**备用方案：** `deploy/systemd/` 保留了迁移前的 systemd 用户服务部署（本机已撤销），恢复用 `make -C deploy/systemd install`；与 Docker 部署不可同时启用（同占 3000 端口）。
+#### systemd 用户服务
+
+另一种部署方式，安装为用户级 systemd 服务，实现后台运行和开机自启：
+
+```bash
+make -C deploy/systemd install
+```
+
+其余目标（start/stop/status/logs 等）见 `deploy/systemd/README.md`。与 Docker 部署不可同时启用（同占 3000 端口）。
 
 ## 开发命令
 

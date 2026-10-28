@@ -1,13 +1,18 @@
 PROJECT_NAME := ai-subscriptions
 REPO_ROOT := $(abspath $(CURDIR)/../..)
 IMAGE := ${PROJECT_NAME}:latest
-DEPLOY_DIR := ~/docker/${PROJECT_NAME}
+DEPLOY_DIR := $(HOME)/docker/${PROJECT_NAME}
 COMPOSE := docker compose --project-directory ${DEPLOY_DIR} -f $(REPO_ROOT)/deploy/docker/docker-compose.yml
+
+# Base image; machine-level override lives in $(DEPLOY_DIR)/build.env
+# (e.g. NODE_IMAGE=z.my/node:24-alpine where docker.io is unreachable)
+NODE_IMAGE ?= node:24-alpine
+-include $(DEPLOY_DIR)/build.env
 
 .PHONY: image deploy up down restart status logs uninstall help
 
 image: ## Build docker image locally
-	docker build -t ${IMAGE} ${REPO_ROOT}
+	docker build --build-arg NODE_IMAGE=$(NODE_IMAGE) -t ${IMAGE} ${REPO_ROOT}
 
 deploy: ## Build image and (re)start the deployment
 	@${MAKE} image

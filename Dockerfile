@@ -1,12 +1,15 @@
+# Base image, overridable at build time via NODE_IMAGE
+# (machine mirrors set it in ~/docker/ai-subscriptions/build.env, see deploy/docker/README.md)
+ARG NODE_IMAGE=node:24-alpine
+
 # --- deps: install all dependencies (devDeps needed for next build) ---
-# z.my = local docker.io mirror (direct registry access is not available)
-FROM z.my/node:24-alpine AS deps
+FROM ${NODE_IMAGE} AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
 # --- build: produce standalone output ---
-FROM z.my/node:24-alpine AS build
+FROM ${NODE_IMAGE} AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -15,7 +18,7 @@ ENV NEXT_OUTPUT=standalone
 RUN npm run build
 
 # --- runner: minimal production image, non-root ---
-FROM z.my/node:24-alpine AS runner
+FROM ${NODE_IMAGE} AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
