@@ -51,11 +51,14 @@ export function useSortableRow(id: string): SortableRow {
     onMount(() => {
       const listeners = Object.entries(sortable.dragActivators);
       for (const [event, handler] of listeners) {
-        element.addEventListener(event, handler as EventListener);
+        // solid-dnd keys are JSX-style ("onpointerdown"); strip the "on" prefix.
+        const domEvent = event.startsWith("on") ? event.slice(2) : event;
+        element.addEventListener(domEvent, handler as EventListener);
       }
       onCleanup(() => {
         for (const [event, handler] of listeners) {
-          element.removeEventListener(event, handler as EventListener);
+          const domEvent = event.startsWith("on") ? event.slice(2) : event;
+          element.removeEventListener(domEvent, handler as EventListener);
         }
       });
     });
