@@ -41,24 +41,23 @@ export const SubscriptionsPage: Component = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [subs, cats, catalog] = await Promise.all([
+      // Providers load together with the subscriptions: the cards decide their
+      // query affordances from the catalog, so it must be present on first
+      // render (and the card auto-query fires from it).
+      const [subs, cats, catalog, providerCatalog] = await Promise.all([
         fetchSubscriptions(),
         fetchCategories(),
         fetchTags(),
+        fetchProviders().catch(() => [] as Provider[]),
       ]);
       setSubscriptions(subs);
       setCategories(cats);
       setTags(catalog);
+      setProviders(providerCatalog);
     } catch {
       setErrorMessage("加载订阅失败，请刷新页面");
     } finally {
       setLoading(false);
-    }
-    try {
-      setProviders(await fetchProviders());
-    } catch {
-      // Provider names are cosmetic; the id still renders.
-      setProviders([]);
     }
   };
 
@@ -149,6 +148,23 @@ export const SubscriptionsPage: Component = () => {
     }
   };
 
+  // The balance route persists the queried total server-side; mirror it locally
+  // so the card shows the fresh amount without a refetch.
+  const handleBalanceUpdate = (id: string, balance: number, currency: string) => {
+    setSubscriptions((previous) =>
+      previous.map((item) =>
+        item.id === id ? { ...item, balance, balanceCurrency: currency } : item
+      )
+    );
+  };
+
+  // The usage route echoes the (eventually calibrated, #34) subscription.
+  const handleSubscriptionUpdate = (updated: Subscription) => {
+    setSubscriptions((previous) =>
+      previous.map((item) => (item.id === updated.id ? updated : item))
+    );
+  };
+
   return (
     <main class="subscriptions-page">
       <header class="subscriptions-header">
@@ -202,6 +218,8 @@ export const SubscriptionsPage: Component = () => {
                   onEdit={openEdit}
                   onDelete={handleDelete}
                   onStatusChange={handleStatusChange}
+                  onBalanceUpdate={handleBalanceUpdate}
+                  onSubscriptionUpdate={handleSubscriptionUpdate}
                 />
               )}
             </For>

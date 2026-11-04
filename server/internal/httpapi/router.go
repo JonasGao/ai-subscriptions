@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"ai-subscriptions/internal/crypto"
+	"ai-subscriptions/internal/providers"
 )
 
 const assetsNotBuiltHint = "web assets not built: run `make build`\n"
@@ -40,6 +41,9 @@ type Options struct {
 	// Notify serves notification-channel CRUD, the low-balance threshold and
 	// channel test sends. Nil leaves those routes unregistered.
 	Notify NotificationService
+	// ProviderHTTP is the outbound client the live usage/balance/model queries
+	// go through. Nil means providers.DefaultHTTPClient (10s timeout).
+	ProviderHTTP providers.HTTPDoer
 }
 
 // New builds the application router.
@@ -69,6 +73,7 @@ func New(opts Options) http.Handler {
 			api.Put("/subscriptions/{id}", handleUpdateSubscription(opts))
 			api.Delete("/subscriptions/{id}", handleDeleteSubscription(opts))
 			api.Get("/subscriptions/{id}/usage", handleSubscriptionUsage(opts))
+			api.Get("/subscriptions/{id}/balance", handleSubscriptionBalance(opts))
 			api.Get("/subscriptions/{id}/models", handleSubscriptionModels(opts))
 			api.Get("/tags", handleListTags(opts))
 			api.Patch("/tags/{id}", handleRenameTag(opts))
