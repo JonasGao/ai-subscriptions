@@ -75,6 +75,7 @@ func run() error {
 		Handler: httpapi.New(httpapi.Options{
 			Assets: assets,
 			Auth:   authService,
+			Proxy:  db,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
