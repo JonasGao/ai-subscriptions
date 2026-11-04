@@ -45,3 +45,14 @@ next-env.d.ts
 pnpm-lock.yaml
 pnpm-workspace.yaml
 .env.volcengine
+
+# 新栈（server/ + web/）：依赖、构建产物与 embed 暂存目录不入库
+/web/node_modules/
+/web/dist/
+/web/.vitest/
+/server/bin/
+# go:embed 只能嵌入包目录内的文件，构建产物回落到 server/internal/webui/dist；
+# 该目录由 `make web-build` 生成，仅 .gitkeep 入库占位
+/server/internal/webui/dist/*
+!/server/internal/webui/dist/.gitkeep
+/server/.data/

@@ -1,0 +1,68 @@
+// Command server is the single binary: it serves the JSON API and the
+// embedded SolidJS SPA on one port.
+package main
+
+import (
+	"context"
+	"errors"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"ai-subscriptions/internal/config"
+	"ai-subscriptions/internal/httpapi"
+	"ai-subscriptions/internal/webui"
+)
+
+func main() {
+	if err := run(); err != nil {
+		log.Fatalf("ai-subscriptions: %v", err)
+	}
+}
+
+func run() error {
+	cfg, err := config.FromEnv(os.Getenv)
+	if err != nil {
+		return err
+	}
+	if err := config.EnsureDataDir(cfg.DataDir); err != nil {
+		return err
+	}
+
+	assets, err := webui.Assets()
+	if err != nil {
+		return err
+	}
+
+	srv := &http.Server{
+		Addr:              cfg.Addr,
+		Handler:           httpapi.New(httpapi.Options{Assets: assets}),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	errCh := make(chan error, 1)
+	go func() {
+		log.Printf("listening on %s (data dir: %s)", cfg.Addr, cfg.DataDir)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errCh <- err
+			return
+		}
+		errCh <- nil
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		log.Print("shutting down")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		return srv.Shutdown(shutdownCtx)
+	}
+}
