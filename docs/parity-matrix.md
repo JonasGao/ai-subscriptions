@@ -29,7 +29,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | fangzhou-models.test.ts           |   15 | provider: fangzhou 模型列表    | ☑    |
 | feishu-listener.test.ts           |   13 | 飞书 WS 监听                   | ☑    |
 | feishu-helpers.test.ts            |   13 | 飞书辅助                       | ☑    |
-| signing.test.ts                   |   12 | 通知签名（钉钉/飞书）         | ☑    |
+| signing.test.ts                   |   12 | 通知签名（钉钉/飞书）          | ☑    |
 | reset-schedule-uniqueness.test.ts |   10 | 重置计划唯一性                 | ☑    |
 | notifications-storage.test.ts     |   10 | 通知存储                       | ☑    |
 | providers.test.ts                 |    9 | providers 注册表               | ☑    |
@@ -429,86 +429,86 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 
 `volcengine-signer.test.ts`（6 例）→ `server/internal/volcengine/signer_test.go`（冻结时钟 `2026-06-01T08:00:00Z`，逐字节断言签名头与 Authorization 格式）：
 
-| 旧用例（逐字）                                | 例数 | Go 测试                                                |
-| --------------------------------------------- | ---: | ------------------------------------------------------ |
-| returns required headers                      |    1 | `TestSignReturnsRequiredHeaders`                       |
-| Authorization header has correct format       |    1 | `TestSignAuthorizationFormat`                          |
-| uses custom region and service                |    1 | `TestSignCustomRegionAndService`                       |
-| different body produces different signature   |    1 | `TestSignDifferentBodyProducesDifferentSignature`      |
-| same inputs produce same signature            |    1 | `TestSignDeterministic`                                |
-| includes query string in canonical request    |    1 | `TestSignIncludesQueryString`                          |
+| 旧用例（逐字）                              | 例数 | Go 测试                                           |
+| ------------------------------------------- | ---: | ------------------------------------------------- |
+| returns required headers                    |    1 | `TestSignReturnsRequiredHeaders`                  |
+| Authorization header has correct format     |    1 | `TestSignAuthorizationFormat`                     |
+| uses custom region and service              |    1 | `TestSignCustomRegionAndService`                  |
+| different body produces different signature |    1 | `TestSignDifferentBodyProducesDifferentSignature` |
+| same inputs produce same signature          |    1 | `TestSignDeterministic`                           |
+| includes query string in canonical request  |    1 | `TestSignIncludesQueryString`                     |
 
 `signing.test.ts`（12 例）→ `server/internal/notify/signing_test.go`（通知签名：钉钉 5 + 飞书 7）：
 
-| 旧 describe          | 旧用例（逐字）                                                    | 例数 | Go 测试                                                    |
-| -------------------- | ----------------------------------------------------------------- | ---: | ---------------------------------------------------------- |
-| computeDingtalkSign  | returns null when secret is empty                                 |    1 | `TestDingtalkSign_ReturnsNullWhenSecretIsEmpty`            |
-| computeDingtalkSign  | produces deterministic sign for a given (secret, timestamp)       |    1 | `TestDingtalkSign_ProducesDeterministicSignForGivenSecretAndTimestamp` |
-| computeDingtalkSign  | different secrets yield different signs                           |    1 | `TestDingtalkSign_DifferentSecretsYieldDifferentSigns`     |
-| computeDingtalkSign  | different timestamps yield different signs                        |    1 | `TestDingtalkSign_DifferentTimestampsYieldDifferentSigns`  |
-| computeDingtalkSign  | sign is URL-safe (percent-encoded)                                |    1 | `TestDingtalkSign_SignIsURLSafePercentEncoded`             |
-| computeFeishuSign    | returns null when secret is empty                                 |    1 | `TestFeishuSign_ReturnsNullWhenSecretIsEmpty`              |
-| computeFeishuSign    | matches the official Feishu signing algorithm                     |    1 | `TestFeishuSign_MatchesOfficialFeishuSigningAlgorithm`     |
-| computeFeishuSign    | returns timestamp as a string                                     |    1 | `TestFeishuSign_ReturnsTimestampAsString`                  |
-| computeFeishuSign    | produces deterministic output for the same (secret, timestamp)    |    1 | `TestFeishuSign_ProducesDeterministicOutput`               |
-| computeFeishuSign    | different secrets yield different signs                           |    1 | `TestFeishuSign_DifferentSecretsYieldDifferentSigns`       |
-| computeFeishuSign    | different timestamps yield different signs                        |    1 | `TestFeishuSign_DifferentTimestampsYieldDifferentSigns`    |
-| computeFeishuSign    | sign is standard base64 (NOT URL-encoded)                         |    1 | `TestFeishuSign_SignIsStandardBase64NotURLEncoded`         |
+| 旧 describe         | 旧用例（逐字）                                                 | 例数 | Go 测试                                                                |
+| ------------------- | -------------------------------------------------------------- | ---: | ---------------------------------------------------------------------- |
+| computeDingtalkSign | returns null when secret is empty                              |    1 | `TestDingtalkSign_ReturnsNullWhenSecretIsEmpty`                        |
+| computeDingtalkSign | produces deterministic sign for a given (secret, timestamp)    |    1 | `TestDingtalkSign_ProducesDeterministicSignForGivenSecretAndTimestamp` |
+| computeDingtalkSign | different secrets yield different signs                        |    1 | `TestDingtalkSign_DifferentSecretsYieldDifferentSigns`                 |
+| computeDingtalkSign | different timestamps yield different signs                     |    1 | `TestDingtalkSign_DifferentTimestampsYieldDifferentSigns`              |
+| computeDingtalkSign | sign is URL-safe (percent-encoded)                             |    1 | `TestDingtalkSign_SignIsURLSafePercentEncoded`                         |
+| computeFeishuSign   | returns null when secret is empty                              |    1 | `TestFeishuSign_ReturnsNullWhenSecretIsEmpty`                          |
+| computeFeishuSign   | matches the official Feishu signing algorithm                  |    1 | `TestFeishuSign_MatchesOfficialFeishuSigningAlgorithm`                 |
+| computeFeishuSign   | returns timestamp as a string                                  |    1 | `TestFeishuSign_ReturnsTimestampAsString`                              |
+| computeFeishuSign   | produces deterministic output for the same (secret, timestamp) |    1 | `TestFeishuSign_ProducesDeterministicOutput`                           |
+| computeFeishuSign   | different secrets yield different signs                        |    1 | `TestFeishuSign_DifferentSecretsYieldDifferentSigns`                   |
+| computeFeishuSign   | different timestamps yield different signs                     |    1 | `TestFeishuSign_DifferentTimestampsYieldDifferentSigns`                |
+| computeFeishuSign   | sign is standard base64 (NOT URL-encoded)                      |    1 | `TestFeishuSign_SignIsStandardBase64NotURLEncoded`                     |
 
 `fangzhou-codingplan.test.ts`（24 例）→ `server/internal/providers/codingplan_test.go`（fetch 16 + connection 8，旧 `cannedHTTPDoer` + 新增 `errDoer`/`recordingDoer`）：
 
-| 旧 describe                 | 旧用例（逐字）                                                                                   | 例数 | Go 测试                                                               |
-| --------------------------- | ------------------------------------------------------------------------------------------------ | ---: | --------------------------------------------------------------------- |
-| fetchCodingPlanUsage        | maps real fixture to three windows with Cap→limit, Percent→used, remaining computed              |    1 | `TestCodingPlan_MapsRealFixtureToThreeWindows`                        |
-| fetchCodingPlanUsage        | skips unknown Level rows, emits warning, and still maps known rows                               |    1 | `TestCodingPlan_SkipsUnknownLevelRowsAndEmitsWarning`                 |
-| fetchCodingPlanUsage        | maps ResetTimestamp=0 to resetTime null                                                          |    1 | `TestCodingPlan_ResetTimestampZeroMapsToResetTimeNull`                |
-| fetchCodingPlanUsage        | falls back to limit=100 when Cap is missing                                                      |    1 | `TestCodingPlan_FallsBackToLimit100WhenCapMissing`                    |
-| fetchCodingPlanUsage        | throws 'Account not subscribed to CodingPlan' when QuotaUsage is empty                           |    1 | `TestCodingPlan_ThrowsWhenQuotaUsageIsEmpty`                          |
-| fetchCodingPlanUsage        | throws when QuotaUsage is not an array                                                           |    1 | `TestCodingPlan_ThrowsWhenQuotaUsageIsNotArray`                       |
-| fetchCodingPlanUsage        | throws when Result is missing                                                                    |    1 | `TestCodingPlan_ThrowsWhenResultIsMissing`                            |
-| fetchCodingPlanUsage        | throws 'CodingPlan usage API returned 400' on HTTP 400                                           |    1 | `TestCodingPlan_ThrowsOnHTTP400`                                      |
-| fetchCodingPlanUsage        | throws 'CodingPlan usage API returned 500' on HTTP 500                                           |    1 | `TestCodingPlan_ThrowsOnHTTP500`                                      |
-| fetchCodingPlanUsage        | propagates AbortError on network failure                                                         |    1 | `TestCodingPlan_PropagatesNetworkError`                               |
-| fetchCodingPlanUsage        | propagates TypeError on network failure                                                          |    1 | `TestCodingPlan_PropagatesTypeErrorNetworkFailure`                    |
-| fetchCodingPlanUsage        | throws when AK/SK is missing                                                                     |    1 | `TestCodingPlan_ThrowsWhenAKSKIsMissing`                              |
-| fetchCodingPlanUsage        | uses Cap value for limit when present                                                            |    1 | `TestCodingPlan_UsesCapValueForLimitWhenPresent`                      |
-| fetchCodingPlanUsage        | returns all null windows with warnings when all Level values are unknown                         |    1 | `TestCodingPlan_AllThreeRowsUnknownReturnsAllNullWindowsWithWarnings` |
-| fetchCodingPlanUsage        | ignores Result.Status field                                                                      |    1 | `TestCodingPlan_IgnoresResultStatusField`                             |
-| fetchCodingPlanUsage        | ignores HasReward, RewardTotalPercent, UpdateTimestamp                                           |    1 | `TestCodingPlan_IgnoresHasRewardRewardTotalPercentUpdateTimestamp`    |
-| testCodingPlanConnection    | returns failure when AK/SK is missing                                                            |    1 | `TestCodingPlanConnection_ReturnsFailureWhenAKSKIsMissing`            |
-| testCodingPlanConnection    | returns failure when AK/SK is empty string                                                       |    1 | `TestCodingPlanConnection_ReturnsFailureWhenAKSKIsEmpty`              |
-| testCodingPlanConnection    | returns success with subscription info when InfoList is non-empty                                |    1 | `TestCodingPlanConnection_ReturnsSuccessWithSubscriptionInfo`         |
-| testCodingPlanConnection    | returns success with fallback labels when BizInfo/Status missing                                 |    1 | `TestCodingPlanConnection_ReturnsSuccessWithFallbackLabels`           |
-| testCodingPlanConnection    | returns failure when InfoList is empty                                                           |    1 | `TestCodingPlanConnection_ReturnsFailureWhenInfoListIsEmpty`          |
-| testCodingPlanConnection    | returns failure on HTTP non-2xx                                                                  |    1 | `TestCodingPlanConnection_ReturnsFailureOnHTTPNon2xx`                 |
-| testCodingPlanConnection    | returns failure on network error                                                                 |    1 | `TestCodingPlanConnection_ReturnsFailureOnNetworkError`               |
-| testCodingPlanConnection    | stringifies non-Error exceptions                                                                 |    1 | `TestCodingPlanConnection_StringifiesNonErrorExceptions`              |
+| 旧 describe              | 旧用例（逐字）                                                                      | 例数 | Go 测试                                                               |
+| ------------------------ | ----------------------------------------------------------------------------------- | ---: | --------------------------------------------------------------------- |
+| fetchCodingPlanUsage     | maps real fixture to three windows with Cap→limit, Percent→used, remaining computed |    1 | `TestCodingPlan_MapsRealFixtureToThreeWindows`                        |
+| fetchCodingPlanUsage     | skips unknown Level rows, emits warning, and still maps known rows                  |    1 | `TestCodingPlan_SkipsUnknownLevelRowsAndEmitsWarning`                 |
+| fetchCodingPlanUsage     | maps ResetTimestamp=0 to resetTime null                                             |    1 | `TestCodingPlan_ResetTimestampZeroMapsToResetTimeNull`                |
+| fetchCodingPlanUsage     | falls back to limit=100 when Cap is missing                                         |    1 | `TestCodingPlan_FallsBackToLimit100WhenCapMissing`                    |
+| fetchCodingPlanUsage     | throws 'Account not subscribed to CodingPlan' when QuotaUsage is empty              |    1 | `TestCodingPlan_ThrowsWhenQuotaUsageIsEmpty`                          |
+| fetchCodingPlanUsage     | throws when QuotaUsage is not an array                                              |    1 | `TestCodingPlan_ThrowsWhenQuotaUsageIsNotArray`                       |
+| fetchCodingPlanUsage     | throws when Result is missing                                                       |    1 | `TestCodingPlan_ThrowsWhenResultIsMissing`                            |
+| fetchCodingPlanUsage     | throws 'CodingPlan usage API returned 400' on HTTP 400                              |    1 | `TestCodingPlan_ThrowsOnHTTP400`                                      |
+| fetchCodingPlanUsage     | throws 'CodingPlan usage API returned 500' on HTTP 500                              |    1 | `TestCodingPlan_ThrowsOnHTTP500`                                      |
+| fetchCodingPlanUsage     | propagates AbortError on network failure                                            |    1 | `TestCodingPlan_PropagatesNetworkError`                               |
+| fetchCodingPlanUsage     | propagates TypeError on network failure                                             |    1 | `TestCodingPlan_PropagatesTypeErrorNetworkFailure`                    |
+| fetchCodingPlanUsage     | throws when AK/SK is missing                                                        |    1 | `TestCodingPlan_ThrowsWhenAKSKIsMissing`                              |
+| fetchCodingPlanUsage     | uses Cap value for limit when present                                               |    1 | `TestCodingPlan_UsesCapValueForLimitWhenPresent`                      |
+| fetchCodingPlanUsage     | returns all null windows with warnings when all Level values are unknown            |    1 | `TestCodingPlan_AllThreeRowsUnknownReturnsAllNullWindowsWithWarnings` |
+| fetchCodingPlanUsage     | ignores Result.Status field                                                         |    1 | `TestCodingPlan_IgnoresResultStatusField`                             |
+| fetchCodingPlanUsage     | ignores HasReward, RewardTotalPercent, UpdateTimestamp                              |    1 | `TestCodingPlan_IgnoresHasRewardRewardTotalPercentUpdateTimestamp`    |
+| testCodingPlanConnection | returns failure when AK/SK is missing                                               |    1 | `TestCodingPlanConnection_ReturnsFailureWhenAKSKIsMissing`            |
+| testCodingPlanConnection | returns failure when AK/SK is empty string                                          |    1 | `TestCodingPlanConnection_ReturnsFailureWhenAKSKIsEmpty`              |
+| testCodingPlanConnection | returns success with subscription info when InfoList is non-empty                   |    1 | `TestCodingPlanConnection_ReturnsSuccessWithSubscriptionInfo`         |
+| testCodingPlanConnection | returns success with fallback labels when BizInfo/Status missing                    |    1 | `TestCodingPlanConnection_ReturnsSuccessWithFallbackLabels`           |
+| testCodingPlanConnection | returns failure when InfoList is empty                                              |    1 | `TestCodingPlanConnection_ReturnsFailureWhenInfoListIsEmpty`          |
+| testCodingPlanConnection | returns failure on HTTP non-2xx                                                     |    1 | `TestCodingPlanConnection_ReturnsFailureOnHTTPNon2xx`                 |
+| testCodingPlanConnection | returns failure on network error                                                    |    1 | `TestCodingPlanConnection_ReturnsFailureOnNetworkError`               |
+| testCodingPlanConnection | stringifies non-Error exceptions                                                    |    1 | `TestCodingPlanConnection_StringifiesNonErrorExceptions`              |
 
 `fangzhou-models.test.ts`（15 例）→ `server/internal/providers/fangzhou_models_test.go`（foundation 8 + agentplan 4 + codingplan 3，新增 `recordingDoer`/`sequenceDoer` 断言请求 URL 与签名头）：
 
-| 旧 describe          | 旧用例（逐字）                                                                                     | 例数 | Go 测试                                                            |
-| -------------------- | -------------------------------------------------------------------------------------------------- | ---: | ------------------------------------------------------------------ |
-| fetchFangzhouModels  | throws when AK/SK is missing                                                                       |    1 | `TestFangzhouModels_ThrowsWhenAKSKIsMissing`                       |
-| fetchFangzhouModels  | fetches single page and extracts Item Names                                                        |    1 | `TestFangzhouModels_FetchesSinglePageAndExtractsItemNames`         |
-| fetchFangzhouModels  | paginates to fetch all models                                                                      |    1 | `TestFangzhouModels_PaginatesToFetchAllModels`                     |
-| fetchFangzhouModels  | stops at defensive limit of 1000 items                                                             |    1 | `TestFangzhouModels_StopsAtDefensiveLimitOf1000Items`              |
-| fetchFangzhouModels  | returns empty array when Items is missing                                                          |    1 | `TestFangzhouModels_ReturnsEmptyArrayWhenItemsIsMissing`           |
-| fetchFangzhouModels  | returns empty array when Result is missing                                                         |    1 | `TestFangzhouModels_ReturnsEmptyArrayWhenResultIsMissing`          |
-| fetchFangzhouModels  | throws on non-2xx response                                                                         |    1 | `TestFangzhouModels_ThrowsOnNon2xxResponse`                        |
-| fetchFangzhouModels  | sends proper V4 signed headers                                                                     |    1 | `TestFangzhouModels_SendsProperV4SignedHeaders`                    |
-| fetchAgentPlanModels | throws when AK/SK is missing                                                                       |    1 | `TestAgentPlanModels_ThrowsWhenAKSKIsMissing`                      |
-| fetchAgentPlanModels | calls ListAgentPlanLatestModel and extracts ModelNames (falling back to ModelId)                   |    1 | `TestAgentPlanModels_CallsListAgentPlanLatestModelAndExtractsModelNames` |
-| fetchAgentPlanModels | returns empty array when Data is missing                                                           |    1 | `TestAgentPlanModels_ReturnsEmptyArrayWhenDataIsMissing`           |
-| fetchAgentPlanModels | throws on non-2xx response                                                                         |    1 | `TestAgentPlanModels_ThrowsOnNon2xxResponse`                       |
-| fetchCodingPlanModels | throws when AK/SK is missing                                                                      |    1 | `TestCodingPlanModels_ThrowsWhenAKSKIsMissing`                     |
-| fetchCodingPlanModels | calls ListArkCodeLatestModel and extracts ModelNames (falling back to ModelId)                    |    1 | `TestCodingPlanModels_CallsListArkCodeLatestModelAndExtractsModelNames` |
-| fetchCodingPlanModels | throws on non-2xx response                                                                        |    1 | `TestCodingPlanModels_ThrowsOnNon2xxResponse`                      |
+| 旧 describe           | 旧用例（逐字）                                                                   | 例数 | Go 测试                                                                  |
+| --------------------- | -------------------------------------------------------------------------------- | ---: | ------------------------------------------------------------------------ |
+| fetchFangzhouModels   | throws when AK/SK is missing                                                     |    1 | `TestFangzhouModels_ThrowsWhenAKSKIsMissing`                             |
+| fetchFangzhouModels   | fetches single page and extracts Item Names                                      |    1 | `TestFangzhouModels_FetchesSinglePageAndExtractsItemNames`               |
+| fetchFangzhouModels   | paginates to fetch all models                                                    |    1 | `TestFangzhouModels_PaginatesToFetchAllModels`                           |
+| fetchFangzhouModels   | stops at defensive limit of 1000 items                                           |    1 | `TestFangzhouModels_StopsAtDefensiveLimitOf1000Items`                    |
+| fetchFangzhouModels   | returns empty array when Items is missing                                        |    1 | `TestFangzhouModels_ReturnsEmptyArrayWhenItemsIsMissing`                 |
+| fetchFangzhouModels   | returns empty array when Result is missing                                       |    1 | `TestFangzhouModels_ReturnsEmptyArrayWhenResultIsMissing`                |
+| fetchFangzhouModels   | throws on non-2xx response                                                       |    1 | `TestFangzhouModels_ThrowsOnNon2xxResponse`                              |
+| fetchFangzhouModels   | sends proper V4 signed headers                                                   |    1 | `TestFangzhouModels_SendsProperV4SignedHeaders`                          |
+| fetchAgentPlanModels  | throws when AK/SK is missing                                                     |    1 | `TestAgentPlanModels_ThrowsWhenAKSKIsMissing`                            |
+| fetchAgentPlanModels  | calls ListAgentPlanLatestModel and extracts ModelNames (falling back to ModelId) |    1 | `TestAgentPlanModels_CallsListAgentPlanLatestModelAndExtractsModelNames` |
+| fetchAgentPlanModels  | returns empty array when Data is missing                                         |    1 | `TestAgentPlanModels_ReturnsEmptyArrayWhenDataIsMissing`                 |
+| fetchAgentPlanModels  | throws on non-2xx response                                                       |    1 | `TestAgentPlanModels_ThrowsOnNon2xxResponse`                             |
+| fetchCodingPlanModels | throws when AK/SK is missing                                                     |    1 | `TestCodingPlanModels_ThrowsWhenAKSKIsMissing`                           |
+| fetchCodingPlanModels | calls ListArkCodeLatestModel and extracts ModelNames (falling back to ModelId)   |    1 | `TestCodingPlanModels_CallsListArkCodeLatestModelAndExtractsModelNames`  |
+| fetchCodingPlanModels | throws on non-2xx response                                                       |    1 | `TestCodingPlanModels_ThrowsOnNon2xxResponse`                            |
 
 偏差与说明：
 
 - **signing.test.ts 描述修正**：矩阵原记「火山 V4 签名」与该文件实际内容（`computeDingtalkSign`/`computeFeishuSign` 通知签名）不符；本票将该行描述订正为「通知签名（钉钉/飞书）」。`signing_test.go` 已由 #37 落基础骨架（5 例），本票重写为 12 例逐字沿用旧用例名并锁定飞书官方参考值 `TOjmNE0/gdXWiUBBctTQNdftMsBHtkNSOeswvkAA7FM=`。
 - **volcengine-signer.test.ts**：冻结时钟 `2026-06-01T08:00:00Z` 断言 `X-Date`/`X-Content-Sha256`/`Authorization` 逐字节（签名串 `44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a` 与 credential scope `20260601/cn-beijing/ark/request`）。
-- **fangzhou-codingplan.test.ts**：旧 `cannedHTTPDoer` 复用自 `providers_test.go`；新增 `errDoer` 覆盖网络错误透传（`AbortError`/`TypeError`/非 Error 异常字符串化）；真实响应 fixture（生产捕获 2026-09-20）锁定三窗口映射与 Cap→limit、`ResetTimestamp×1000→ISO`（`session→2026-09-20T07:35:55.000Z`/`weekly→2026-09-20T16:00:00.000Z`/`monthly→2026-10-20T15:59:59.000Z`）。
+- **fangzhou-codingplan.test.ts**：旧 `cannedHTTPDoer` 复用自 `providers_test.go`；新增 `errDoer` 覆盖网络错误透传（`AbortError`/`TypeError`/非 Error 异常字符串化）；真实响应 fixture（生产捕获 2026-09-20）锁定三窗口映射与 Cap→limit、`ResetTimestamp×1000→ISO`（`session→2026-09-20T07:35:55.000Z`/`weekly→2026-09-20T16:00:00.000Z`/`monthly→2026-10-20T15:59:59.000Z`）。`QuotaUsage` 先按 `json.RawMessage` 解码再转 `[]codingPlanQuota`：缺失、`null`、非数组、空数组统一抛 `Account not subscribed to CodingPlan`，与旧栈 `!Array.isArray(...) || length === 0` 守卫逐字一致（避免直解切片时 JSON 类型错误经 usage 路由 502 透传用户）。
 - **fangzhou-models.test.ts**：新增 `recordingDoer` 捕获请求以断言 `Action`/`Version`/签名头；`sequenceDoer` 支持多页分页断言（3 页 5 模型 + 防御上限 1000/10 页）；`ModelsHandlers()` 注册表从空表改为包含 `fangzhou`/`fangzhou:agentplan`/`fangzhou:codingplan` 三个异常处理器（#28 保留的 `ResolveModelsHandlerWith` 测试语义不变）。
 - **模型空返回**：`FetchFangzhouModels` 与 `fetchPlanModels` 在无数据时返回 `[]string{}` 而非 nil，保证 JSON 线形为 `[]`（匹配旧 `toEqual([])` 语义，而非 `null`）。
 - **连接测试**：`testVolcengineConnection` 已是 #28 实现的通用辅助，本票直接复用并锁定 `codingPlan`/`agentPlan` 的差异化消息（`未检测到 CodingPlan 订阅`/`未检测到 AgentPlan 订阅`）。

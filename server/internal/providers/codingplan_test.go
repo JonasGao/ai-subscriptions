@@ -162,14 +162,18 @@ func TestCodingPlan_ThrowsWhenQuotaUsageIsEmpty(t *testing.T) {
 }
 
 func TestCodingPlan_ThrowsWhenQuotaUsageIsNotArray(t *testing.T) {
-	// In Go, the JSON decoder will fail if QuotaUsage is not an array (string).
-	// The error will be a JSON parse error, not "Account not subscribed".
-	// But the old test expects "Account not subscribed to CodingPlan".
-	// We need to handle this case explicitly.
 	body := `{"Result":{"QuotaUsage":"not-an-array"}}`
 	_, err := FetchCodingPlanUsage(context.Background(), cannedHTTPDoer{body: body}, map[string]string{"ak": "a", "sk": "s"})
-	if err == nil {
-		t.Error("expected error, got nil")
+	if err == nil || !strings.Contains(err.Error(), "Account not subscribed to CodingPlan") {
+		t.Errorf("err = %v, want containing \"Account not subscribed to CodingPlan\"", err)
+	}
+}
+
+func TestCodingPlan_ThrowsWhenQuotaUsageIsNull(t *testing.T) {
+	body := `{"Result":{"QuotaUsage":null}}`
+	_, err := FetchCodingPlanUsage(context.Background(), cannedHTTPDoer{body: body}, map[string]string{"ak": "a", "sk": "s"})
+	if err == nil || !strings.Contains(err.Error(), "Account not subscribed to CodingPlan") {
+		t.Errorf("err = %v, want containing \"Account not subscribed to CodingPlan\"", err)
 	}
 }
 
