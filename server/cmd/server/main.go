@@ -17,6 +17,7 @@ import (
 	"ai-subscriptions/internal/config"
 	"ai-subscriptions/internal/healthcheck"
 	"ai-subscriptions/internal/httpapi"
+	"ai-subscriptions/internal/notify"
 	"ai-subscriptions/internal/scheduler"
 	"ai-subscriptions/internal/store"
 	"ai-subscriptions/internal/webui"
@@ -90,17 +91,27 @@ func run() error {
 	defer stop()
 
 	// ADR-0018: the reset tick runs on a 5-minute time.Ticker (replaces
-	// node-cron). It restores exhausted schedules due for a reset and advances
-	// their nextResetTime. Notification dispatch and provider calibration hook
-	// into their own tickets (#39, #34).
+	// node-cron). It restores exhausted schedules due for a reset, advances
+	// their nextResetTime and then dispatches the reset/low-balance events to
+	// the configured notification channels (#39). Provider calibration hooks
+	// into its own ticket (#34).
+	dispatcher := notify.NewDispatcher(db, notify.NewHTTPSender(nil), notify.DefaultFeishuClient())
 	go scheduler.Run(ctx, 5*time.Minute, func() error {
-		triggers, err := db.ProcessResetTick()
-		if err == nil && len(triggers) > 0 {
+		triggers, resetErr := db.ProcessResetTick()
+		if resetErr == nil && len(triggers) > 0 {
 			log.Printf("reset tick: %d trigger(s)", len(triggers))
 		}
-		return err
+
+		// A reset failure must not block notifications (the old scheduler ran
+		// the two phases in separate try/catch blocks).
+		subscriptions, subsErr := db.Subscriptions()
+		if subsErr != nil {
+			return errors.Join(resetErr, subsErr)
+		}
+		notifyErr := dispatcher.RunNotificationTick(ctx, subscriptions, triggers)
+		return errors.Join(resetErr, notifyErr)
 	}, func(err error) {
-		log.Printf("reset tick failed: %v", err)
+		log.Printf("scheduler tick failed: %v", err)
 	})
 
 	errCh := make(chan error, 1)
