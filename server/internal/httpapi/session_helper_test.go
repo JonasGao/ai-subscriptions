@@ -6,13 +6,15 @@ import (
 	"testing"
 
 	"ai-subscriptions/internal/auth"
+	"ai-subscriptions/internal/crypto"
 	"ai-subscriptions/internal/store"
 )
 
-// newSessionRouter builds a router whose session gate is backed by a real auth
-// service on a temporary store, and signs in so the returned cookie passes the
-// gate. Tests about non-auth behaviour use it to reach their route.
-func newSessionRouter(t *testing.T, opts Options) (http.Handler, *http.Cookie) {
+// newSessionRouterWithStore builds a router whose session gate is backed by a
+// real auth service on a temporary store, and signs in so the returned cookie
+// passes the gate. The store is also wired as the data service so tests can
+// seed and inspect subscription state.
+func newSessionRouterWithStore(t *testing.T, opts Options) (http.Handler, *http.Cookie, *store.Store) {
 	t.Helper()
 
 	db, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
@@ -30,5 +32,29 @@ func newSessionRouter(t *testing.T, opts Options) (http.Handler, *http.Cookie) {
 	if opts.Auth == nil {
 		opts.Auth = svc
 	}
-	return New(opts), &http.Cookie{Name: authCookieName, Value: result.Token}
+	if opts.Data == nil {
+		opts.Data = db
+	}
+	if opts.ProviderRefs == nil {
+		opts.ProviderRefs = db
+	}
+	if opts.Cipher == nil {
+		opts.Cipher = crypto.New("route-test-secret")
+	}
+	return New(opts), &http.Cookie{Name: authCookieName, Value: result.Token}, db
+}
+
+// newSessionRouter is the store-less flavour used by tests that only care
+// about routing and auth.
+func newSessionRouter(t *testing.T, opts Options) (http.Handler, *http.Cookie) {
+	t.Helper()
+	srv, cookie, _ := newSessionRouterWithStore(t, opts)
+	return srv, cookie
+}
+
+// newSubscriptionRouter is the subscription-route flavour: it returns the
+// store so tests can seed and inspect state.
+func newSubscriptionRouter(t *testing.T) (http.Handler, *http.Cookie, *store.Store) {
+	t.Helper()
+	return newSessionRouterWithStore(t, Options{})
 }

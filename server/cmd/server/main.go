@@ -73,10 +73,12 @@ func run() error {
 	srv := &http.Server{
 		Addr: cfg.Addr,
 		Handler: httpapi.New(httpapi.Options{
-			Assets: assets,
-			Auth:   authService,
-			Proxy:  db,
-			Notify: db,
+			Assets:       assets,
+			Auth:         authService,
+			Data:         db,
+			ProviderRefs: db,
+			Proxy:        db,
+			Notify:       db,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
