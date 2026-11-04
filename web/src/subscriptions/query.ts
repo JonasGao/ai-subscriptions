@@ -21,6 +21,12 @@ export interface SubscriptionQueryOptions {
   onEdit: (subscription: Subscription) => void;
   onBalanceUpdate?: (id: string, balance: number, currency: string) => void;
   onSubscriptionUpdate?: (subscription: Subscription) => void;
+  /** ADR-0007: auto-exhaust toggle callback (manual + automatic). */
+  onScheduleToggle?: (
+    subscriptionId: string,
+    scheduleId: string,
+    exhausted: boolean
+  ) => void | Promise<void>;
 }
 
 export interface PreviousBalance {
@@ -53,6 +59,42 @@ export function createSubscriptionQuery(options: SubscriptionQueryOptions) {
 
   const isRecurring = () => options.subscription.subscriptionType === "recurring";
 
+  // ADR-0007: auto-exhaust linkage. After a successful usage query, check each
+  // window (fiveHour/weekly/monthly). For each non-null window with limit > 0
+  // and used >= limit, find the matching schedule (by type, enabled, not
+  // exhausted) and call onScheduleToggle sequentially.
+  const checkAutoExhaust = async (usage: UsageQueryResponse) => {
+    if (!options.onScheduleToggle) return;
+    const schedules = options.subscription.resetSchedules ?? [];
+
+    // Check windows in order: fiveHour, weekly, monthly
+    const windows: Array<{
+      type: "fiveHour" | "weekly" | "monthly";
+      window: typeof usage.fiveHour;
+    }> = [
+      { type: "fiveHour", window: usage.fiveHour },
+      { type: "weekly", window: usage.weekly },
+      { type: "monthly", window: usage.monthly },
+    ];
+
+    for (const { type, window } of windows) {
+      if (!window) continue;
+      const limit = parseFloat(window.limit);
+      const used = parseFloat(window.used);
+      if (!Number.isFinite(limit) || limit <= 0) continue;
+      if (!Number.isFinite(used) || used < limit) continue;
+
+      // Find matching schedule: same type, enabled, not exhausted
+      const schedule = schedules.find(
+        (s) => s.type === type && s.enabled && !s.exhausted
+      );
+      if (!schedule) continue;
+
+      // Call toggle sequentially (await each)
+      await options.onScheduleToggle(options.subscription.id, schedule.id, true);
+    }
+  };
+
   const runQuery = async () => {
     setLoading(true);
     setError(null);
@@ -70,6 +112,8 @@ export function createSubscriptionQuery(options: SubscriptionQueryOptions) {
         const data = (await res.json()) as UsageQueryResponse;
         setUsage(data);
         setLastQueryAt(Date.now());
+        // ADR-0007: auto-exhaust after successful usage query
+        await checkAutoExhaust(data);
         // The usage route echoes the (currently uncalibrated) subscription;
         // #34 fills in reset-time calibration. Pushing it up keeps the list in
         // sync without a refetch.

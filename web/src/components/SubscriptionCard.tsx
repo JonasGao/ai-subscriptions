@@ -137,6 +137,7 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
     onEdit: props.onEdit,
     onBalanceUpdate: props.onBalanceUpdate,
     onSubscriptionUpdate: props.onSubscriptionUpdate,
+    onScheduleToggle: props.onScheduleToggle,
   });
 
   const handleModelsClick = () => {
