@@ -1,4 +1,5 @@
 // Port of the balance-formatting helpers in lib/utils.ts.
+import type { Subscription } from "./types";
 
 const CURRENCY_SYMBOL_MAP: Record<string, string> = {
   CNY: "¥",
@@ -30,4 +31,39 @@ const PROVIDER_CURRENCY_MAP: Record<string, string> = {
 
 export function getProviderCurrency(provider: string): string {
   return PROVIDER_CURRENCY_MAP[provider] ?? "USD";
+}
+
+/** calculateMonthlyTotal sums recurring subscriptions, yearly prices / 12. */
+export function calculateMonthlyTotal(subscriptions: Subscription[]): number {
+  return subscriptions
+    .filter((subscription) => subscription.subscriptionType === "recurring")
+    .reduce(
+      (total, subscription) =>
+        total +
+        (subscription.billingCycle === "yearly"
+          ? subscription.price / 12
+          : subscription.price),
+      0
+    );
+}
+
+/** calculateYearlyTotal annualizes monthly prices (×12) and sums them. */
+export function calculateYearlyTotal(subscriptions: Subscription[]): number {
+  return subscriptions
+    .filter((subscription) => subscription.subscriptionType === "recurring")
+    .reduce(
+      (total, subscription) =>
+        total +
+        (subscription.billingCycle === "monthly"
+          ? subscription.price * 12
+          : subscription.price),
+      0
+    );
+}
+
+/** calculateOneTimeTotal sums every one-time top-up. */
+export function calculateOneTimeTotal(subscriptions: Subscription[]): number {
+  return subscriptions
+    .filter((subscription) => subscription.subscriptionType === "one-time")
+    .reduce((total, subscription) => total + subscription.price, 0);
 }
