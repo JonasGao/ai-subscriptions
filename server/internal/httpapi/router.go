@@ -23,6 +23,9 @@ type Options struct {
 	// ProviderRefs supplies subscription/tool references for provider
 	// enrichment. Nil means a fresh install with no references.
 	ProviderRefs ProviderRefSource
+	// Auth verifies session cookies and owns credentials. Nil disables the
+	// session gate's ability to authenticate anyone, which only tests use.
+	Auth AuthService
 }
 
 // New builds the application router.
@@ -30,7 +33,19 @@ func New(opts Options) http.Handler {
 	r := chi.NewRouter()
 
 	r.Route("/api", func(api chi.Router) {
+		// Every API route runs through the session gate; the auth endpoints
+		// are white-listed inside the gate itself. Unknown /api paths are
+		// gated too (the gate wraps this subrouter's NotFound handler).
+		api.Use(opts.sessionGate)
+
 		api.Get("/health", handleHealth)
+		if opts.Auth != nil {
+			api.Post("/auth/login", handleLogin(opts.Auth))
+			api.Post("/auth/logout", handleLogout)
+			api.Get("/auth/session", handleSession(opts))
+			api.Get("/auth/is-initial", handleIsInitial(opts.Auth))
+			api.Post("/auth/change-password", handleChangePassword(opts.Auth))
+		}
 		api.Get("/providers", handleProviders(opts))
 		api.Get("/providers/unregistered", handleUnregisteredProviders(opts))
 		api.NotFound(writeJSONNotFound)

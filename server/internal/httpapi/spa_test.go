@@ -93,11 +93,14 @@ func TestMissingAssetsDoNotFallBackToIndex(t *testing.T) {
 }
 
 func TestUnknownAPIRouteDoesNotFallBackToIndex(t *testing.T) {
-	srv := New(Options{Assets: testAssets()})
+	srv, session := newSessionRouter(t, Options{Assets: testAssets()})
 
 	for _, target := range []string{"/api", "/api/does-not-exist"} {
 		t.Run(target, func(t *testing.T) {
-			rec := get(t, srv, target)
+			req := httptest.NewRequest(http.MethodGet, target, nil)
+			req.AddCookie(session)
+			rec := httptest.NewRecorder()
+			srv.ServeHTTP(rec, req)
 
 			if rec.Code != http.StatusNotFound {
 				t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)

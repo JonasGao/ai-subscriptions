@@ -24,8 +24,13 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family:
-    Inter, system-ui, -apple-system, "Segoe UI", "PingFang SC",
-    "Microsoft YaHei", sans-serif;
+    Inter,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    "PingFang SC",
+    "Microsoft YaHei",
+    sans-serif;
 }
 
 .shell {
@@ -57,4 +62,107 @@ body {
   border-radius: 999px;
   color: var(--accent);
   font-size: 0.875rem;
+}
+
+.loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.auth-card {
+  width: min(24rem, 100%);
+  padding: 2rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--bg) 92%, var(--fg) 8%);
+}
+
+.auth-card h1 {
+  margin: 0 0 1.25rem;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.auth-form input {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  border-radius: 0.45rem;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.auth-form input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.auth-form button {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.45rem;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-form button.ghost {
+  border-color: color-mix(in srgb, var(--fg) 20%, transparent);
+  background: transparent;
+  color: var(--fg);
+}
+
+.auth-form button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.auth-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.auth-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.shell button {
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.45rem;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
 }

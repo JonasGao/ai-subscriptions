@@ -20,10 +20,14 @@ type stubProviderRefs struct {
 func (s stubProviderRefs) SubscriptionRefs() []providers.ProviderRef { return s.subscriptions }
 func (s stubProviderRefs) ToolRefs() []providers.ProviderRef         { return s.tools }
 
-func getJSON(t *testing.T, handler http.Handler, path string) *httptest.ResponseRecorder {
+func getJSON(t *testing.T, handler http.Handler, path string, cookies ...*http.Cookie) *httptest.ResponseRecorder {
 	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	for _, cookie := range cookies {
+		req.AddCookie(cookie)
+	}
 	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+	handler.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("GET %s status = %d, want 200 (body=%q)", path, rec.Code, rec.Body.String())
 	}
@@ -34,9 +38,9 @@ func getJSON(t *testing.T, handler http.Handler, path string) *httptest.Response
 }
 
 func TestProvidersRoutesServeEmptyInstallShape(t *testing.T) {
-	srv := New(Options{})
+	srv, session := newSessionRouter(t, Options{})
 
-	providersRec := getJSON(t, srv, "/api/providers")
+	providersRec := getJSON(t, srv, "/api/providers", session)
 	providersWant, err := os.ReadFile("testdata/old_stack_providers_enriched.json")
 	if err != nil {
 		t.Fatalf("read golden: %v", err)
@@ -46,14 +50,14 @@ func TestProvidersRoutesServeEmptyInstallShape(t *testing.T) {
 			providersRec.Body.Bytes(), providersWant)
 	}
 
-	unregisteredRec := getJSON(t, srv, "/api/providers/unregistered")
+	unregisteredRec := getJSON(t, srv, "/api/providers/unregistered", session)
 	if got, want := unregisteredRec.Body.String(), "[]"; got != want {
 		t.Errorf("/api/providers/unregistered body = %q, want %q", got, want)
 	}
 }
 
 func TestProvidersRouteEnrichesReferenceCounts(t *testing.T) {
-	srv := New(Options{ProviderRefs: stubProviderRefs{
+	srv, session := newSessionRouter(t, Options{ProviderRefs: stubProviderRefs{
 		subscriptions: []providers.ProviderRef{
 			{Provider: "deepseek"},
 			{Provider: "deepseek"},
@@ -66,7 +70,7 @@ func TestProvidersRouteEnrichesReferenceCounts(t *testing.T) {
 		},
 	}})
 
-	rec := getJSON(t, srv, "/api/providers")
+	rec := getJSON(t, srv, "/api/providers", session)
 
 	var body []struct {
 		ID                string `json:"id"`
@@ -103,7 +107,7 @@ func TestProvidersRouteEnrichesReferenceCounts(t *testing.T) {
 }
 
 func TestUnregisteredProvidersRoute(t *testing.T) {
-	srv := New(Options{ProviderRefs: stubProviderRefs{
+	srv, session := newSessionRouter(t, Options{ProviderRefs: stubProviderRefs{
 		subscriptions: []providers.ProviderRef{
 			{Provider: "other", ProviderCustom: "FooAPI"},
 			{Provider: "other", ProviderCustom: "FooAPI"},
@@ -114,18 +118,20 @@ func TestUnregisteredProvidersRoute(t *testing.T) {
 		},
 	}})
 
-	rec := getJSON(t, srv, "/api/providers/unregistered")
+	rec := getJSON(t, srv, "/api/providers/unregistered", session)
 	if got, want := rec.Body.String(), `[{"name":"FooAPI","count":2},{"name":"BarSvc","count":1}]`; got != want {
 		t.Errorf("body = %q, want %q", got, want)
 	}
 }
 
 func TestProvidersRoutesRejectNonGET(t *testing.T) {
-	srv := New(Options{})
+	srv, session := newSessionRouter(t, Options{})
 
 	for _, path := range []string{"/api/providers", "/api/providers/unregistered"} {
+		req := httptest.NewRequest(http.MethodPost, path, nil)
+		req.AddCookie(session)
 		rec := httptest.NewRecorder()
-		srv.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, path, nil))
+		srv.ServeHTTP(rec, req)
 		if rec.Code != http.StatusMethodNotAllowed {
 			t.Errorf("POST %s status = %d, want 405", path, rec.Code)
 		}
