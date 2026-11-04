@@ -293,7 +293,7 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 | ----------------------------------- | ---: | ---------------------- | ---- |
 | SubscriptionCard.test.tsx           |   18 | SubscriptionCard       | ◑    |
 | model-button.test.tsx               |   18 | 模型查询按钮           | ☐    |
-| SortablePriorityList.test.tsx       |   13 | 优先级拖拽列表         | ☐    |
+| SortablePriorityList.test.tsx       |   13 | 优先级拖拽列表         | ☑    |
 | auto-exhaust.test.tsx               |   10 | 自动用尽标记（卡片侧） | ☐    |
 | TagInput.test.tsx                   |    6 | 标签输入               | ☑    |
 | useNow.test.ts                      |    5 | 时间信号原语           | ☐    |
@@ -330,6 +330,33 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 | saves a typed tag when the user submits without pressing Enter |    1 | 同名用例（`ProxySubscriptionForm`） |
 
 偏差：① 同上，`force-dynamic` 无对应物，改为行为断言；② 旧组件自取数据（`useEffect` + fetch），新栈由路由页持有数据、页签只渲染 props，故 `ProxySubscriptionTab` 的取数路径由路由级用例覆盖；③ 旧表单的 Dialog/Select/RadioGroup 来自 shadcn+Radix，新栈用原生 `dialog` 结构与原生 `select`/`radio`，`getByLabelText`/`placeholder` 定位保持不变。另补 `server/internal/httpapi/proxy_test.go` 的 4 例路由级用例（CRUD 回环、清空到期日、400 校验文案、会话门禁）——旧栈这五个 handler 无路由测试，本票按「行为以旧栈实现为规范」补锁定。
+
+### 已闭合文件的用例级对账（#35）
+
+`SortablePriorityList.test.tsx`（13 例）→ `web/src/priorities/SortablePriorityList.test.tsx`（13 例，Solid + solid-dnd 通过 `./dnd` 接缝以 mock 方式对齐旧栈的 `@dnd-kit/sortable` mock）：
+
+| 旧 describe                       | 旧用例（逐字）                                                                                        | 例数 | 新用例                                              |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------- | ---: | --------------------------------------------------- |
+| priority indicators               | numbers visible subscriptions continuously and spans the full color range                             |    1 | 同名用例                                            |
+| priority indicators               | uses the highest-priority color for a one-item scene                                                  |    1 | 同名用例                                            |
+| priority indicators               | moves the rank and color with a subscription after reordering                                         |    1 | 同名用例（通过重建组件覆盖重排）                      |
+| exhausted scope labels            | does not render a scope label when no resetSchedules exist                                            |    1 | 同名用例                                            |
+| exhausted scope labels            | does not render a scope label when schedules exist but none are exhausted                             |    1 | 同名用例                                            |
+| exhausted scope labels            | does not render a scope label when exhausted schedule is disabled                                     |    1 | 同名用例                                            |
+| exhausted scope labels            | renders the matching scope label when a single schedule is exhausted                                  |    1 | 同名用例                                            |
+| exhausted scope labels            | renders the largest scope when multiple schedules are exhausted (monthly > weekly > fiveHour)           |    1 | 同名用例                                            |
+| exhausted scope labels            | picks weekly over fiveHour when both are exhausted                                                    |    1 | 同名用例                                            |
+| exhausted scope labels            | does not render a scope label for cancelled subscriptions                                             |    1 | 同名用例                                            |
+| exhausted scope labels            | does not render a scope label for paused subscription without exhausted schedules                     |    1 | 同名用例                                            |
+| exhausted scope labels            | renders the scope label with red styling                                                              |    1 | 同名用例                                            |
+| exhausted scope labels            | places the scope label before the status badge                                                        |    1 | 同名用例                                            |
+
+路由级新增用例（旧栈无对应行）→ `server/internal/httpapi/priorities_tools_test.go`（`TestPrioritySceneRoutesRoundTrip`、`TestToolPrioritySceneRoutesRoundTrip`、`TestToolRoutesRoundTrip`，合计覆盖订阅/工具优先级场景的完整 CRUD 回环、PATCH 重排序、空名/重名/缺失场景的 4xx 校验、工具的 PUT/DELETE/PATCH 校验与排序回环）；存储级新增 `server/internal/store/priorities_test.go`（场景 CRUD + 重排序，订阅与工具两族）与 `server/internal/store/tools_test.go`（工具 CRUD、重排序、删除后从工具优先级场景中剪除）。
+
+偏差：
+- 新栈 `@thisbeyond/solid-dnd` 替代旧栈的 `@dnd-kit/sortable`；`./dnd` 提供可 mock 的 `useSortableRow` 接缝，parity 测试保持与旧栈相同的 mock 结构。
+- 场景名在 `create` 时 trim 后存储；`rename`（PUT）也 trim 后比较重名与存储（旧栈 `create` trim、`update` 存原值，前端两处都先 trim，故观察行为一致）。
+- 工具 PUT 仅更新已声明字段（`name`/`category`/`provider`/`providerCustom`/`forms`/`isOpenSource`/`repoUrl`/`status`/`notes`）；旧栈通过 spread 接受任意字段（含 `order`），新栈通过 PATCH `/api/tools` 的 `toolIds` 进行排序。
 
 ## 不适用
 

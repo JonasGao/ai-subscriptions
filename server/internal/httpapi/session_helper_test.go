@@ -38,6 +38,12 @@ func newSessionRouterWithStore(t *testing.T, opts Options) (http.Handler, *http.
 	if opts.ProviderRefs == nil {
 		opts.ProviderRefs = db
 	}
+	if opts.Priorities == nil {
+		opts.Priorities = db
+	}
+	if opts.Tools == nil {
+		opts.Tools = db
+	}
 	if opts.Cipher == nil {
 		opts.Cipher = crypto.New("route-test-secret")
 	}
