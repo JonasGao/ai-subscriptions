@@ -332,6 +332,9 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 - **前端**：卡片从 props 接收服务端注册表（ADR-0006）而非旧栈的模块级 `defaultProviders`，因此测试
   按需传入 provider 目录；旧「rerender 强制重算」在 Solid 中改为信号驱动，「60 秒后」用假时钟推进。
   无 toast 库（#40 页面壳），模型列表失败改为对话框内联错误态（旧用例只断言「查询失败」文案）。
+- **列表回写延后**：Solid `<For>` 按对象身份 keyed，把 usage 回显/余额回写替换进列表会让该卡片重建并
+  再次触发挂载查询（循环）。卡片自身直接渲染查询结果、服务端已持久化余额，因此 #28 暂不把回调接到
+  `SubscriptionsPage`；列表级回显（校准后的订阅）随 #34 与「身份稳定」的列表更新一起做。
 - `SubscriptionCard.test.tsx` 的 auto-query/cooldown/balance-display 三个子行由
   `web/src/components/SubscriptionCard.query.test.tsx`（23 例，含新栈补充守卫）闭合；该行因 `it.each`
   展开实际 21 例，此前 #26 已闭合 deletion(2)+tags(1)。

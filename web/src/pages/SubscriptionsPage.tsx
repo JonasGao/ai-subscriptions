@@ -137,6 +137,12 @@ export const SubscriptionsPage: Component = () => {
     }
   };
 
+  // NOTE: the balance/usage echo updates are deliberately not wired into this
+  // list yet. Solid's <For> keys by object identity, so replacing the echoed
+  // subscription would remount that card and re-run its mount query. The card
+  // already displays the fresh balance from its own query result, and the
+  // server persists the write-back; the list-level echo (calibrated schedules)
+  // lands with #34 together with a remount-safe list update.
   const handleDelete = async (id: string) => {
     try {
       await deleteSubscription(id);
@@ -146,23 +152,6 @@ export const SubscriptionsPage: Component = () => {
     } catch {
       setErrorMessage("删除订阅失败，请重试");
     }
-  };
-
-  // The balance route persists the queried total server-side; mirror it locally
-  // so the card shows the fresh amount without a refetch.
-  const handleBalanceUpdate = (id: string, balance: number, currency: string) => {
-    setSubscriptions((previous) =>
-      previous.map((item) =>
-        item.id === id ? { ...item, balance, balanceCurrency: currency } : item
-      )
-    );
-  };
-
-  // The usage route echoes the (eventually calibrated, #34) subscription.
-  const handleSubscriptionUpdate = (updated: Subscription) => {
-    setSubscriptions((previous) =>
-      previous.map((item) => (item.id === updated.id ? updated : item))
-    );
   };
 
   return (
@@ -218,8 +207,6 @@ export const SubscriptionsPage: Component = () => {
                   onEdit={openEdit}
                   onDelete={handleDelete}
                   onStatusChange={handleStatusChange}
-                  onBalanceUpdate={handleBalanceUpdate}
-                  onSubscriptionUpdate={handleSubscriptionUpdate}
                 />
               )}
             </For>
