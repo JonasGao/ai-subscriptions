@@ -5,8 +5,8 @@ package httpapi
 // old handlers because the SPA renders them verbatim.
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
 	"math"
 	"net/http"
 	"strings"
@@ -18,11 +18,6 @@ import (
 	"ai-subscriptions/internal/notify"
 	"ai-subscriptions/internal/store"
 )
-
-// errFeishuAppSenderPending is returned for feishu-app test sends until the
-// app-bot sender lands with #38. The endpoint shape stays identical: the
-// failure is recorded in lastSendResult and reported as a 502.
-var errFeishuAppSenderPending = errors.New("feishu-app channel test send is not supported yet")
 
 // NotificationService is the storage seam the router depends on. *store.Store
 // is the production implementation.
@@ -38,13 +33,13 @@ type NotificationService interface {
 	SetDefaultLowBalanceThreshold(value float64) error
 }
 
-func mountNotificationRoutes(api chi.Router, service NotificationService) {
+func mountNotificationRoutes(api chi.Router, service NotificationService, feishu FeishuService) {
 	api.Get("/notifications", handleNotificationList(service))
 	api.Post("/notifications", handleNotificationCreate(service))
 	api.Put("/notifications", handleNotificationThreshold(service))
 	api.Put("/notifications/{id}", handleNotificationUpdate(service))
 	api.Delete("/notifications/{id}", handleNotificationDelete(service))
-	api.Post("/notifications/{id}", handleNotificationAction(service))
+	api.Post("/notifications/{id}", handleNotificationAction(service, feishu))
 }
 
 // decodeJSONObject mirrors parseJsonBody: malformed JSON and non-object bodies
@@ -389,7 +384,7 @@ func handleNotificationDelete(service NotificationService) http.HandlerFunc {
 	}
 }
 
-func handleNotificationAction(service NotificationService) http.HandlerFunc {
+func handleNotificationAction(service NotificationService, feishu FeishuService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		channel, err := service.NotificationChannelByID(chi.URLParam(r, "id"))
 		if err != nil {
@@ -409,7 +404,7 @@ func handleNotificationAction(service NotificationService) http.HandlerFunc {
 
 		switch action {
 		case "test":
-			handleNotificationTestSend(w, service, *channel)
+			handleNotificationTestSend(w, service, feishu, *channel)
 		case "toggle":
 			updated, err := service.ToggleNotificationChannel(channel.ID)
 			if err != nil {
@@ -429,14 +424,14 @@ func handleNotificationAction(service NotificationService) http.HandlerFunc {
 	}
 }
 
-func handleNotificationTestSend(w http.ResponseWriter, service NotificationService, channel model.NotificationChannel) {
+func handleNotificationTestSend(w http.ResponseWriter, service NotificationService, feishu FeishuService, channel model.NotificationChannel) {
 	if !channel.Enabled {
 		writeJSONAligned(w, http.StatusBadRequest, map[string]string{"error": "Cannot test a disabled channel"})
 		return
 	}
 
 	startedAt := model.FormatTimestamp(time.Now())
-	err := sendChannelTest(channel)
+	err := sendChannelTest(feishu, channel)
 	if err != nil {
 		message := err.Error()
 		_ = service.SetNotificationChannelSendResult(channel.ID, model.SendResult{
@@ -478,13 +473,13 @@ func sanitizedOrNil(channel *model.NotificationChannel) any {
 	return notify.SanitizeChannel(*channel)
 }
 
-// sendChannelTest mirrors the old route's sendTest: webhook channels go through
-// the prepared-send pipeline; feishu-app has a dedicated sender that arrives
-// with #38, so it reports a clear failure instead of silently doing nothing.
-func sendChannelTest(channel model.NotificationChannel) error {
+// sendChannelTest mirrors the old route's sendTest: feishu-app channels go
+// through the credential-based app-bot sender (token cache + retry), the rest
+// through the prepared-send pipeline.
+func sendChannelTest(feishu FeishuService, channel model.NotificationChannel) error {
 	event := testEvent()
 	if channel.Type == notify.TypeFeishuApp {
-		return errFeishuAppSenderPending
+		return feishu.SendToChannel(context.Background(), event, channel)
 	}
 	prepared, err := notify.PrepareSend(channel, event, time.Now())
 	if err != nil {

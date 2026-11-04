@@ -24,18 +24,18 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | opencode.test.ts                  |   23 | provider: opencode             | ☐    |
 | enrichment.test.ts                |   23 | providers 能力标记             | ☑    |
 | zhipu.test.ts                     |   22 | provider: zhipu（窗口解码）    | ☐    |
-| feishu-app.test.ts                |   21 | 飞书应用机器人                 | ☐    |
+| feishu-app.test.ts                |   21 | 飞书应用机器人                 | ☑    |
 | provider-models.test.ts           |   15 | providers 模型查询             | ☐    |
 | fangzhou-models.test.ts           |   15 | provider: fangzhou 模型列表    | ☐    |
-| feishu-listener.test.ts           |   13 | 飞书 WS 监听                   | ☐    |
-| feishu-helpers.test.ts            |   13 | 飞书辅助                       | ☐    |
+| feishu-listener.test.ts           |   13 | 飞书 WS 监听                   | ☑    |
+| feishu-helpers.test.ts            |   13 | 飞书辅助                       | ☑    |
 | signing.test.ts                   |   12 | 火山 V4 签名                   | ☐    |
 | reset-schedule-uniqueness.test.ts |   10 | 重置计划唯一性                 | ☐    |
 | notifications-storage.test.ts     |   10 | 通知存储                       | ☑    |
 | providers.test.ts                 |    9 | providers 注册表               | ☑    |
 | models-generic-fetch.test.ts      |    8 | 通用模型获取回退               | ☐    |
 | github-models.test.ts             |    8 | provider: github 模型列表      | ☐    |
-| feishu-credentials.test.ts        |    8 | 飞书凭据                       | ☐    |
+| feishu-credentials.test.ts        |    8 | 飞书凭据                       | ☑    |
 | proxy-subscriptions.test.ts       |    7 | 代理订阅                       | ☑    |
 | volcengine-signer.test.ts         |    6 | 火山 HMAC 签名器               | ☐    |
 | tags.test.ts                      |    6 | 标签稳定标识                   | ☑    |
@@ -156,6 +156,89 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 路由形状（旧栈无路由测试，按旧 handler 实现锁定）：`server/internal/httpapi/notifications_test.go` 30 例——GET 列表/阈值、创建校验文案（8 条）、feishu-app 字段校验与 secrets 脱敏、PUT 合并/清空/400/404、DELETE、toggle、未知 action、阈值 PUT、以及签名测试发送端到端（钉钉 URL 签名、飞书 body 签名、通用 webhook payload、失败 502 与 lastSendResult 记录、禁用渠道拒绝）。
 
 偏差与边界：① `feishu-app` 的测试发送需要应用机器人发送器，随 #38 提供；本票端点形状不变，该类型测试发送以 502 记录明确的失败原因，不静默成功。② `payload` 构造只移植了测试发送所需的 low-balance 分支；`payload.test.ts`（27 例）与 `dispatcher.test.ts`（36 例）行仍归 #39，本票未关闭。③ 旧 `toLocaleString("zh-CN")` 的本地化依赖运行时 ICU，新栈用 `2006/1/2 15:04:05`（服务器本地时区）近似；精确字节语义留给 #39 的 payload 对账钉住。④ feishu-app 的 appSecret 守卫逐字移植了旧 handler 的兜底行为（显式清空若已有存量值则先通过），未按注释意图「修正」。
+
+### 已闭合文件的用例级对账（#38）
+
+四份飞书用例全部落在 `server/internal/notify`（领域层）与 `server/internal/httpapi`（路由层）。旧栈的 `now()`/`fetchFn`/`WSClient` 注入缝在新栈对应 `FeishuClient` 的 `HTTPDoer`+`now` 与 `ListenerManager` 的 `Scheduler`/`Now`/`NewID`/`SocketFactory`，因此每条用例仍是同一接缝上的行为断言。
+
+`feishu-app.test.ts`（21 例）→ `server/internal/notify/feishu_app_test.go`：
+
+| 旧 describe | 旧用例（逐字） | 例数 | Go 测试 |
+| --- | --- | ---: | --- |
+| getTenantToken | fetches a token on first call | 1 | `TestFeishuTenantTokenFetchesOnFirstCall` |
+| getTenantToken | returns cached token on subsequent calls within expiry | 1 | `TestFeishuTenantTokenReturnsCachedTokenWithinExpiry` |
+| getTenantToken | refreshes token after expiry buffer is reached | 1 | `TestFeishuTenantTokenRefreshesAfterExpiryBuffer` |
+| getTenantToken | forceRefresh bypasses cache | 1 | `TestFeishuTenantTokenForceRefreshBypassesCache` |
+| getTenantToken | throws when token response has non-zero code | 1 | `TestFeishuTenantTokenRejectsNonZeroCode` |
+| getTenantToken | throws when HTTP response is not ok | 1 | `TestFeishuTenantTokenRejectsHTTPFailure` |
+| getTenantToken | caches tokens per appId - different apps have separate caches | 1 | `TestFeishuTenantTokenCachesPerAppID` |
+| getTenantToken | clearTokenCache(appId) clears only that app's cache | 1 | `TestFeishuClearTokenCacheClearsOneApp` |
+| getTenantToken | clearTokenCache() without args clears all caches | 1 | `TestFeishuClearTokenCacheClearsAll` |
+| buildFeishuAppCard | builds a valid interactive card JSON string for low-balance event | 1 | `TestBuildFeishuAppCardRendersLowBalance` |
+| buildFeishuAppCard | builds a valid card for reset event | 1 | `TestBuildFeishuAppCardRendersReset` |
+| buildFeishuAppCard | does not include keyword in title (feishu-app uses credential auth) | 1 | `TestBuildFeishuAppCardOmitsKeywordTitle` |
+| sendFeishuAppMessage | sends a message with the fetched token | 1 | `TestSendFeishuAppMessageUsesFetchedToken` |
+| sendFeishuAppMessage | retries once on 401 with fresh token | 1 | `TestSendFeishuAppMessageRetriesOn401` |
+| sendFeishuAppMessage | retries once on code 99991663 even with 200 status | 1 | `TestSendFeishuAppMessageRetriesOnTokenExpiredCode` |
+| sendFeishuAppMessage | throws after retry also fails | 1 | `TestSendFeishuAppMessageFailsAfterRetry` |
+| sendFeishuAppMessage | uses chat_id receive_id_type when configured | 1 | `TestSendFeishuAppMessageUsesChatIDReceiveType` |
+| dispatchEvent with feishu-app | routes feishu-app channel to feishuAppSender, others to httpSender | 1 | `TestFeishuAppSenderRoutesChannelToAppBot` |
+| feishuAppCredentials | extracts credentials from a valid feishu-app channel | 1 | `TestFeishuAppCredentialsExtractsFields` |
+| feishuAppCredentials | throws when channel is not feishu-app type | 1 | `TestFeishuAppCredentialsRejectsOtherType` |
+| feishuAppCredentials | throws when required fields are missing | 1 | `TestFeishuAppCredentialsRejectsMissingFields` |
+
+`feishu-listener.test.ts`（13 例）→ `server/internal/notify/feishu_listener_test.go`：
+
+| 旧用例（逐字） | 例数 | Go 测试 |
+| --- | ---: | --- |
+| starts a listener and returns status with listenId and ttlSeconds | 1 | `TestListenerStartReturnsStatusWithListenIDAndTTL` |
+| returns existing status when listener already active (idempotent) | 1 | `TestListenerStartIsIdempotentWhileActive` |
+| prevents race condition on concurrent starts | 1 | `TestListenerStartSerialisesConcurrentStarts` |
+| isListenerActive returns correct state | 1 | `TestListenerIsActiveTracksState` |
+| stops a listener and keeps tombstone state | 1 | `TestListenerStopKeepsTombstone` |
+| can stop by listenId (snapshot from start response) | 1 | `TestListenerCanStopByListenID` |
+| stop returns false when no listener exists | 1 | `TestListenerStopUnknownReturnsFalse` |
+| auto-stops after TTL expires with timeout reason | 1 | `TestListenerAutoStopsAfterTTL` |
+| tombstone is cleaned up after 30 seconds | 1 | `TestListenerTombstoneExpiresAfterGrace` |
+| receives messages and stores them | 1 | `TestListenerRecordsReceivedMessages` |
+| getListenerMessages returns empty array for nonexistent listener | 1 | `TestListenerMessagesEmptyForUnknownListener` |
+| multiple appIds have isolated listeners | 1 | `TestListenerKeepsAppIDsIsolated` |
+| uses custom ttlSeconds when provided | 1 | `TestListenerHonoursCustomTTL` |
+
+`feishu-helpers.test.ts`（13 例）→ `server/internal/notify/feishu_helpers_test.go`（13 例逐条对应，另有 1 例矩阵外新增）：
+
+| 旧 describe | 旧用例（逐字） | 例数 | Go 测试 |
+| --- | --- | ---: | --- |
+| translateFeishuError | translates known error codes to human-readable messages | 1 | `TestTranslateFeishuErrorTokenInvalid` |
+| translateFeishuError | translates tenant token errors | 1 | `TestTranslateFeishuErrorTenantToken` |
+| translateFeishuError | translates permission error code | 1 | `TestTranslateFeishuErrorPermissionDenied` |
+| translateFeishuError | translates 99991672 scope error with raw msg | 1 | `TestTranslateFeishuErrorScopeNames` |
+| translateFeishuError | returns null for unknown error codes | 1 | `TestTranslateFeishuErrorUnknownCode` |
+| listFeishuChats | fetches chat list with token auth | 1 | `TestFeishuListChatsFetchesWithTokenAuth` |
+| listFeishuChats | supports pagination with page_token | 1 | `TestFeishuListChatsSupportsPagination` |
+| listFeishuChats | throws translated error on non-zero code | 1 | `TestFeishuListChatsTranslatesNonZeroCode` |
+| listFeishuChats | throws on HTTP error | 1 | `TestFeishuListChatsTranslatesHTTPError` |
+| lookupFeishuUserByPhone | looks up user by phone number | 1 | `TestFeishuLookupUserByPhone` |
+| lookupFeishuUserByPhone | throws when mobiles array is empty | 1 | `TestFeishuLookupUserByPhoneRejectsEmptyList` |
+| lookupFeishuUserByPhone | throws translated error on permission denied | 1 | `TestFeishuLookupUserByPhoneTranslatesPermissionError` |
+| lookupFeishuUserByPhone | returns empty user_list when no match found | 1 | `TestFeishuLookupUserByPhoneReturnsEmptyList` |
+
+`feishu-credentials.test.ts`（8 例）→ `server/internal/notify/feishu_credentials_test.go`：
+
+| 旧用例（逐字） | 例数 | Go 测试 |
+| --- | ---: | --- |
+| returns direct credentials from body when both appId and appSecret present | 1 | `TestResolveFeishuCredentialsUsesDirectBody` |
+| uses stored credentials when channelId provided and stored channel has appSecret | 1 | `TestResolveFeishuCredentialsUsesStoredChannel` |
+| uses body appId with stored appSecret when only appId provided in body | 1 | `TestResolveFeishuCredentialsUsesBodyAppIDWithStoredSecret` |
+| throws when neither direct credentials nor channelId provided | 1 | `TestResolveFeishuCredentialsRequiresAppIDAndSecretOrChannelID` |
+| throws when channelId does not exist | 1 | `TestResolveFeishuCredentialsRejectsUnknownChannel` |
+| throws when channel is not feishu-app type | 1 | `TestResolveFeishuCredentialsRejectsNonFeishuAppChannel` |
+| throws when stored channel has no appSecret | 1 | `TestResolveFeishuCredentialsRejectsStoredChannelWithoutAppSecret` |
+| trims whitespace from credentials | 1 | `TestResolveFeishuCredentialsTrimsWhitespace` |
+
+路由形状（旧栈无路由测试，按旧 handler 实现锁定）：`server/internal/httpapi/feishu_test.go` 17 例（14 个顶层用例 + lookup-user 入参校验的 3 个表驱动子例）——chats 直连凭据/已存凭据/凭据错误/飞书错误透传、lookup-user 手机号反查与三条入参校验文案、listen 启停轮询闭环/自定义 TTL/缺参 400/未知 404/未知停止 success=false/凭据错误 500、以及 feishu-app 测试发送成功与失败 502（含 lastSendResult 落库）。
+
+偏差与理由：① 旧栈用 `@larksuiteoapi/node-sdk` 的 `WSClient` + `EventDispatcher`；新栈按 ADR-0018 用 oapi-sdk-go v3，WS 长连接走其 Channel 模块（`channel.NewChannel` + `ws.Client`），在 `feishu_socket.go` 里以 `FeishuSocket`（`Connect`/`Close`）适配，监听器本体（TTL/墓碑/多 appId 隔离/幂等/并发启停）逐条沿用旧语义。② Channel 默认策略是「群聊必须 @机器人、且拒绝 @所有人」，而本监听的用途是从任意消息里取 open_id（旧栈同样记录所有 `im.message.receive_v1`），因此显式把 `RequireMention=false`、`RespondToMentionAll=true`、`DMMode=open`。③ 旧 `getListenerStatus` 的 `ttlSeconds` 是常量返回值（源码注释即「Simplified」），新栈改为按实际启动参数返回，因此自定义 TTL 的用例能自洽；默认 TTL 仍为 120。④ 旧 `stopFeishuListener` 会先做 listenId→appId 反查再按 appId 停止，新栈保留同一解析顺序（listenId 优先），页面据此可用启动响应里的快照 id 停止。⑤ 票面要求「按手机号/邮箱解析用户」，旧栈只有 `byPhone`；新栈 `LookupUsers` 同时支持 `mobiles`/`emails`（飞书 `contact/v3/users/batch_get_id` 原生支持两者），`mobiles` 的校验文案逐字保留，新增 `TestFeishuLookupUsersByEmail` 覆盖邮箱路径。⑥ 旧 `feishu-app.test.ts` 末条的 `dispatchEvent` 扇出用例在第 38 票只断言「feishu-app 渠道走应用机器人发送器」这一路由事实；完整的事件调度器（含 lastSendResult 记录与回滚）归 #39。
 
 ### 已闭合文件的用例级对账（#26）
 
