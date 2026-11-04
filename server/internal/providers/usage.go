@@ -99,10 +99,10 @@ func ResolveUsageHandlerKey(provider, planID string) string {
 
 // usageHandlerKeys is the static registration key set of
 // lib/providers/index.ts usageHandlers. Capability flags derive from this set
-// (ADR-0006). Handler bodies for providers owned by later parity tickets
-// (#33) are not implemented yet; those tickets add them to UsageHandlers
-// without changing this key set. #31 (alibaba) and #32 (github) landed their
-// bodies.
+// (ADR-0006). Every registered key now has an implemented handler body
+// (#28/#31/#32/#33); the split between this set and UsageHandlers remains so a
+// route lookup for an unimplemented key reports a handler failure rather than
+// "unsupported".
 func usageHandlerKeys() []string {
 	return []string{
 		"moonshot:kimi-code",
@@ -117,8 +117,8 @@ func usageHandlerKeys() []string {
 
 // HasUsageHandler reports whether key is registered in the old stack's usage
 // handler registry. The route guards key off registration (not implementation)
-// so providers whose bodies land with #31/#33 still take the query branch
-// rather than being reported as unsupported.
+// so every registered provider takes the query branch rather than being
+// reported as unsupported.
 func HasUsageHandler(key string) bool {
 	for _, registered := range usageHandlerKeys() {
 		if registered == key {
@@ -128,11 +128,10 @@ func HasUsageHandler(key string) bool {
 	return false
 }
 
-// UsageHandlers returns the implemented usage handlers. Keys that are
-// registered in the old stack but whose bodies land with later tickets are
-// absent here, so a lookup for them finds no handler instead of one that
-// cannot work. An optional injected client (nil = DefaultHTTPClient) is bound
-// into every handler so route-level tests can stub the outbound call.
+// UsageHandlers returns the implemented usage handlers, keyed by the
+// registration keys in usageHandlerKeys. An optional injected client (nil =
+// DefaultHTTPClient) is bound into every handler so route-level tests can stub
+// the outbound call.
 func UsageHandlers(clients ...HTTPDoer) map[string]UsageHandler {
 	client := resolveClient(clients)
 	return map[string]UsageHandler{
@@ -141,6 +140,8 @@ func UsageHandlers(clients ...HTTPDoer) map[string]UsageHandler {
 		"fangzhou:codingplan": &codingPlanUsageHandler{client: client},
 		"moonshot:kimi-code":  &moonshotUsageHandler{client: client},
 		"github":              &githubUsageHandler{client: client},
+		"opencode:go":         &opencodeUsageHandler{client: client},
+		"zhipu:coding-plan":   &zhipuUsageHandler{client: client},
 	}
 }
 

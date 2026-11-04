@@ -21,9 +21,9 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | alibaba-tokenplan.test.ts         |   26 | provider: alibaba（ACS3 签名） | ☑    |
 | github.test.ts                    |   25 | provider: github（token 交换） | ☑    |
 | fangzhou-codingplan.test.ts       |   24 | provider: fangzhou             | ☐    |
-| opencode.test.ts                  |   23 | provider: opencode             | ☐    |
+| opencode.test.ts                  |   23 | provider: opencode             | ☑    |
 | enrichment.test.ts                |   23 | providers 能力标记             | ☑    |
-| zhipu.test.ts                     |   22 | provider: zhipu（窗口解码）    | ☐    |
+| zhipu.test.ts                     |   22 | provider: zhipu（窗口解码）    | ☑    |
 | feishu-app.test.ts                |   21 | 飞书应用机器人                 | ☑    |
 | provider-models.test.ts           |   15 | providers 模型查询             | ☑    |
 | fangzhou-models.test.ts           |   15 | provider: fangzhou 模型列表    | ☐    |
@@ -443,6 +443,39 @@ string-to-sign 与 HMAC-SHA256 签名的字节级一致性。
 `server/internal/httpapi/alibaba_usage_route_test.go` 额外锁定路由级端到端：GET
 `/api/subscriptions/{id}/usage` 对 recurring alibaba:token-plan 订阅签名请求、分桶
 equity、回写 subscription echo，覆盖浏览器演示路径。
+
+### 已闭合文件的用例级对账（#33）
+
+`zhipu.test.ts`（22 例）→ `server/internal/providers/zhipu_test.go`（子测试名逐字沿用旧用例名）：
+
+| 旧 describe         | 例数 | Go 测试                 |
+| ------------------- | ---: | ----------------------- |
+| fetchZhipuUsage     |   12 | `TestFetchZhipuUsage`   |
+| testZhipuConnection |   10 | `TestZhipuConnectionProbe` |
+
+`opencode.test.ts`（23 例）→ `server/internal/providers/opencode_test.go`：
+
+| 旧 describe             | 例数 | Go 测试                     |
+| ----------------------- | ---: | --------------------------- |
+| fetchOpencodeGoUsage    |   15 | `TestFetchOpencodeGoUsage`  |
+| testOpencodeConnection  |    8 | `TestOpencodeConnectionProbe` |
+
+窗口口径解码边例均逐条移植：zhipu 的未知 type/unit 行降级为 `warnings`、同桶冲突取
+更高 `usage`、`nextResetTime` 缺失时 `resetTime=null`、`currentValue===usage` 的用尽态；
+opencode 的 `rate-limited` 强制 100（保留 >100 的超额）、缺失 `percent` 归零、缺失
+`resetsAt` 为 `null`、401 `api_key_expired` 的过期专属提示（区别于无效 Key）。
+
+**moonshot 用量部分**：`providers.test.ts` 的 moonshot 4 例（`TestMoonshotUsage`）
+在本票复核后保持闭合（行内子表见上文 `providers.test.ts`）；同文件
+`balance-handlers.test.ts` 的 moonshot 余额 1 例已于 #28 闭合（见「已闭合文件的用例级对账（#28）」）。
+三家的浏览器演示路径由 `server/internal/httpapi/zhipu_opencode_usage_route_test.go`
+（zhipu、opencode go、opencode 过期 Key）+ `TestUsageRouteDispatchesToProviderHandler`
+（moonshot）锁定。
+
+偏差：旧栈 Microsoft/JS 语义在 Go 侧用 `jsNumber`/`jsString`/`isoMillis` 复刻；zhipu
+无 unit/number 的行按 JS 模板字面量渲染为 `undefined`；HTTP seam 与测试注入
+`HTTPDoer` 的偏差同 #28/#31/#32。旧 `usage_test.go` 里「opencode 处理器尚未落地」的
+防御分支用例随本票删除（所有注册键均有实现，分支不可经路由触达）。
 
 ## → solid（web/）
 
