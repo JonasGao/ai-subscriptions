@@ -3,6 +3,9 @@ import { useNavigate } from "@solidjs/router";
 import { useAuth } from "../auth/AuthProvider";
 import { SubscriptionCard } from "../components/SubscriptionCard";
 import { SubscriptionForm } from "../components/SubscriptionForm";
+import { priorityScenes } from "../priorities/api";
+import { PriorityScenes } from "../priorities/PriorityScenes";
+import { SortablePriorityList } from "../priorities/SortablePriorityList";
 import {
   createSubscription,
   deleteSubscription,
@@ -199,6 +202,7 @@ export const SubscriptionsPage: Component = () => {
           </button>
           <nav class="shell-nav">
             <a href="/proxy-subscriptions">代理订阅</a>
+            <a href="/tools">工具</a>
           </nav>
           <button type="button" class="ghost" onClick={handleLogout}>
             退出登录
@@ -236,6 +240,27 @@ export const SubscriptionsPage: Component = () => {
           </section>
         </Show>
       </Show>
+
+      <section class="priority-section">
+        <h2>优先级管理</h2>
+        <PriorityScenes
+          client={priorityScenes}
+          orderOf={(scene) => scene.subscriptionOrder}
+          items={subscriptions().map((subscription) => ({
+            id: subscription.id,
+            name: subscription.name,
+          }))}
+          addLabel="订阅"
+          emptyLabel="该场景暂无订阅，请从下方列表添加"
+          renderList={(order, onRemove) => (
+            <SortablePriorityList
+              subscriptionOrder={order}
+              subscriptions={subscriptions()}
+              onRemove={onRemove}
+            />
+          )}
+        />
+      </section>
 
       <Show when={formOpen()}>
         <SubscriptionForm

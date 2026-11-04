@@ -5,6 +5,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 import { SubscriptionsPage } from "./pages/SubscriptionsPage";
 import { ProxySubscriptionsPage } from "./pages/ProxySubscriptionsPage";
+import { ToolsPage } from "./pages/ToolsPage";
 
 /** Guarded wraps a page in SessionGate (middleware.ts parity). */
 const Guarded: Component<{ children: JSX.Element }> = (props) => (
@@ -39,6 +40,7 @@ export const AppRoutes: Component = () => (
       path="/proxy-subscriptions"
       component={() => guard(<ProxySubscriptionsPage />)}
     />
+    <Route path="/tools" component={() => guard(<ToolsPage />)} />
     <Route path="/" component={() => guard(<Home />)} />
     <Route path="*" component={() => guard(<SubscriptionsPage />)} />
   </>
