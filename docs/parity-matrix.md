@@ -38,8 +38,8 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | feishu-credentials.test.ts        |    8 | 飞书凭据                       | ☐    |
 | proxy-subscriptions.test.ts       |    7 | 代理订阅                       | ☐    |
 | volcengine-signer.test.ts         |    6 | 火山 HMAC 签名器               | ☐    |
-| tags.test.ts                      |    6 | 标签稳定标识                   | ☐    |
-| db.test.ts                        |    6 | 存储层（SQLite，ADR-0017）     | ☐    |
+| tags.test.ts                      |    6 | 标签稳定标识                   | ☑    |
+| db.test.ts                        |    6 | 存储层（SQLite，ADR-0017）     | ☑    |
 | balance-handlers.test.ts          |    5 | 余额查询注册表                 | ☐    |
 | subscription-status-edit.test.ts  |    4 | 订阅状态编辑                   | ☐    |
 | status-policy.test.ts             |    3 | 状态策略                       | ☐    |
@@ -47,6 +47,29 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | usage-route.test.ts               |    2 | 用量查询路由                   | ☐    |
 | tags-api-cache.test.ts            |    1 | 标签 API 缓存                  | ☐    |
 | proxy-tags-route.test.ts          |    1 | 代理标签路由                   | ☐    |
+
+### 已闭合文件的用例级对账（#23）
+
+`db.test.ts` → `server/internal/store/reset_test.go`（旧用例名逐字沿用为 Go 测试名）：
+
+| 旧 describe                            | 例数 | Go 测试                                                                                                                       |
+| -------------------------------------- | ---: | ----------------------------------------------------------------------------------------------------------------------------- |
+| processResetTick filtering             |    4 | `TestResetTickSkipsCancelledSubscriptions` / `…SkipsDisabledSchedules` / `…AdvancesWithoutTriggeringWhenNotExhausted` / `…TriggersAndClearsExhaustion` |
+| schedule exhaustion status transitions |    2 | `TestToggleScheduleExhaustedPausesActiveSubscription` / `…RestoresActiveStatus`                                               |
+
+`tags.test.ts` → `server/internal/store/tags_test.go` + `import_test.go`：
+
+| 旧 describe       | 例数 | Go 测试                                                                                              |
+| ----------------- | ---: | ---------------------------------------------------------------------------------------------------- |
+| subscription tags |    6 | 首例（空标签目录迁移）落在 `TestImportLegacyDataWithoutTags`，其余 5 例在 `tags_test.go`（增删改与上限） |
+
+评审补强（#23 阻塞项）：`readData` 的「AI助手」→「官方订阅」重命名同时作用于类别表与
+每条订阅的 `category` 引用，迁移器此前只改前者，单向导入 + 完成标记会让悬空引用永久
+固化（含从 JSON 快照恢复的灾难恢复路径）。现由
+`TestImportRenamesRetiredCategoryEverywhere` 覆盖逐订阅引用；`migration-drill` 的
+`verify()` 新增逐订阅 `category` 对账与「引用必须存在于导入后类别表」检查
+（`TestVerifyReportsSubscriptionCategoryMismatch` / `TestVerifyAcceptsNormalizedCategories`
+锁定该检查本身有效且无误报）。
 
 ### 已闭合文件的用例级对账（#25）
 

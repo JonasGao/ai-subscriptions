@@ -9,11 +9,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"ai-subscriptions/internal/config"
 	"ai-subscriptions/internal/httpapi"
+	"ai-subscriptions/internal/store"
 	"ai-subscriptions/internal/webui"
 )
 
@@ -35,6 +37,19 @@ func run() error {
 	assets, err := webui.Assets()
 	if err != nil {
 		return err
+	}
+
+	// Storage engine (ADR-0017): open SQLite, import any legacy JSON on first
+	// start, then take a rolling file snapshot.
+	db, err := store.Open(filepath.Join(cfg.DataDir, store.DefaultFilename))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	if snapshot, err := db.Snapshot(); err != nil {
+		log.Printf("warning: backup snapshot failed: %v", err)
+	} else {
+		log.Printf("backup snapshot: %s", snapshot)
 	}
 
 	srv := &http.Server{
