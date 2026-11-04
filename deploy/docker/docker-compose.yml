@@ -1,5 +1,7 @@
 # ai-subscriptions - local docker deployment
-# Image is built locally from /home/god/ai-subscriptions (make image / make deploy)
+# Image is built locally from the repository root (make image / make deploy).
+# Contract inherited from the old stack: port 3000, /data volume, DATA_DIR,
+# non-root 1000:1000, 1 CPU / 512M (see deploy/docker/README.md).
 
 services:
   ai-subscriptions:
@@ -27,15 +29,10 @@ services:
           cpus: "1.0"
           memory: 512M
 
+    # The runtime image is distroless (no shell, no wget/curl), so the probe is
+    # the binary's own `healthcheck` subcommand hitting /api/health on $PORT.
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "-q",
-          "--spider",
-          "http://127.0.0.1:3000/api/auth/session",
-        ]
+      test: ["CMD", "/app/ai-subscriptions", "healthcheck"]
       interval: 30s
       timeout: 10s
       retries: 3

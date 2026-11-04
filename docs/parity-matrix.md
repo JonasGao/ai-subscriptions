@@ -127,3 +127,18 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | 测试文件 | 用例 | 理由                                                      | 状态 |
 | -------- | ---: | --------------------------------------------------------- | ---- |
 | （空）   |      | 图表功能移除（ADR-0018 范围修订 ②）不产生行：图表本无测试 |      |
+
+## 部署契约（#41，矩阵外新增）
+
+旧栈部署没有任何测试文件，本票**不关闭矩阵行**（582 例去向不变），改为把 ADR-0018 的部署面契约写成可执行断言，防止漂移：
+
+| Go 测试                                     | 覆盖契约                                                                 |
+| ------------------------------------------- | ------------------------------------------------------------------------ |
+| `deploycontract` `TestDockerfileBuildsWebThenGoThenDistroless` | 三阶段（node→go→distroless）、`CGO_ENABLED=0`、`go:embed` 暂存、运行阶段无构建工具 |
+| `deploycontract` `TestDockerfileKeepsDataVolumeWritableForContractUser` | `/data` 归属 `1000:1000`、运行镜像非 root                          |
+| `deploycontract` `TestComposePreservesExternalContract` | 端口 3000、`./data:/data`、`DATA_DIR`、`user 1000:1000`、1CPU/512M、env_file、healthcheck 节奏、日志上限、网络名 |
+| `deploycontract` `TestComposeHealthcheckWorksInDistroless` | healthcheck 不依赖 shell/wget/curl（改走二进制子命令）              |
+| `deploycontract` `TestVolumeDestinationMatchesDataDir` | 卷挂载目标与 `DATA_DIR` 一致（SQLite 库与 `backups/` 快照落在卷上） |
+| `deploycontract` `TestRootMakefileKeepsCommandFamily` / `TestDockerMakefileBuildsNewStackImage` | make 命令族不变、镜像标签与 `--project-directory`、构建参数透传 |
+| `deploycontract` `TestSystemdServiceRunsSingleBinary` / `TestSystemdReadmeDocumentsInstallPath` | unit 只 exec 单二进制、安装路径文档化                       |
+| `healthcheck` `TestProbeAcceptsHealthyServer` 等 7 例 | distroless 内健康探测语义：2xx 才健康、非 2xx/不可达/PORT 非法均非 0 |

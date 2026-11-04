@@ -6,7 +6,7 @@
 
 - 旧栈（`app/` + `lib/` + `__tests__/`）冻结：仅收紧急 bugfix；新需求排队到 cutover 后在新栈实现。
 - 两栈不共享写：旧栈继续用 JSON，新栈只在 cutover 部署后接管 `DATA_DIR`。
-- `server/` 与 `web/` 并行开发，cutover 前 `make deploy` 仍部署旧栈。
+- `server/` 与 `web/` 并行开发；部署管线（#41）落地后 `make deploy` 已构建新栈镜像（多阶段：node 构建 SPA → go 编译 → distroless），旧栈 `Dockerfile`/`next` 目标仅留 `legacy-build` 备用至 cutover。
 
 ## 阶段
 
