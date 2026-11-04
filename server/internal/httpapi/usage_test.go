@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"ai-subscriptions/internal/model"
 	"ai-subscriptions/internal/store"
 )
 
@@ -105,4 +106,71 @@ func TestUsageRouteProviderFailures(t *testing.T) {
 			t.Errorf("body = %q", rec.Body.String())
 		}
 	})
+}
+
+// TestUsageRouteCalibratesAndEchoesSubscription closes the #34 half of the
+// usage-route parity row: a successful query reverse-derives the schedule
+// config, persists it, and echoes the calibrated (credentials-stripped)
+// subscription so the frontend can replace its list entry without a refetch
+// (ADR-0016).
+func TestUsageRouteCalibratesAndEchoesSubscription(t *testing.T) {
+	body := `{"usage":{"limit":"1024","used":"100","remaining":"924","resetTime":"2099-03-04T04:01:38Z"},"limits":[]}`
+	f := newSubscriptionQueryFixture(t, body)
+	dayOfWeek := 0
+	id := seedOneTimeSubscription(t, f, store.SubscriptionInput{
+		Provider:         "moonshot",
+		PlanID:           "kimi-code",
+		SubscriptionType: "recurring",
+		BillingCycle:     "monthly",
+		Credentials:      f.encrypt(t, map[string]string{"apiKey": "kimi-key"}),
+		ResetSchedules: []model.ResetSchedule{{
+			ID:            "sched-weekly",
+			Enabled:       true,
+			Type:          "weekly",
+			Timezone:      "UTC",
+			DayOfWeek:     &dayOfWeek,
+			TimeOfDay:     "00:00",
+			NextResetTime: "2024-01-01T00:00:00Z",
+			CreatedAt:     "2024-01-01T00:00:00Z",
+			UpdatedAt:     "2024-01-01T00:00:00Z",
+		}},
+	})
+
+	rec := request(t, f.srv, http.MethodGet, "/api/subscriptions/"+id+"/usage", "", f.cookie)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body %s)", rec.Code, rec.Body.String())
+	}
+
+	var payload struct {
+		Subscription struct {
+			ResetSchedules []model.ResetSchedule `json:"resetSchedules"`
+		} `json:"subscription"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(payload.Subscription.ResetSchedules) != 1 {
+		t.Fatalf("resetSchedules = %#v, want one", payload.Subscription.ResetSchedules)
+	}
+	echoed := payload.Subscription.ResetSchedules[0]
+	if echoed.NextResetTime != "2099-03-04T04:01:38Z" {
+		t.Errorf("echoed nextResetTime = %q", echoed.NextResetTime)
+	}
+	if echoed.DayOfWeek == nil || *echoed.DayOfWeek != 3 {
+		t.Errorf("echoed dayOfWeek = %v, want 3", echoed.DayOfWeek)
+	}
+	if echoed.TimeOfDay != "04:01" {
+		t.Errorf("echoed timeOfDay = %q, want 04:01", echoed.TimeOfDay)
+	}
+
+	saved, err := f.db.SubscriptionByID(id)
+	if err != nil {
+		t.Fatalf("SubscriptionByID: %v", err)
+	}
+	if saved.ResetSchedules[0].NextResetTime != "2099-03-04T04:01:38Z" {
+		t.Errorf("persisted nextResetTime = %q", saved.ResetSchedules[0].NextResetTime)
+	}
+	if saved.ResetSchedules[0].DayOfWeek == nil || *saved.ResetSchedules[0].DayOfWeek != 3 {
+		t.Errorf("persisted dayOfWeek = %v, want 3", saved.ResetSchedules[0].DayOfWeek)
+	}
 }

@@ -13,6 +13,7 @@ import (
 
 	"ai-subscriptions/internal/crypto"
 	"ai-subscriptions/internal/model"
+	"ai-subscriptions/internal/providers"
 	"ai-subscriptions/internal/store"
 )
 
@@ -35,6 +36,9 @@ type DataService interface {
 	// DeleteResetSchedule back the schedule CRUD; ToggleScheduleExhausted is
 	// the manual "已用尽" switch (ADR-0007).
 	ToggleScheduleExhausted(subscriptionID, scheduleID string, exhausted bool) (*model.Subscription, error)
+	// CalibrateSubscriptionFromUsage reverse-derives reset-schedule config from
+	// an already-fetched usage result and persists it (ADR-0016, #34).
+	CalibrateSubscriptionFromUsage(subscriptionID string, result providers.UsageResult) (*model.Subscription, error)
 }
 
 // subscriptionPayload is the wire shape of a subscription

@@ -14,7 +14,9 @@ import (
 	"time"
 
 	"ai-subscriptions/internal/auth"
+	"ai-subscriptions/internal/calibration"
 	"ai-subscriptions/internal/config"
+	"ai-subscriptions/internal/crypto"
 	"ai-subscriptions/internal/healthcheck"
 	"ai-subscriptions/internal/httpapi"
 	"ai-subscriptions/internal/scheduler"
@@ -91,14 +93,23 @@ func run() error {
 
 	// ADR-0018: the reset tick runs on a 5-minute time.Ticker (replaces
 	// node-cron). It restores exhausted schedules due for a reset and advances
-	// their nextResetTime. Notification dispatch and provider calibration hook
-	// into their own tickets (#39, #34).
+	// their nextResetTime. Query-driven calibration (ADR-0016) then runs for
+	// the triggered subscriptions; notification dispatch hooks in with #39.
+	calibrator := calibration.New(db, crypto.NewFromEnv(os.Getenv), nil)
 	go scheduler.Run(ctx, 5*time.Minute, func() error {
 		triggers, err := db.ProcessResetTick()
-		if err == nil && len(triggers) > 0 {
+		if err != nil {
+			return err
+		}
+		if len(triggers) > 0 {
 			log.Printf("reset tick: %d trigger(s)", len(triggers))
 		}
-		return err
+		// Alignment is best-effort: a failure is logged and never blocks the
+		// next tick or the notification path.
+		if err := calibrator.AlignResetTimes(ctx, triggers); err != nil {
+			log.Printf("reset-time alignment failed: %v", err)
+		}
+		return nil
 	}, func(err error) {
 		log.Printf("reset tick failed: %v", err)
 	})

@@ -50,9 +50,10 @@ func subscriptionEcho(sub model.Subscription) subscriptionPayload {
 // handleSubscriptionUsage serves GET /api/subscriptions/{id}/usage.
 //
 // The guard chain (404 / not-recurring / unsupported / credentials) is the old
-// stack's verbatim. The success branch dispatches to the provider usage handler
-// and echoes the subscription back; the auto-exhaust linkage is a frontend rule
-// (#29) and reset-time calibration is #34, so neither runs here yet.
+// stack's verbatim. On success the provider result calibrates the subscription's
+// reset schedules (ADR-0016, #34) and the freshest, credentials-stripped copy is
+// echoed back so the frontend stays consistent without a refetch. Auto-exhaust
+// linkage remains a frontend rule (#29).
 func handleSubscriptionUsage(opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sub, err := opts.Data.SubscriptionByID(chi.URLParam(r, "id"))
@@ -101,9 +102,22 @@ func handleSubscriptionUsage(opts Options) http.HandlerFunc {
 			return
 		}
 
+		// Calibrate from the result we just paid for (no second request) and
+		// echo the calibrated copy; a nil return means the subscription was
+		// deleted mid-flight, so fall back to the pre-query record.
+		calibrated, err := opts.Data.CalibrateSubscriptionFromUsage(sub.ID, result)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "Failed to query usage")
+			return
+		}
+		echo := *sub
+		if calibrated != nil {
+			echo = *calibrated
+		}
+
 		writeNoStoreJSON(w, http.StatusOK, usageResponse{
 			UsageResult:  result,
-			Subscription: subscriptionEcho(*sub),
+			Subscription: subscriptionEcho(echo),
 		})
 	}
 }

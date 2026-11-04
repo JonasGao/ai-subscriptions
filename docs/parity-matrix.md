@@ -15,7 +15,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | dispatcher.test.ts                |   36 | notifications 调度器           | ☐    |
 | utils.test.ts                     |   34 | 领域工具                       | ◑    |
 | provider-plans.test.ts            |   29 | providers 注册表               | ☑    |
-| reset-alignment.test.ts           |   27 | 重置对齐/校准                  | ☐    |
+| reset-alignment.test.ts           |   27 | 重置对齐/校准                  | ☑    |
 | payload.test.ts                   |   27 | 飞书消息构造                   | ☐    |
 | models-resolver.test.ts           |   26 | 模型查询解析                   | ☑    |
 | alibaba-tokenplan.test.ts         |   26 | provider: alibaba（ACS3 签名） | ☑    |
@@ -542,7 +542,7 @@ equity、回写 subscription echo，覆盖浏览器演示路径。
 | auto-exhaust.test.tsx               |   10 | 自动用尽标记（卡片侧） | ☑    |
 | TagInput.test.tsx                   |    6 | 标签输入               | ☑    |
 | useNow.test.ts                      |    5 | 时间信号原语           | ☑    |
-| query-calibration-callback.test.tsx |    2 | 校准回调局部更新       | ☐    |
+| query-calibration-callback.test.tsx |    2 | 校准回调局部更新       | ☑    |
 | ProxySubscriptionTab.test.tsx       |    1 | 代理订阅页签           | ☑    |
 | MainPageShell.test.tsx              |    1 | 主页骨架               | ☐    |
 
@@ -624,3 +624,22 @@ equity、回写 subscription echo，覆盖浏览器演示路径。
 | `deploycontract` `TestRootMakefileKeepsCommandFamily` / `TestDockerMakefileBuildsNewStackImage` | make 命令族不变、镜像标签与 `--project-directory`、构建参数透传                                                  |
 | `deploycontract` `TestSystemdServiceRunsSingleBinary` / `TestSystemdReadmeDocumentsInstallPath` | unit 只 exec 单二进制、安装路径文档化                                                                            |
 | `healthcheck` `TestProbeAcceptsHealthyServer` 等 7 例                                           | distroless 内健康探测语义：2xx 才健康、非 2xx/不可达/PORT 非法均非 0                                             |
+
+### 已闭合文件的用例级对账（#34）
+
+`reset-alignment.test.ts`（27 例）→ Go：
+
+| 旧 describe                     | 例数 | Go 测试                                                                                                       |
+| ------------------------------- | ---: | ------------------------------------------------------------------------------------------------------------- |
+| alignResetTimes                 |   24 | `server/internal/calibration/calibration_test.go`（逐例 `TestAlignResetTimes*`，旧用例名/断言语义一一对应；另加 1 例默认 fetcher 上游错误分支） |
+| calibrateSubscriptionFromUsage  |    3 | `server/internal/store/calibration_test.go`（`TestCalibrateSubscriptionFromUsage*`）                          |
+
+`query-calibration-callback.test.tsx`（2 例）→ `web/src/components/SubscriptionCard.query-calibration.test.tsx`（同名 describe，逐例沿用旧用例名）。
+列表回显另由 `web/src/pages/SubscriptionsPage.calibration.test.tsx` 锁定：校准后的订阅原地合并进列表（卡片不重建、挂载查询只发一次），编辑表单立即显示反推后的 `dayOfMonth`/`timeOfDay`。
+
+#34 偏差与说明：
+
+- **存储 seam**：旧用例 mock `lib/db`/`lib/encryption`；新栈走真实 SQLite 存储与真实 cipher，调度路径的 provider 调用注入 `UsageFetcher` 接缝（默认实现解析 handler + 解密），守卫分支（无凭据/不可解析/非周期/解密失败/上游失败）由注入的 `HTTPDoer` 覆盖。
+- **写盘检测**：旧用例 `vi.spyOn(writeData)`；新栈以固定时钟下 `updatedAt` 是否变化判定「值无变化不写盘」。
+- **列表更新**：Solid `<For>` 按对象身份 keyed，旧 React 的「替换对象」会重建卡片并重跑挂载查询；`SubscriptionsPage` 改用 `createStore` + `reconcile({ key: "id" })` 原地合并，行为等价且无循环查询。
+- **monthly 月末漂移**：按 ADR-0016 接受（`dayOfMonth` 由 API 实例反推，29/30/31 号向月末 clamp 漂移不特殊处理）。
