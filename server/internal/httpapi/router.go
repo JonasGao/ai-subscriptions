@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"ai-subscriptions/internal/crypto"
+	"ai-subscriptions/internal/notify"
 	"ai-subscriptions/internal/providers"
 )
 
@@ -44,6 +45,12 @@ type Options struct {
 	// ProviderHTTP is the outbound client the live usage/balance/model queries
 	// go through. Nil means providers.DefaultHTTPClient (10s timeout).
 	ProviderHTTP providers.HTTPDoer
+	// Feishu serves the app-bot helpers (chat list, user lookup, test send).
+	// Nil falls back to the process-wide client.
+	Feishu FeishuService
+	// Listeners serves the Feishu WS listener lifecycle. Nil falls back to the
+	// process-wide manager.
+	Listeners ListenerService
 }
 
 // New builds the application router.
@@ -86,7 +93,16 @@ func New(opts Options) http.Handler {
 			mountProxyRoutes(api, opts.Proxy)
 		}
 		if opts.Notify != nil {
-			mountNotificationRoutes(api, opts.Notify)
+			feishu := opts.Feishu
+			if feishu == nil {
+				feishu = notify.DefaultFeishuClient()
+			}
+			listeners := opts.Listeners
+			if listeners == nil {
+				listeners = notify.DefaultListenerManager()
+			}
+			mountNotificationRoutes(api, opts.Notify, feishu)
+			mountFeishuRoutes(api, feishu, listeners, opts.Notify)
 		}
 		api.NotFound(writeJSONNotFound)
 	})
