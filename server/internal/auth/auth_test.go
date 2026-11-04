@@ -355,7 +355,16 @@ func TestSessionTokenRejectsTamperingAndForeignSecrets(t *testing.T) {
 		t.Fatalf("Authenticate: %v", err)
 	}
 
-	tampered := result.Token[:len(result.Token)-1] + "X"
+	// Flip a character in the middle of the token: the final base64 character
+	// carries padding bits the decoder ignores, so tampering there can decode
+	// to the same signature bytes and pass vacuously.
+	index := len(result.Token) / 2
+	original := result.Token[index]
+	replacement := byte('A')
+	if original == 'A' {
+		replacement = 'B'
+	}
+	tampered := result.Token[:index] + string(replacement) + result.Token[index+1:]
 	if _, ok := svc.Verify(tampered); ok {
 		t.Error("tampered token verified")
 	}

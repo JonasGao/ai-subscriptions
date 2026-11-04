@@ -53,15 +53,24 @@ func handleUnregisteredProviders(opts Options) http.HandlerFunc {
 // and the body has no trailing newline. Byte alignment is an acceptance
 // criterion for the API surface.
 func writeJSONAligned(w http.ResponseWriter, status int, payload any) {
+	body, err := marshalAligned(payload)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "encode response"})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	_, _ = w.Write(body)
+}
+
+// marshalAligned encodes payload the way JSON.stringify does for the old
+// stack: raw HTML characters and no trailing newline.
+func marshalAligned(payload any) ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := json.NewEncoder(&buf)
 	encoder.SetEscapeHTML(false)
 	if err := encoder.Encode(payload); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "encode response"})
-		return
+		return nil, err
 	}
-	body := bytes.TrimRight(buf.Bytes(), "\n")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	_, _ = w.Write(body)
+	return bytes.TrimRight(buf.Bytes(), "\n"), nil
 }

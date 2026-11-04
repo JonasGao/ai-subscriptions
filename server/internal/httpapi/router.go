@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+
+	"ai-subscriptions/internal/crypto"
 )
 
 const assetsNotBuiltHint = "web assets not built: run `make build`\n"
@@ -26,6 +28,12 @@ type Options struct {
 	// Auth verifies session cookies and owns credentials. Nil disables the
 	// session gate's ability to authenticate anyone, which only tests use.
 	Auth AuthService
+	// Data is the subscription/category/tag storage surface (#26). Nil keeps
+	// those routes unregistered, which only tests that do not touch them use.
+	Data DataService
+	// Cipher encrypts credential blobs on write. Nil derives one from
+	// NEXTAUTH_SECRET like the old stack.
+	Cipher *crypto.Cipher
 }
 
 // New builds the application router.
@@ -48,6 +56,21 @@ func New(opts Options) http.Handler {
 		}
 		api.Get("/providers", handleProviders(opts))
 		api.Get("/providers/unregistered", handleUnregisteredProviders(opts))
+		if opts.Data != nil {
+			api.Get("/subscriptions", handleListSubscriptions(opts))
+			api.Post("/subscriptions", handleCreateSubscription(opts))
+			api.Get("/subscriptions/{id}", handleGetSubscription(opts))
+			api.Put("/subscriptions/{id}", handleUpdateSubscription(opts))
+			api.Delete("/subscriptions/{id}", handleDeleteSubscription(opts))
+			api.Get("/subscriptions/{id}/usage", handleSubscriptionUsage(opts))
+			api.Get("/subscriptions/{id}/models", handleSubscriptionModels(opts))
+			api.Get("/tags", handleListTags(opts))
+			api.Patch("/tags/{id}", handleRenameTag(opts))
+			api.Delete("/tags/{id}", handleDeleteTag(opts))
+			api.Get("/categories", handleListCategories(opts))
+			api.Post("/categories", handleAddCategory(opts))
+			api.Delete("/categories", handleDeleteCategory(opts))
+		}
 		api.NotFound(writeJSONNotFound)
 	})
 

@@ -82,8 +82,10 @@ func TestOpenMigratesUserVersion(t *testing.T) {
 	}
 
 	// Migrations are recorded once: a second open is a no-op and keeps data.
+	// (The first open seeded the default catalogue, so this inserts a marker
+	// category on top of it and the reopen must not touch either.)
 	if _, err := s.db.Exec(
-		"INSERT INTO categories(name, position) VALUES('kept', 0)",
+		"INSERT INTO categories(name, position) VALUES('kept', 100)",
 	); err != nil {
 		t.Fatalf("seed category: %v", err)
 	}
@@ -96,12 +98,12 @@ func TestOpenMigratesUserVersion(t *testing.T) {
 		t.Fatalf("reopen: %v", err)
 	}
 	defer s2.Close()
-	var count int
-	if err := s2.db.QueryRow("SELECT COUNT(*) FROM categories").Scan(&count); err != nil {
-		t.Fatalf("count categories: %v", err)
+	categories, err := s2.Categories()
+	if err != nil {
+		t.Fatalf("Categories: %v", err)
 	}
-	if count != 1 {
-		t.Fatalf("categories after reopen = %d, want 1 (migration must not reset data)", count)
+	if len(categories) != len(DefaultCategories)+1 || categories[len(categories)-1] != "kept" {
+		t.Fatalf("categories after reopen = %v, want the seeded defaults plus kept", categories)
 	}
 	if got := s2.SchemaVersion(); got != latestSchemaVersion {
 		t.Fatalf("user_version after reopen = %d, want %d", got, latestSchemaVersion)

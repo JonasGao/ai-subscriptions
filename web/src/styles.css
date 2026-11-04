@@ -166,3 +166,400 @@ body {
   font: inherit;
   cursor: pointer;
 }
+
+/* ---------- subscriptions page (#26) ---------- */
+
+.subscriptions-page {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.subscriptions-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.subscriptions-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+}
+
+.subscriptions-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.subscriptions-toolbar button,
+.form-actions button {
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.45rem;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.subscriptions-toolbar button.ghost,
+.form-actions button.ghost {
+  border-color: color-mix(in srgb, var(--fg) 20%, transparent);
+  background: transparent;
+  color: var(--fg);
+}
+
+.subscriptions-toolbar button.danger,
+.subscription-card-actions button.danger,
+.form-actions button.danger {
+  border-color: #dc2626;
+  background: #dc2626;
+}
+
+.category-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.category-filter select {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  border-radius: 0.4rem;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.subscription-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: 1rem;
+}
+
+.subscription-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 14%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--bg) 94%, var(--fg) 6%);
+}
+
+.subscription-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.subscription-card-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.subscription-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.status-badge {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.status-badge.clickable {
+  cursor: pointer;
+}
+
+.status-active {
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+.status-paused {
+  border-color: #d97706;
+  color: #d97706;
+}
+
+.quota-exhausted {
+  color: #dc2626;
+  font-size: 0.75rem;
+}
+
+.subscription-card-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.subscription-card-fields > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.subscription-card-fields dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.subscription-card-fields dd {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: right;
+}
+
+.subscription-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}
+
+.subscription-card-notes {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.subscription-card-notes p {
+  margin: 0.2rem 0 0;
+  color: var(--fg);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.subscription-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.subscription-card-actions button {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.empty-state {
+  color: var(--muted);
+}
+
+/* ---------- dialogs & forms ---------- */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.dialog {
+  width: min(38rem, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+  border-radius: 0.75rem;
+  background: var(--bg);
+  color: var(--fg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.dialog h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.2rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.form-grid label,
+.form-field-wide {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.form-grid input,
+.form-grid select {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  border-radius: 0.4rem;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.form-grid input:focus,
+.form-grid select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.form-field-wide {
+  grid-column: 1 / -1;
+}
+
+.form-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.form-hint {
+  font-size: 0.75rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.form-error {
+  margin: 0.75rem 0 0;
+  color: #dc2626;
+  font-size: 0.85rem;
+}
+
+/* ---------- tag input ---------- */
+
+.tag-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.tag-input-box {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.5rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  border-radius: 0.4rem;
+  background: var(--bg);
+}
+
+.tag-input-box:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.3rem;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--fg);
+  font-size: 0.78rem;
+}
+
+.tag-chip-label {
+  overflow-wrap: anywhere;
+}
+
+.tag-chip-remove {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+
+.tag-input-field {
+  flex: 1;
+  min-width: 8rem;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  padding: 0.25rem 0.15rem;
+}
+
+.tag-options {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 60;
+  max-height: 12rem;
+  overflow-y: auto;
+  padding: 0.25rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  border-radius: 0.5rem;
+  background: var(--bg);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.tag-option {
+  display: block;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tag-option:hover,
+.tag-option[aria-selected="true"] {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.tag-hint,
+.tag-feedback {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.tag-feedback {
+  color: #dc2626;
+}

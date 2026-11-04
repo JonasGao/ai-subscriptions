@@ -115,6 +115,16 @@ func Open(path string, opts ...Option) (*Store, error) {
 			return nil, err
 		}
 	}
+	// A fresh install seeds the default category catalogue the old stack's
+	// getInitialData() wrote on first read. The seeding runs after the import
+	// and never alongside an explicit operator-driven import, so it cannot
+	// make a not-yet-imported database look populated.
+	if !s.skipLegacyImport {
+		if err := s.seedDefaultCategories(ctx); err != nil {
+			db.Close()
+			return nil, err
+		}
+	}
 	return s, nil
 }
 

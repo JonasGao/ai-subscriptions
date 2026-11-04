@@ -41,11 +41,11 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | tags.test.ts                      |    6 | 标签稳定标识                   | ☑    |
 | db.test.ts                        |    6 | 存储层（SQLite，ADR-0017）     | ☑    |
 | balance-handlers.test.ts          |    5 | 余额查询注册表                 | ☐    |
-| subscription-status-edit.test.ts  |    4 | 订阅状态编辑                   | ☐    |
-| status-policy.test.ts             |    3 | 状态策略                       | ☐    |
+| subscription-status-edit.test.ts  |    4 | 订阅状态编辑                   | ☑    |
+| status-policy.test.ts             |    3 | 状态策略                       | ☑    |
 | models-route.test.ts              |    3 | 模型查询路由                   | ☐    |
 | usage-route.test.ts               |    2 | 用量查询路由                   | ☐    |
-| tags-api-cache.test.ts            |    1 | 标签 API 缓存                  | ☐    |
+| tags-api-cache.test.ts            |    1 | 标签 API 缓存                  | ☑    |
 | proxy-tags-route.test.ts          |    1 | 代理标签路由                   | ☐    |
 
 ### 已闭合文件的用例级对账（#23）
@@ -129,15 +129,62 @@ NextAuth 的 `null`，保持容器 healthcheck 拿到 200；② 登录限流键�
 `/api/auth/[...nextauth]` 流程不移植（由三端点替代）；④ `/api/health` 保持免登录——
 distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会话 cookie，且该端点只回 `{"status":"ok"}`。
 
+### 已闭合文件的用例级对账（#26）
+
+`subscription-status-edit.test.ts` → `server/internal/httpapi/subscriptions_test.go`（经真实 store + PUT 路由执行，沿用旧用例语义）：
+
+| 旧用例 | 例数 | Go 测试 |
+| ------ | ---: | ------- |
+| keeps an explicitly chosen active status even with exhausted schedules | 1 | `TestPutSubscriptionKeepsExplicitActiveStatusWithExhaustedSchedules` |
+| keeps the manually chosen status after saving the edit form | 1 | `TestPutSubscriptionKeepsChosenStatusFromFormPayload` |
+| keeps the chosen status even when the subscription has healthy schedules | 1 | `TestPutSubscriptionKeepsChosenStatusWithHealthySchedules` |
+| still recomputes status when only schedules change | 1 | `TestPutSubscriptionRecomputesStatusWhenOnlySchedulesChange` |
+
+`status-policy.test.ts` → `server/internal/status/status_test.go`（同一策略函数）。
+
+`tags-api-cache.test.ts` → `server/internal/httpapi/tags_categories_test.go`：旧断言是 Next 的
+`dynamic = "force-dynamic"`（可变目录禁止构建期快照）；Go 侧等价语义由
+`TestTagsRouteIsNeverCached` 锁定——响应 `Cache-Control: no-store`，且写后立即 GET 能看到新标签。
+
+`TagInput.test.tsx` → `web/src/components/TagInput.test.tsx`：6 例逐条沿用（点击历史标签、
+大小写不敏感搜索并复用精确名、Enter 创建与中英文逗号批量、待提交文本回调、表单保存未确认文本、
+超长标签跳过并提示）。React 的合成 `onChange` 对应 Solid 的 `onInput`，断言不变。
+
+`SubscriptionCard.test.tsx` 拆分（行内子表，本票只闭合渲染基线，余下随查询/调度/收尾票）：
+
+| 旧 describe | 例数 | 去向 |
+| ----------- | ---: | ---- |
+| deletion confirmation | 2 | **#26** 闭合（`web/src/components/SubscriptionCard.test.tsx`） |
+| tags | 1 | **#26** 闭合（标签按关联顺序渲染） |
+| auto-query on mount | 9 | #28（查询框架/余额/用量），#29（用尽联动） |
+| quota query cooldown | 5 | #28 |
+| balance display | 4 | #28 |
+
+#26 另新增 4 条渲染基线断言（标识/方案/类型/价格、一次性充值金额、用尽标记、状态徽标切换），
+属新栈自有用例，不占旧行。注：按 `it.each` 展开后该文件实际 21 例（矩阵原记 18 例）。
+
+#26 偏差与说明：
+
+- 空的可选字段（`notes`/`providerCustom`/空 `resetSchedules`）在响应中省略（Go `omitempty`），
+  旧栈在表单显式提交空串/空数组时会保留 `""`/`[]`；语义等价，前端按可选处理。`tagIds`
+  始终输出为数组（旧栈创建路径也总带该键）。
+- `usage`/`models` 占位路由只移植旧栈的守卫链（404、not-recurring、不支持、凭据缺失文案逐字对齐）；
+  终端查询分支返回旧栈 handler 失败族的 502（`Usage query failed` / `Model query failed`），
+  providers 查询框架与校准由 #28/#29/#34 接入。
+- 分类路由（`/api/categories` GET/POST/DELETE）与标签改名/删除路由（`/api/tags/{id}` PATCH/DELETE）
+  没有旧测试行；行为按 `lib/db.ts` 与旧路由移植，由新用例锁定（含「在用分类不可删」「重名标签保旧 ID」）。
+- 首启播种默认分类用 `app_state` 标记保证只播种一次；旧栈语义是「数据文件不存在时播种」，
+  删除全部分类后重启不会复活默认值。
+
 ## → solid（web/）
 
 | 测试文件                            | 用例 | 目标区域               | 状态 |
 | ----------------------------------- | ---: | ---------------------- | ---- |
-| SubscriptionCard.test.tsx           |   18 | SubscriptionCard       | ☐    |
+| SubscriptionCard.test.tsx           |   18 | SubscriptionCard       | ◑    |
 | model-button.test.tsx               |   18 | 模型查询按钮           | ☐    |
 | SortablePriorityList.test.tsx       |   13 | 优先级拖拽列表         | ☐    |
 | auto-exhaust.test.tsx               |   10 | 自动用尽标记（卡片侧） | ☐    |
-| TagInput.test.tsx                   |    6 | 标签输入               | ☐    |
+| TagInput.test.tsx                   |    6 | 标签输入               | ☑    |
 | useNow.test.ts                      |    5 | 时间信号原语           | ☐    |
 | query-calibration-callback.test.tsx |    2 | 校准回调局部更新       | ☐    |
 | ProxySubscriptionTab.test.tsx       |    1 | 代理订阅页签           | ☐    |

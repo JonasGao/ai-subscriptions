@@ -47,8 +47,8 @@ type SubscriptionInput struct {
 
 // DeleteTagResult reports which subscriptions lost an association.
 type DeleteTagResult struct {
-	TagID                   string
-	AffectedSubscriptionIDs []string
+	TagID                   string   `json:"tagId"`
+	AffectedSubscriptionIDs []string `json:"affectedSubscriptionIds"`
 }
 
 // Tags returns the tag catalog, newest first (lib/db.ts getTags), falling back
@@ -76,15 +76,24 @@ func (s *Store) CreateSubscription(input SubscriptionInput, tagNames []string) (
 		return nil, err
 	}
 
+	// ADR-0005: the persisted planId is derived from provider/type/planId.
+	planID, err := resolvePlanIDOnCreate(input)
+	if err != nil {
+		return nil, err
+	}
+
 	now := s.nowISO()
 	created := model.Subscription{
-		ID:                  newID(),
-		Name:                input.Name,
-		Category:            input.Category,
-		Provider:            input.Provider,
-		ProviderCustom:      input.ProviderCustom,
-		SubscriptionType:    defaultString(input.SubscriptionType, "recurring"),
-		BillingCycle:        input.BillingCycle,
+		ID:               newID(),
+		Name:             input.Name,
+		Category:         input.Category,
+		Provider:         input.Provider,
+		ProviderCustom:   input.ProviderCustom,
+		SubscriptionType: defaultString(input.SubscriptionType, "recurring"),
+		// lib/db.ts readData normalized every stored record to
+		// `billingCycle || "monthly"`, so an omitted cycle never round-tripped
+		// as absent. Persisting the default keeps the wire shape identical.
+		BillingCycle:        defaultString(input.BillingCycle, "monthly"),
 		Price:               input.Price,
 		StartDate:           input.StartDate,
 		RenewalDate:         input.RenewalDate,
@@ -95,7 +104,7 @@ func (s *Store) CreateSubscription(input SubscriptionInput, tagNames []string) (
 		BalanceCurrency:     input.BalanceCurrency,
 		LowBalanceThreshold: input.LowBalanceThreshold,
 		ResetSchedules:      input.ResetSchedules,
-		PlanID:              input.PlanID,
+		PlanID:              planID,
 		CreatedAt:           now,
 		UpdatedAt:           now,
 	}

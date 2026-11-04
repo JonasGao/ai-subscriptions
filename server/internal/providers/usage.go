@@ -114,6 +114,19 @@ func usageHandlerKeys() []string {
 	}
 }
 
+// HasUsageHandler reports whether key is registered in the old stack's usage
+// handler registry. The route guards key off registration (not implementation)
+// so providers whose bodies land with #30-#33 still take the query branch
+// rather than being reported as unsupported.
+func HasUsageHandler(key string) bool {
+	for _, registered := range usageHandlerKeys() {
+		if registered == key {
+			return true
+		}
+	}
+	return false
+}
+
 // UsageHandlers returns the implemented usage handlers. Keys that are
 // registered in the old stack but whose bodies land with later tickets are
 // absent here, so a lookup for them finds no handler instead of one that
