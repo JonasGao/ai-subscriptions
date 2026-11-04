@@ -84,13 +84,17 @@ type WebhookSubscription struct {
 	Price            float64 `json:"price"`
 }
 
-// WebhookPayload is the generic webhook envelope.
+// WebhookPayload is the generic webhook envelope. Balance/Threshold are set
+// only for low-balance events; ScheduleType/NextResetTime only for reset
+// events, so consumers can switch on the `event` discriminator.
 type WebhookPayload struct {
-	Event        string              `json:"event"`
-	Timestamp    string              `json:"timestamp"`
-	Subscription WebhookSubscription `json:"subscription"`
-	Balance      *float64            `json:"balance,omitempty"`
-	Threshold    *float64            `json:"threshold,omitempty"`
+	Event         string              `json:"event"`
+	Timestamp     string              `json:"timestamp"`
+	Subscription  WebhookSubscription `json:"subscription"`
+	Balance       *float64            `json:"balance,omitempty"`
+	Threshold     *float64            `json:"threshold,omitempty"`
+	ScheduleType  string              `json:"scheduleType,omitempty"`
+	NextResetTime string              `json:"nextResetTime,omitempty"`
 }
 
 // BuildFeishuCard wraps a title and markdown body in a one-element card.
@@ -193,10 +197,12 @@ func joinLines(lines []string) string {
 	return buf.String()
 }
 
-// BuildWebhookPayload builds the generic webhook body for a low-balance event.
+// BuildWebhookPayload builds the generic webhook body. Low-balance events carry
+// balance/threshold; reset events carry scheduleType/nextResetTime. The other
+// kind's fields stay absent from the JSON so consumers can rely on the
+// discriminator alone.
 func BuildWebhookPayload(event Event) WebhookPayload {
-	balance, threshold := event.Balance, event.Threshold
-	return WebhookPayload{
+	payload := WebhookPayload{
 		Event:     event.Kind,
 		Timestamp: event.TriggeredAt,
 		Subscription: WebhookSubscription{
@@ -207,9 +213,25 @@ func BuildWebhookPayload(event Event) WebhookPayload {
 			SubscriptionType: event.Subscription.SubscriptionType,
 			Price:            event.Subscription.Price,
 		},
-		Balance:   &balance,
-		Threshold: &threshold,
 	}
+	if event.Kind == "low-balance" {
+		balance, threshold := event.Balance, event.Threshold
+		payload.Balance = &balance
+		payload.Threshold = &threshold
+	} else {
+		payload.ScheduleType = event.ScheduleType
+		payload.NextResetTime = event.NextResetTime
+	}
+	return payload
+}
+
+// BuildDingtalkPayload wraps the event markdown in DingTalk's markdown
+// envelope.
+func BuildDingtalkPayload(event Event, includeKeyword bool) DingtalkPayload {
+	var payload DingtalkPayload
+	payload.MsgType = "markdown"
+	payload.Markdown.Title, payload.Markdown.Text = BuildEventMarkdown(event, includeKeyword)
+	return payload
 }
 
 // BuildDingtalkURL appends timestamp/sign to the webhook URL when the channel
@@ -229,6 +251,22 @@ func BuildDingtalkURL(channel model.NotificationChannel, now time.Time) string {
 	return fmt.Sprintf("%s%stimestamp=%d&sign=%s", channel.URL, separator, sign.Timestamp, sign.Sign)
 }
 
+// BuildFeishuPayload builds the interactive-card envelope for a feishu webhook
+// channel. A channel with a signing secret carries the keyword-free title plus
+// top-level timestamp/sign fields; an unsigned channel weaves the keyword into
+// the title instead (Feishu keyword security).
+func BuildFeishuPayload(event Event, channel model.NotificationChannel, now time.Time) (FeishuPayload, error) {
+	title, body := BuildEventMarkdown(event, channel.Secret == "")
+	payload := FeishuPayload{MsgType: "interactive", Card: BuildFeishuCard(title, body)}
+	if channel.Secret != "" {
+		if sign := ComputeFeishuSign(channel.Secret, now.Unix()); sign != nil {
+			payload.Timestamp = sign.Timestamp
+			payload.Sign = sign.Sign
+		}
+	}
+	return payload, nil
+}
+
 // PrepareSend builds the channel-specific send for an event. It errors for
 // disabled channels and for feishu-app channels, which have a dedicated sender.
 func PrepareSend(channel model.NotificationChannel, event Event, now time.Time) (*PreparedSend, error) {
@@ -240,22 +278,15 @@ func PrepareSend(channel model.NotificationChannel, event Event, now time.Time) 
 
 	switch channel.Type {
 	case TypeDingtalk:
-		var payload DingtalkPayload
-		payload.MsgType = "markdown"
-		payload.Markdown.Title, payload.Markdown.Text = BuildEventMarkdown(event, includeKeyword)
-		body, err := json.Marshal(payload)
+		body, err := json.Marshal(BuildDingtalkPayload(event, includeKeyword))
 		if err != nil {
 			return nil, err
 		}
 		return &PreparedSend{Channel: channel, URL: BuildDingtalkURL(channel, now), Body: body, Headers: headers}, nil
 	case TypeFeishu:
-		title, text := BuildEventMarkdown(event, includeKeyword)
-		payload := FeishuPayload{MsgType: "interactive", Card: BuildFeishuCard(title, text)}
-		if channel.Secret != "" {
-			if sign := ComputeFeishuSign(channel.Secret, now.Unix()); sign != nil {
-				payload.Timestamp = sign.Timestamp
-				payload.Sign = sign.Sign
-			}
+		payload, err := BuildFeishuPayload(event, channel, now)
+		if err != nil {
+			return nil, err
 		}
 		body, err := json.Marshal(payload)
 		if err != nil {
