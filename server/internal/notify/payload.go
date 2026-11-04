@@ -1,9 +1,11 @@
 package notify
 
-// Payload construction, ported from lib/notifications/payload.ts. Only the
-// low-balance branch is needed here: the only thing #37 puts on the wire is a
-// channel test send, which uses a synthetic low-balance event. The reset
-// branch and the full event dispatcher belong to #39.
+// Payload construction, ported from lib/notifications/payload.ts.
+//
+// BuildEventMarkdown is the shared title/body builder for both event kinds: the
+// webhook channels and the credential-based feishu-app card all render the same
+// markdown. Event detection and the fan-out dispatcher land with #39; this
+// package provides the renderers they use.
 
 import (
 	"bytes"
@@ -17,13 +19,16 @@ import (
 	"ai-subscriptions/internal/model"
 )
 
-// Event is one notification event. Kind discriminates the payload shape.
+// Event is one notification event. Kind discriminates the payload shape; the
+// reset-only fields are ignored for low-balance events.
 type Event struct {
-	Kind         string
-	Subscription model.Subscription
-	Balance      float64
-	Threshold    float64
-	TriggeredAt  string
+	Kind          string
+	Subscription  model.Subscription
+	Balance       float64
+	Threshold     float64
+	ScheduleType  string
+	NextResetTime string
+	TriggeredAt   string
 }
 
 // PreparedSend is a channel-specific (URL, body, headers) triple.
@@ -100,18 +105,64 @@ func BuildFeishuCard(title, body string) FeishuCard {
 // signing secret are assumed to use keyword security, so the keyword "AI订阅"
 // is woven into the title.
 func BuildLowBalanceMarkdown(sub model.Subscription, balance, threshold float64, includeKeyword bool, triggeredAt string) (title, body string) {
-	if includeKeyword {
-		title = fmt.Sprintf("【AI订阅】🪫 %s 余额不足提醒", sub.Name)
-	} else {
-		title = fmt.Sprintf("🪫 %s 余额不足", sub.Name)
-	}
-	lines := []string{
-		"- **订阅**: " + sub.Name,
-		"- **提供商**: " + sub.Provider,
+	return buildMarkdownCard(sub, "🪫", "余额不足提醒", "余额不足", []string{
 		"- **当前余额**: " + formatNumber(balance),
 		"- **阈值**: " + formatNumber(threshold),
-		"- **时间**: " + formatLocalTime(triggeredAt),
+	}, includeKeyword, triggeredAt)
+}
+
+// FormatScheduleType renders a reset schedule type the way the message reads.
+func FormatScheduleType(scheduleType string) string {
+	switch scheduleType {
+	case "fiveHour":
+		return "每5小时"
+	case "weekly":
+		return "每周"
+	case "monthly":
+		return "每月"
 	}
+	return scheduleType
+}
+
+// BuildResetMarkdown builds the quota-reset title and body.
+func BuildResetMarkdown(sub model.Subscription, scheduleType, nextResetTime string, includeKeyword bool, triggeredAt string) (title, body string) {
+	return buildMarkdownCard(sub, "🔄", "配额已重置", "配额已重置", []string{
+		"- **重置计划**: " + FormatScheduleType(scheduleType),
+		"- **下次重置**: " + formatLocalTime(nextResetTime),
+	}, includeKeyword, triggeredAt)
+}
+
+// BuildEventMarkdown renders any event to (title, body). It is the single
+// dispatch point both the webhook and the feishu-app card renderers share.
+func BuildEventMarkdown(event Event, includeKeyword bool) (title, body string) {
+	if event.Kind == "reset" {
+		return BuildResetMarkdown(event.Subscription, event.ScheduleType, event.NextResetTime,
+			includeKeyword, event.TriggeredAt)
+	}
+	return BuildLowBalanceMarkdown(event.Subscription, event.Balance, event.Threshold,
+		includeKeyword, event.TriggeredAt)
+}
+
+// buildMarkdownCard assembles the keyword-aware title and the field list. The
+// time line uses the event's own timestamp, never wall clock at send time, so
+// the message shows the moment the event happened even under retries.
+func buildMarkdownCard(
+	sub model.Subscription,
+	emoji, longLabel, shortLabel string,
+	fields []string,
+	includeKeyword bool,
+	triggeredAt string,
+) (title, body string) {
+	if includeKeyword {
+		title = fmt.Sprintf("【AI订阅】%s %s %s", emoji, sub.Name, longLabel)
+	} else {
+		title = fmt.Sprintf("%s %s %s", emoji, sub.Name, shortLabel)
+	}
+	lines := append([]string{
+		"- **订阅**: " + sub.Name,
+		"- **提供商**: " + sub.Provider,
+	}, fields...)
+	lines = append(lines, "- **时间**: "+formatLocalTime(triggeredAt))
 	return title, joinLines(lines)
 }
 
@@ -191,16 +242,14 @@ func PrepareSend(channel model.NotificationChannel, event Event, now time.Time) 
 	case TypeDingtalk:
 		var payload DingtalkPayload
 		payload.MsgType = "markdown"
-		payload.Markdown.Title, payload.Markdown.Text = BuildLowBalanceMarkdown(
-			event.Subscription, event.Balance, event.Threshold, includeKeyword, event.TriggeredAt)
+		payload.Markdown.Title, payload.Markdown.Text = BuildEventMarkdown(event, includeKeyword)
 		body, err := json.Marshal(payload)
 		if err != nil {
 			return nil, err
 		}
 		return &PreparedSend{Channel: channel, URL: BuildDingtalkURL(channel, now), Body: body, Headers: headers}, nil
 	case TypeFeishu:
-		title, text := BuildLowBalanceMarkdown(
-			event.Subscription, event.Balance, event.Threshold, includeKeyword, event.TriggeredAt)
+		title, text := BuildEventMarkdown(event, includeKeyword)
 		payload := FeishuPayload{MsgType: "interactive", Card: BuildFeishuCard(title, text)}
 		if channel.Secret != "" {
 			if sign := ComputeFeishuSign(channel.Secret, now.Unix()); sign != nil {
