@@ -13,7 +13,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | 测试文件                          | 用例 | 目标区域                       | 状态 |
 | --------------------------------- | ---: | ------------------------------ | ---- |
 | dispatcher.test.ts                |   36 | notifications 调度器           | ☐    |
-| utils.test.ts                     |   34 | 领域工具                       | ☐    |
+| utils.test.ts                     |   34 | 领域工具                       | ◑    |
 | provider-plans.test.ts            |   29 | providers 注册表               | ☑    |
 | reset-alignment.test.ts           |   27 | 重置对齐/校准                  | ☐    |
 | payload.test.ts                   |   27 | 飞书消息构造                   | ☐    |
@@ -30,7 +30,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | feishu-listener.test.ts           |   13 | 飞书 WS 监听                   | ☐    |
 | feishu-helpers.test.ts            |   13 | 飞书辅助                       | ☐    |
 | signing.test.ts                   |   12 | 火山 V4 签名                   | ☐    |
-| reset-schedule-uniqueness.test.ts |   10 | 重置计划唯一性                 | ☐    |
+| reset-schedule-uniqueness.test.ts |   10 | 重置计划唯一性                 | ☑    |
 | notifications-storage.test.ts     |   10 | 通知存储                       | ☑    |
 | providers.test.ts                 |    9 | providers 注册表               | ☑    |
 | models-generic-fetch.test.ts      |    8 | 通用模型获取回退               | ☐    |
@@ -204,6 +204,72 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 - 首启播种默认分类用 `app_state` 标记保证只播种一次；旧栈语义是「数据文件不存在时播种」，
   删除全部分类后重启不会复活默认值。
 
+### 已闭合文件的用例级对账（#27）
+
+`reset-schedule-uniqueness.test.ts`（10 例）→ `server/internal/store/reset_uniqueness_test.go`（旧用例名逐字沿用为 Go 测试名）：
+
+| 旧 describe                    | 旧用例（逐字）                                             | 例数 | Go 测试                                                           |
+| ------------------------------ | ---------------------------------------------------------- | ---: | ----------------------------------------------------------------- |
+| createSubscription             | allows creating a subscription with unique schedule types  |    1 | `TestCreateSubscriptionAllowsUniqueScheduleTypes`                 |
+| createSubscription             | rejects duplicate schedule types                           |    1 | `TestCreateSubscriptionRejectsDuplicateScheduleTypes`             |
+| updateSubscription             | allows updating with unique schedule types                 |    1 | `TestUpdateSubscriptionAllowsUniqueScheduleTypes`                 |
+| updateSubscription             | rejects duplicate schedule types                           |    1 | `TestUpdateSubscriptionRejectsDuplicateScheduleTypes`（#26 既有） |
+| addResetSchedule               | allows adding a new schedule type                          |    1 | `TestAddResetScheduleAllowsNewType`                               |
+| addResetSchedule               | rejects adding a duplicate schedule type                   |    1 | `TestAddResetScheduleRejectsDuplicateType`                        |
+| data migration - dedup on read | deduplicates schedules keeping earliest createdAt          |    1 | `TestLoadDeduplicatesSchedulesKeepingEarliestCreatedAt`           |
+| data migration - dedup on read | deduplicates multiple types independently                  |    1 | `TestLoadDeduplicatesMultipleTypesIndependently`                  |
+| data migration - dedup on read | recomputes subscription status when a duplicate is dropped |    1 | `TestLoadRecomputesStatusWhenDuplicateDropped`                    |
+| data migration - dedup on read | writes deduplicated data back to file                      |    1 | `TestLoadPersistsDeduplicatedSchedules`                           |
+
+偏差：旧栈的「加载去重」发生在每次 `readData` 并回写 `subscriptions.json`；SQLite 由
+`UNIQUE (subscription_id, type)` 直接挡住重复行，去重落在一次性 JSON→SQLite 导入器
+（导入即持久化），故后四例以旧 JSON 快照为输入。读路径不再需要回写。
+
+`useNow.test.ts`（5 例）→ `web/src/lib/useNow.test.ts`（`useNow` hook 变 `createNow()` 信号原语，行为断言逐条沿用）：
+
+| 旧用例（逐字）                                      | 例数 | 新用例                               |
+| --------------------------------------------------- | ---: | ------------------------------------ |
+| returns current timestamp initially                 |    1 | 同名用例                             |
+| updates every 60 seconds                            |    1 | 同名用例                             |
+| does not update before 60 seconds                   |    1 | 同名用例                             |
+| updates immediately on visibility change to visible |    1 | 同名用例（hidden 不更新同样保留）    |
+| cleans up interval and listener on unmount          |    1 | 同名用例（`dispose()` 代替 unmount） |
+
+`utils.test.ts` 中重置数学部分（行内子表；该行整体仍为 ◑，其余用例随 #28）：
+
+| 旧 describe                                   | 例数 | 新用例（`web/src/subscriptions/reset.test.ts`） | 说明                                          |
+| --------------------------------------------- | ---: | ----------------------------------------------- | --------------------------------------------- |
+| getResetUrgencyColor › threshold constants    |    1 | 同名 describe                                   | ADR-0013 阈值常量                             |
+| getResetUrgencyColor › boundary points        |    4 | 同名 describe                                   | 72h/24h 与 240h/120h 端点                     |
+| getResetUrgencyColor › red clamp              |    3 | 同名 describe                                   | 红区夹取与过期                                |
+| getResetUrgencyColor › midpoint interpolation |    2 | 同名 describe                                   | 周/月 48h、180h 中点                          |
+| getResetUrgencyColor › exponential easing     |    3 | 同名 describe                                   | 2^x−1 缓动                                    |
+| getResetUrgencyColor › gradient monotonicity  |    1 | 同名 describe                                   | 色相单调                                      |
+| getResetUrgencyColor › edge cases             |    3 | 同名 describe                                   | null/注入时钟/非法 ISO                        |
+| （小计）                                      |   17 | —                                               | 其余 17 例（用量百分比/区间/币种/余额）归 #28 |
+
+偏差：`getResetUrgencyColor` 是纯展示数学，新栈落在 Solid 前端（`web/src/subscriptions/reset.ts`），
+不经 Go；矩阵该行的 `→ Go` 目标区域因此对重置数学部分改判为 solid 侧。
+
+另：本票新增 `server/internal/reset/reset_test.go`（时长解析、偏移推断、周/月/五小时递推、
+月末 clamp 与 31→28→31 不漂移、时区、五小时锚点不漂移/跳过错过的周期）、
+`server/internal/scheduler/scheduler_test.go`（5 分钟 ticker：不立即触发、失败后继续、取消即停）、
+`server/internal/httpapi/reset_schedule_test.go`（toggle 端点形状、重复类型 400、resetSchedules 非数组 400）、
+`web/src/components/ResetScheduleConfig.test.tsx`、`web/src/components/ResetScheduleGrid.test.tsx`、
+`web/src/pages/SubscriptionsPage.reset.test.tsx`，均为新栈自有用例，不占旧行。
+
+#27 偏差与说明：
+
+- 月历递推修正了旧栈的一个真实缺陷：`setMonth(+1)` 作用在 1 月 31 日会先滚到 3 月 3 日，
+  随后 `setDate(31)` 得到 3 月 31 日，直接跳过 2 月。新栈（Go 与 TS 一致）显式计算目标年月
+  再 `clamp` 到当月天数：1 月 31 日 → 2 月 28 日（闰年 29 日）→ 3 月 31 日。
+  旧栈没有该函数的测试，ADR/票面的「月末 clamp 与 31→28 漂移语义」以本票测试为准。
+- 新增 `POST /api/subscriptions/{id}/schedules/{scheduleId}/toggle` 之外的「单条计划增删改」路由
+  未实现：旧栈同样只有 toggle 路由，增删改经由订阅 create/update 的 `resetSchedules` 数组完成，
+  新栈保持该形状；唯一性与去重由 store 的写路径与导入器保证。
+- 紧迫度颜色只在卡片的周/月计划行着色（`getResetUrgencyColor` 的载体在 #28 的用量窗口到位前，
+  先用于本地计划倒计时；ADR-0013 的固定阈值与曲线完全复用同一函数）。
+
 ## → solid（web/）
 
 | 测试文件                            | 用例 | 目标区域               | 状态 |
@@ -213,7 +279,7 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 | SortablePriorityList.test.tsx       |   13 | 优先级拖拽列表         | ☐    |
 | auto-exhaust.test.tsx               |   10 | 自动用尽标记（卡片侧） | ☐    |
 | TagInput.test.tsx                   |    6 | 标签输入               | ☑    |
-| useNow.test.ts                      |    5 | 时间信号原语           | ☐    |
+| useNow.test.ts                      |    5 | 时间信号原语           | ☑    |
 | query-calibration-callback.test.tsx |    2 | 校准回调局部更新       | ☐    |
 | ProxySubscriptionTab.test.tsx       |    1 | 代理订阅页签           | ☑    |
 | MainPageShell.test.tsx              |    1 | 主页骨架               | ☐    |

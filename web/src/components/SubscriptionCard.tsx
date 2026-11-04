@@ -6,6 +6,7 @@ import type {
   Tag,
 } from "../subscriptions/types";
 import { resolveStatus } from "../subscriptions/status";
+import { ResetScheduleGrid } from "./ResetScheduleGrid";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
@@ -14,6 +15,12 @@ interface SubscriptionCardProps {
   onEdit: (subscription: Subscription) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: "active" | "paused") => void;
+  /** Manual schedule exhaustion switch (ADR-0007); omitted disables the grid. */
+  onScheduleToggle?: (
+    subscriptionId: string,
+    scheduleId: string,
+    exhausted: boolean
+  ) => void;
 }
 
 const STATUS_LABELS: Record<SubscriptionStatus, string> = {
@@ -53,7 +60,9 @@ export function getTypeLabel(type: string): string {
 function priceLabel(subscription: Subscription): string {
   const amount = `¥${subscription.price.toFixed(2)}`;
   if (subscription.subscriptionType === "one-time") return amount;
-  return subscription.billingCycle === "yearly" ? `${amount}/年` : `${amount}/月`;
+  return subscription.billingCycle === "yearly"
+    ? `${amount}/年`
+    : `${amount}/月`;
 }
 
 /**
@@ -169,6 +178,25 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
           </div>
         </Show>
       </dl>
+
+      <Show
+        when={
+          props.onScheduleToggle &&
+          isRecurring() &&
+          (props.subscription.resetSchedules ?? []).length > 0
+        }
+      >
+        <ResetScheduleGrid
+          schedules={props.subscription.resetSchedules ?? []}
+          onToggle={(scheduleId, exhausted) =>
+            props.onScheduleToggle?.(
+              props.subscription.id,
+              scheduleId,
+              exhausted
+            )
+          }
+        />
+      </Show>
 
       <Show when={props.subscription.notes}>
         <div class="subscription-card-notes">
