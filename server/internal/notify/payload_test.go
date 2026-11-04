@@ -560,3 +560,10 @@ func TestBuildWebhookPayloadIncludesScheduleFieldsForReset(t *testing.T) {
 		t.Errorf("balance/threshold = %v/%v, want none on reset", payload.Balance, payload.Threshold)
 	}
 }
+
+func TestNewHTTPSenderDefaultsToTimeoutClient(t *testing.T) {
+	sender := NewHTTPSender(nil)
+	if sender.Client == nil || sender.Client.Timeout != 10*time.Second {
+		t.Fatalf("default sender must use a 10s-timeout client, got %+v", sender.Client)
+	}
+}

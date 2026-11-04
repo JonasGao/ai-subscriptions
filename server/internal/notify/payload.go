@@ -311,10 +311,13 @@ type HTTPSender struct {
 	Client *http.Client
 }
 
-// NewHTTPSender returns a sender using client, or http.DefaultClient when nil.
+// NewHTTPSender returns a sender using client, or a client with the shared
+// webhook timeout when nil — never http.DefaultClient, which has no timeout
+// and would let a hanging webhook stall the test-send handler and the
+// dispatcher tick (providers use the same 10s budget).
 func NewHTTPSender(client *http.Client) *HTTPSender {
 	if client == nil {
-		client = http.DefaultClient
+		client = &http.Client{Timeout: 10 * time.Second}
 	}
 	return &HTTPSender{Client: client}
 }
