@@ -211,14 +211,14 @@ func TestChangePasswordValidatesInput(t *testing.T) {
 	db := newTestStore(t)
 	svc := newTestService(t, db, newTestClock())
 
-	if err := svc.ChangePassword("admin123", "12345"); !errors.Is(err, auth.ErrPasswordTooShort) {
+	if _, err := svc.ChangePassword("admin123", "12345"); !errors.Is(err, auth.ErrPasswordTooShort) {
 		t.Fatalf("short password err = %v, want ErrPasswordTooShort", err)
 	}
 	// The old stack checks the new-password length before the old password.
-	if err := svc.ChangePassword("wrong-old", "12345"); !errors.Is(err, auth.ErrPasswordTooShort) {
+	if _, err := svc.ChangePassword("wrong-old", "12345"); !errors.Is(err, auth.ErrPasswordTooShort) {
 		t.Fatalf("short password with wrong old err = %v, want ErrPasswordTooShort", err)
 	}
-	if err := svc.ChangePassword("wrong-old", "newpass123"); !errors.Is(err, auth.ErrOldPassword) {
+	if _, err := svc.ChangePassword("wrong-old", "newpass123"); !errors.Is(err, auth.ErrOldPassword) {
 		t.Fatalf("wrong old password err = %v, want ErrOldPassword", err)
 	}
 }
@@ -237,7 +237,7 @@ func TestChangePasswordSuccessClearsInitialFlag(t *testing.T) {
 		t.Fatalf("AuthData before change: %v", err)
 	}
 	clock.Advance(time.Minute)
-	if err := svc.ChangePassword("admin123", "newpass456"); err != nil {
+	if _, err := svc.ChangePassword("admin123", "newpass456"); err != nil {
 		t.Fatalf("ChangePassword: %v", err)
 	}
 
@@ -318,6 +318,39 @@ func TestSessionTokenExpiresAfterSevenDays(t *testing.T) {
 	}
 }
 
+// The old stack's non-forced flow keeps the user signed in after a password
+// change (app/change-password/page.tsx only signs out when force=1), so the
+// successful change must hand the caller a token bound to the NEW hash.
+// Sessions issued before the change stay dead — only this one is replaced.
+func TestChangePasswordReissuesSessionForCaller(t *testing.T) {
+	db := newTestStore(t)
+	svc := newTestService(t, db, newTestClock())
+
+	before, err := svc.Authenticate("admin", "admin123", "203.0.113.14")
+	if err != nil {
+		t.Fatalf("Authenticate: %v", err)
+	}
+
+	after, err := svc.ChangePassword("admin123", "newpass900")
+	if err != nil {
+		t.Fatalf("ChangePassword: %v", err)
+	}
+	if after.Token == "" {
+		t.Fatal("ChangePassword returned no replacement token")
+	}
+
+	user, ok := svc.Verify(after.Token)
+	if !ok {
+		t.Fatal("replacement token does not verify")
+	}
+	if user.Username != "admin" || user.IsInitial {
+		t.Errorf("user = %+v, want admin with isInitial=false", user)
+	}
+	if _, ok := svc.Verify(before.Token); ok {
+		t.Error("token issued before the change still verifies")
+	}
+}
+
 func TestSessionTokenInvalidAfterPasswordChange(t *testing.T) {
 	db := newTestStore(t)
 	svc := newTestService(t, db, newTestClock())
@@ -326,7 +359,7 @@ func TestSessionTokenInvalidAfterPasswordChange(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Authenticate: %v", err)
 	}
-	if err := svc.ChangePassword("admin123", "newpass789"); err != nil {
+	if _, err := svc.ChangePassword("admin123", "newpass789"); err != nil {
 		t.Fatalf("ChangePassword: %v", err)
 	}
 	if _, ok := svc.Verify(result.Token); ok {

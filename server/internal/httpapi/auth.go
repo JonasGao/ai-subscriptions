@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 // is the production implementation; tests substitute narrower stubs.
 type AuthService interface {
 	Authenticate(username, password, clientIP string) (auth.LoginResult, error)
-	ChangePassword(oldPassword, newPassword string) error
+	ChangePassword(oldPassword, newPassword string) (auth.LoginResult, error)
 	IsInitial() (bool, error)
 	Verify(token string) (auth.User, bool)
 }
@@ -122,9 +123,36 @@ func handleLogin(svc AuthService) http.HandlerFunc {
 }
 
 // handleLogout serves POST /api/auth/logout: only the cookie needs clearing.
+// Unlike change-password it needs no session, so SameSite=Lax does not protect
+// it — a cross-site form can force a logout by making the browser accept the
+// clearing Set-Cookie. The old stack's NextAuth signout required a CSRF token;
+// here the equivalent guarantee comes from rejecting cross-site origins.
 func handleLogout(w http.ResponseWriter, r *http.Request) {
+	if isCrossSiteRequest(r) {
+		writeJSONAligned(w, http.StatusForbidden, map[string]string{"error": "跨站请求被拒绝"})
+		return
+	}
 	clearSessionCookie(w, r)
 	writeJSONAligned(w, http.StatusOK, map[string]bool{"success": true})
+}
+
+// isCrossSiteRequest reports whether a state-changing request came from
+// another origin. Origin is the authoritative browser signal; Sec-Fetch-Site
+// covers browsers that omit it. Non-browser clients (curl, the healthcheck)
+// send neither and are allowed — they cannot be CSRF'd.
+func isCrossSiteRequest(r *http.Request) bool {
+	if site := r.Header.Get("Sec-Fetch-Site"); site == "cross-site" {
+		return true
+	}
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return false
+	}
+	parsed, err := url.Parse(origin)
+	if err != nil {
+		return true
+	}
+	return !strings.EqualFold(parsed.Host, r.Host)
 }
 
 // handleSession serves GET /api/auth/session. The unauthenticated body is an
@@ -160,9 +188,11 @@ func handleIsInitial(svc AuthService) http.HandlerFunc {
 }
 
 // handleChangePassword serves POST /api/auth/change-password (shape unchanged:
-// {oldPassword,newPassword} → {success:true} / {error}). A successful change
-// clears the current cookie because the token is bound to the old hash — all
-// sessions, including this one, are invalidated.
+// {oldPassword,newPassword} → {success:true} / {error}). The token is bound to
+// the password hash, so a successful change kills every session issued before
+// it. The caller is the one exception the old stack kept signed in (non-forced
+// flow lands on /subscriptions instead of re-authenticating), so it receives a
+// replacement cookie minted against the new hash.
 func handleChangePassword(svc AuthService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
@@ -175,7 +205,7 @@ func handleChangePassword(svc AuthService) http.HandlerFunc {
 			return
 		}
 
-		err := svc.ChangePassword(body.OldPassword, body.NewPassword)
+		result, err := svc.ChangePassword(body.OldPassword, body.NewPassword)
 		switch {
 		case errors.Is(err, auth.ErrPasswordTooShort), errors.Is(err, auth.ErrOldPassword):
 			writeJSONAligned(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
@@ -185,7 +215,7 @@ func handleChangePassword(svc AuthService) http.HandlerFunc {
 			return
 		}
 
-		clearSessionCookie(w, r)
+		setSessionCookie(w, r, result.Token)
 		writeJSONAligned(w, http.StatusOK, map[string]bool{"success": true})
 	}
 }

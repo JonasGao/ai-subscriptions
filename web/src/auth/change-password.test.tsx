@@ -47,10 +47,11 @@ function fillPasswords(
 }
 
 describe("改密页", () => {
-  it("强制改密时展示首登标题，成功后返回登录页", async () => {
+  it("强制改密时展示首登标题，成功后登出并返回登录页", async () => {
     const fetchMock = stubFetch({
       "GET /api/auth/session": seedSession,
       "POST /api/auth/change-password": { body: { success: true } },
+      "POST /api/auth/logout": { body: { success: true } },
     });
 
     const { history } = renderAt("/change-password?force=1");
@@ -63,6 +64,13 @@ describe("改密页", () => {
     fireEvent.click(screen.getByRole("button", { name: "确认修改" }));
 
     await waitFor(() => expect(history.get()).toBe("/login"));
+    // The old stack signs out on the forced flow (app/change-password/page.tsx).
+    expect(
+      fetchMock.mock.calls.some(
+        ([url, init]) =>
+          String(url).endsWith("/api/auth/logout") && init?.method === "POST"
+      )
+    ).toBe(true);
 
     const call = fetchMock.mock.calls.find(([url]) =>
       String(url).endsWith("/api/auth/change-password")
@@ -72,6 +80,26 @@ describe("改密页", () => {
       oldPassword: "admin123",
       newPassword: "newpass123",
     });
+  });
+
+  it("非强制改密成功后保持登录并进入订阅页", async () => {
+    const fetchMock = stubFetch({
+      "GET /api/auth/session": changedSession,
+      "POST /api/auth/change-password": { body: { success: true } },
+    });
+
+    const { history } = renderAt("/change-password");
+
+    await screen.findByRole("heading", { name: "修改密码" });
+    fillPasswords("oldpass1", "newpass123", "newpass123");
+    fireEvent.click(screen.getByRole("button", { name: "确认修改" }));
+
+    // app/change-password/page.tsx only signs out on the forced flow.
+    await waitFor(() => expect(history.get()).toBe("/subscriptions"));
+    expect(await screen.findByText(/已登录：admin/)).toBeTruthy();
+    expect(
+      fetchMock.mock.calls.some(([url]) => String(url).endsWith("/api/auth/logout"))
+    ).toBe(false);
   });
 
   it("两次新密码不一致时本地拦截，不发请求", async () => {

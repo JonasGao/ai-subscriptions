@@ -308,6 +308,92 @@ func TestLogoutClearsSessionCookie(t *testing.T) {
 	}
 }
 
+// The old stack's signout required a CSRF token; without a check here a
+// third-party page can force a logout by auto-submitting a form, because the
+// logout endpoint needs no session and the clearing Set-Cookie is honoured
+// even when the cookie is not sent (SameSite=Lax does not help).
+func TestLogoutRejectsCrossSiteRequests(t *testing.T) {
+	f := newAuthFixture(t)
+
+	login := postJSON(t, f.handler, "/api/auth/login", map[string]string{
+		"username": "admin", "password": "admin123",
+	})
+	cookie := sessionCookie(t, login)
+
+	for _, tc := range []struct {
+		name   string
+		origin string
+		site   string
+	}{
+		{name: "foreign origin", origin: "https://evil.example"},
+		{name: "cross-site fetch metadata", site: "cross-site"},
+		{name: "null origin (sandboxed iframe)", origin: "null"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
+			req.RemoteAddr = "203.0.113.20:1234"
+			req.AddCookie(cookie)
+			if tc.origin != "" {
+				req.Header.Set("Origin", tc.origin)
+			}
+			if tc.site != "" {
+				req.Header.Set("Sec-Fetch-Site", tc.site)
+			}
+			rec := httptest.NewRecorder()
+			f.handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusForbidden {
+				t.Fatalf("status = %d, want 403 (body=%q)", rec.Code, rec.Body.String())
+			}
+			for _, c := range rec.Result().Cookies() {
+				if c.Name == authCookieName {
+					t.Errorf("cross-site logout still cleared the session cookie: %+v", c)
+				}
+			}
+		})
+	}
+}
+
+func TestLogoutAcceptsSameOriginAndNonBrowserClients(t *testing.T) {
+	f := newAuthFixture(t)
+
+	for _, tc := range []struct {
+		name   string
+		origin string
+		site   string
+	}{
+		{name: "same origin", origin: "http://example.com", site: "same-origin"},
+		{name: "no origin header (curl)"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
+			req.Host = "example.com"
+			req.RemoteAddr = "203.0.113.20:1234"
+			if tc.origin != "" {
+				req.Header.Set("Origin", tc.origin)
+			}
+			if tc.site != "" {
+				req.Header.Set("Sec-Fetch-Site", tc.site)
+			}
+			rec := httptest.NewRecorder()
+			f.handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want 200 (body=%q)", rec.Code, rec.Body.String())
+			}
+			var cleared bool
+			for _, c := range rec.Result().Cookies() {
+				if c.Name == authCookieName && c.Value == "" && c.MaxAge < 0 {
+					cleared = true
+				}
+			}
+			if !cleared {
+				t.Error("same-origin logout did not clear the session cookie")
+			}
+		})
+	}
+}
+
 func TestChangePasswordIsGatedAndUpdatesTheSessionState(t *testing.T) {
 	f := newAuthFixture(t)
 
@@ -359,6 +445,17 @@ func TestChangePasswordIsGatedAndUpdatesTheSessionState(t *testing.T) {
 		t.Fatalf("session status = %d, want 200", rec.Code)
 	} else if body := decodeJSON(t, rec); body["user"] != nil {
 		t.Errorf("old session still authenticated after the password change: %v", body["user"])
+	}
+	// The caller itself is not logged out: the response reissues a cookie bound
+	// to the new hash, matching the old stack's non-forced flow.
+	replacement := sessionCookie(t, rec)
+	if replacement.Value == "" || replacement.Value == cookie.Value {
+		t.Errorf("change-password response cookie = %q, want a fresh token", replacement.Value)
+	}
+	if rec := getWithCookie(t, f.handler, "/api/auth/session", replacement); rec.Code != http.StatusOK {
+		t.Fatalf("session status = %d, want 200", rec.Code)
+	} else if body := decodeJSON(t, rec); body["user"] == nil {
+		t.Error("reissued session is not authenticated after the password change")
 	}
 	if rec := getWithCookie(t, f.handler, "/api/auth/is-initial"); decodeJSON(t, rec)["isInitial"] != false {
 		t.Error("isInitial stayed true after a successful change")

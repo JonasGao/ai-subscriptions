@@ -183,12 +183,15 @@ func (s *Service) Authenticate(username, password, clientIP string) (LoginResult
 
 // ChangePassword sets a new password after verifying the current one. The
 // isInitial flag is cleared, and sessions issued before the change stop
-// verifying because the token is bound to the password hash.
-func (s *Service) ChangePassword(oldPassword, newPassword string) error {
+// verifying because every token is bound to the password hash. The returned
+// result carries a fresh token for the caller so the old stack's non-forced
+// flow (stay signed in, land on /subscriptions) keeps working; every other
+// session, and the caller's previous token, is dead.
+func (s *Service) ChangePassword(oldPassword, newPassword string) (LoginResult, error) {
 	// utf8.RuneCountInString approximates JavaScript's String#length (UTF-16
 	// code units) closely enough for the "至少6位" rule.
 	if utf8.RuneCountInString(newPassword) < MinPasswordLength {
-		return ErrPasswordTooShort
+		return LoginResult{}, ErrPasswordTooShort
 	}
 
 	s.mu.Lock()
@@ -196,20 +199,28 @@ func (s *Service) ChangePassword(oldPassword, newPassword string) error {
 
 	data, err := s.ensureAccountLocked()
 	if err != nil {
-		return err
+		return LoginResult{}, err
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(data.PasswordHash), []byte(oldPassword)); err != nil {
-		return ErrOldPassword
+		return LoginResult{}, ErrOldPassword
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcryptCost)
 	if err != nil {
-		return err
+		return LoginResult{}, err
 	}
 	data.PasswordHash = string(hash)
 	data.UpdatedAt = model.FormatTimestamp(s.now())
 	data.IsInitial = false
-	return s.store.WriteAuthData(data)
+	if err := s.store.WriteAuthData(data); err != nil {
+		return LoginResult{}, err
+	}
+
+	token, err := s.issue(data, s.now())
+	if err != nil {
+		return LoginResult{}, err
+	}
+	return LoginResult{Username: data.Username, IsInitial: data.IsInitial, Token: token}, nil
 }
 
 var _ Store = (*store.Store)(nil)
