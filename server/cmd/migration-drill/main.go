@@ -162,6 +162,7 @@ func verify(source string, st *store.Store) ([]string, error) {
 		var legacy struct {
 			Subscriptions []struct {
 				Name        string `json:"name"`
+				Category    string `json:"category"`
 				Credentials string `json:"credentials"`
 			} `json:"subscriptions"`
 			Categories []string    `json:"categories"`
@@ -184,6 +185,40 @@ func verify(source string, st *store.Store) ([]string, error) {
 		}
 		if len(data.Tags) != len(legacy.Tags) {
 			problems = append(problems, fmt.Sprintf("tags: imported %d, source %d", len(data.Tags), len(legacy.Tags)))
+		}
+
+		// Every subscription's category reference must survive the rename too,
+		// and must point at a category that exists after import. Checking only
+		// the catalogue let ticket #23's dangling references through. The
+		// expectation is re-derived here instead of calling the importer so the
+		// drill stays an independent cross-check.
+		sourceCategories := make(map[string]struct{}, len(legacy.Categories))
+		for _, category := range legacy.Categories {
+			sourceCategories[category] = struct{}{}
+		}
+		importedCategories := make(map[string]struct{}, len(data.Categories))
+		for _, category := range data.Categories {
+			importedCategories[category] = struct{}{}
+		}
+		for i, sub := range legacy.Subscriptions {
+			if i >= len(data.Subscriptions) {
+				break
+			}
+			expectedCategory := migrateCategory(sub.Category, legacy.Categories)
+			got := data.Subscriptions[i].Category
+			if got != expectedCategory {
+				problems = append(problems, fmt.Sprintf(
+					"subscription %q: category imported %q, source expects %q (position %d)",
+					sub.Name, got, expectedCategory, i))
+			}
+			// A reference that was already dangling in the source is carried
+			// over faithfully; only a new dangling reference is a drill failure.
+			_, sourceOk := sourceCategories[sub.Category]
+			if _, importedOk := importedCategories[got]; !importedOk && sourceOk {
+				problems = append(problems, fmt.Sprintf(
+					"subscription %q: category %q is not in the imported category list",
+					sub.Name, got))
+			}
 		}
 
 		// Ciphertext must be byte-identical per subscription name (names need
@@ -355,6 +390,20 @@ func normalizeCategories(categories []string) []string {
 		out = append(out, category)
 	}
 	return out
+}
+
+// migrateCategory ports readData's per-subscription rename: it only fires when
+// the legacy catalogue still carried the retired name.
+func migrateCategory(category string, legacyCategories []string) string {
+	if category != "AI助手" {
+		return category
+	}
+	for _, candidate := range legacyCategories {
+		if candidate == "AI助手" {
+			return "官方订阅"
+		}
+	}
+	return category
 }
 
 func sortedNonEmpty(values []string) []string {

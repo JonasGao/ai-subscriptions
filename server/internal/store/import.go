@@ -207,26 +207,56 @@ func parseLegacyDocuments(dataDir string, files []string, cipher *crypto.Cipher)
 	return docs, nil
 }
 
+// The retired built-in category and its replacement (readData in lib/db.ts).
+const (
+	retiredCategory = "AI助手"
+	currentCategory = "官方订阅"
+)
+
+// legacyCategories renames the retired built-in category and de-duplicates the
+// catalogue, preserving first-seen order (readData's rule).
+func legacyCategories(legacy []string) []string {
+	out := make([]string, 0, len(legacy))
+	seen := make(map[string]struct{}, len(legacy))
+	for _, category := range legacy {
+		if category == retiredCategory {
+			category = currentCategory
+		}
+		if _, dup := seen[category]; dup {
+			continue
+		}
+		seen[category] = struct{}{}
+		out = append(out, category)
+	}
+	return out
+}
+
+// legacySubscriptionCategory maps one subscription's category the way readData
+// did: the rename only happens when the legacy catalogue still carried the
+// retired name. A reference that was already orphaned before the migration is
+// left untouched rather than silently re-homed.
+func legacySubscriptionCategory(category string, legacyCategories []string) string {
+	if category != retiredCategory {
+		return category
+	}
+	for _, candidate := range legacyCategories {
+		if candidate == retiredCategory {
+			return currentCategory
+		}
+	}
+	return category
+}
+
 // normalizeLegacySubscriptions ports the migration rules readData applied on
 // every load in lib/db.ts, now applied exactly once at import time:
-//   - category "AI助手" renamed to "官方订阅" (deduplicated)
+//   - category "AI助手" renamed to "官方订阅" in the catalogue *and* in every
+//     subscription referencing it (deduplicated)
 //   - tags default to [], unknown tag ids dropped, ids deduplicated
 //   - subscriptionType defaults to recurring, billingCycle to monthly
 //   - legacy apiKey migrated into the credentials blob
 //   - invalid/duplicate schedules dropped, exhausted defaulted to false
 func normalizeLegacySubscriptions(raw *legacySubscriptionFile, cipher *crypto.Cipher) (*model.SubscriptionData, error) {
-	categories := make([]string, 0, len(raw.Categories))
-	seenCategories := make(map[string]struct{}, len(raw.Categories))
-	for _, category := range raw.Categories {
-		if category == "AI助手" {
-			category = "官方订阅"
-		}
-		if _, dup := seenCategories[category]; dup {
-			continue
-		}
-		seenCategories[category] = struct{}{}
-		categories = append(categories, category)
-	}
+	categories := legacyCategories(raw.Categories)
 
 	tags := raw.Tags
 	if tags == nil {
@@ -240,6 +270,8 @@ func normalizeLegacySubscriptions(raw *legacySubscriptionFile, cipher *crypto.Ci
 	subscriptions := make([]model.Subscription, 0, len(raw.Subscriptions))
 	for _, legacy := range raw.Subscriptions {
 		sub := legacy.Subscription
+
+		sub.Category = legacySubscriptionCategory(sub.Category, raw.Categories)
 
 		sub.TagIDs = filterKnownTagIDs(legacy.Subscription.TagIDs, knownTagIDs)
 		sub.SubscriptionType = defaultString(sub.SubscriptionType, "recurring")

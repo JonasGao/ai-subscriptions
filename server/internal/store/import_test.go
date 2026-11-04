@@ -119,6 +119,122 @@ func TestImportMovesCiphertextVerbatim(t *testing.T) {
 	}
 }
 
+// The retired "AI助手" category is renamed in the catalogue *and* in every
+// subscription that referenced it (readData did both); leaving the references
+// behind would dangle, and the one-way import + completion marker would freeze
+// them forever — the restore-from-JSON-snapshot path included.
+func TestImportRenamesRetiredCategoryEverywhere(t *testing.T) {
+	dir := t.TempDir()
+	writeJSONFile(t, dir, "subscriptions.json", map[string]any{
+		"subscriptions": []any{
+			map[string]any{
+				"id": "sub-retired", "name": "On the retired category", "category": "AI助手",
+				"provider": "openai", "subscriptionType": "recurring",
+				"billingCycle": "monthly", "price": 20, "status": "active",
+				"createdAt": "2024-01-01T00:00:00.000Z",
+				"updatedAt": "2024-01-01T00:00:00.000Z",
+			},
+			map[string]any{
+				"id": "sub-current", "name": "Already renamed", "category": "官方订阅",
+				"provider": "openai", "subscriptionType": "recurring",
+				"billingCycle": "monthly", "price": 20, "status": "active",
+				"createdAt": "2024-01-02T00:00:00.000Z",
+				"updatedAt": "2024-01-02T00:00:00.000Z",
+			},
+			map[string]any{
+				"id": "sub-other", "name": "Untouched category", "category": "中转站",
+				"provider": "openai", "subscriptionType": "recurring",
+				"billingCycle": "monthly", "price": 20, "status": "active",
+				"createdAt": "2024-01-03T00:00:00.000Z",
+				"updatedAt": "2024-01-03T00:00:00.000Z",
+			},
+		},
+		"categories": []string{"AI助手", "官方订阅", "中转站"},
+	})
+
+	s := openStoreIn(t, dir)
+	data, err := s.ReadSubscriptionData()
+	if err != nil {
+		t.Fatalf("ReadSubscriptionData: %v", err)
+	}
+
+	want := []string{"官方订阅", "中转站"}
+	if len(data.Categories) != len(want) {
+		t.Fatalf("categories = %#v, want %#v", data.Categories, want)
+	}
+	for i := range want {
+		if data.Categories[i] != want[i] {
+			t.Fatalf("categories = %#v, want %#v", data.Categories, want)
+		}
+	}
+
+	known := make(map[string]struct{}, len(data.Categories))
+	for _, category := range data.Categories {
+		known[category] = struct{}{}
+	}
+	wantByID := map[string]string{
+		"sub-retired": "官方订阅",
+		"sub-current": "官方订阅",
+		"sub-other":   "中转站",
+	}
+	if len(data.Subscriptions) != len(wantByID) {
+		t.Fatalf("subscriptions = %d, want %d", len(data.Subscriptions), len(wantByID))
+	}
+	for _, sub := range data.Subscriptions {
+		if sub.Category != wantByID[sub.ID] {
+			t.Fatalf("subscription %q category = %q, want %q", sub.ID, sub.Category, wantByID[sub.ID])
+		}
+		if _, ok := known[sub.Category]; !ok {
+			t.Fatalf("subscription %q category %q is not in the catalogue %#v", sub.ID, sub.Category, data.Categories)
+		}
+	}
+}
+
+// Disaster recovery per ADR-0017: the pre-import JSON snapshot is the last
+// resort, so restoring it into a fresh DATA_DIR must produce a correct import —
+// including renamed per-subscription categories.
+func TestImportFromRestoredSnapshotRenamesCategories(t *testing.T) {
+	origin := t.TempDir()
+	writeJSONFile(t, origin, "subscriptions.json", map[string]any{
+		"subscriptions": []any{map[string]any{
+			"id": "sub-1", "name": "Restored", "category": "AI助手",
+			"provider": "openai", "subscriptionType": "recurring",
+			"billingCycle": "monthly", "price": 20, "status": "active",
+			"createdAt": "2024-01-01T00:00:00.000Z",
+			"updatedAt": "2024-01-01T00:00:00.000Z",
+		}},
+		"categories": []string{"AI助手"},
+	})
+
+	first := openStoreIn(t, origin)
+	snapshot := first.LegacySnapshotPath()
+	if snapshot == "" {
+		t.Fatal("no legacy JSON snapshot was taken before import")
+	}
+	snapshotted, err := os.ReadFile(snapshot)
+	if err != nil {
+		t.Fatalf("read legacy snapshot: %v", err)
+	}
+
+	// Restore the snapshot as the live document of a brand-new data directory.
+	restored := t.TempDir()
+	if err := os.WriteFile(filepath.Join(restored, "subscriptions.json"), snapshotted, 0o644); err != nil {
+		t.Fatalf("restore snapshot: %v", err)
+	}
+
+	second := openStoreIn(t, restored)
+	data, err := second.ReadSubscriptionData()
+	if err != nil {
+		t.Fatalf("ReadSubscriptionData: %v", err)
+	}
+	if len(data.Categories) != 1 || data.Categories[0] != "官方订阅" {
+		t.Fatalf("categories = %#v, want [官方订阅]", data.Categories)
+	}
+	if len(data.Subscriptions) != 1 || data.Subscriptions[0].Category != "官方订阅" {
+		t.Fatalf("subscriptions = %#v, want category 官方订阅", data.Subscriptions)
+	}
+}
+
 // ADR-0017: the pre-import JSON snapshot exists and is never modified by later
 // writes; the import runs once and is idempotent afterwards.
 func TestImportSnapshotsJSONAndRunsOnce(t *testing.T) {
