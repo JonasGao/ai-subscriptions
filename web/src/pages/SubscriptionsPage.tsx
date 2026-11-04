@@ -20,6 +20,9 @@ export const SubscriptionsPage: Component = () => {
     <main class="shell">
       <h1>AI订阅管理</h1>
       <p class="tagline">已登录：{auth.session()?.user.name ?? ""}</p>
+      <nav class="shell-nav">
+        <a href="/proxy-subscriptions">代理订阅</a>
+      </nav>
       <button type="button" onClick={handleLogout}>
         退出登录
       </button>

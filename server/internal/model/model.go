@@ -113,16 +113,18 @@ type ToolData struct {
 
 // ProxySubscription is a manually-tracked proxy purchase (ADR-0009).
 type ProxySubscription struct {
-	ID             string   `json:"id"`
-	Name           string   `json:"name"`
-	MonthlyPrice   float64  `json:"monthlyPrice"`
-	ExpirationDate string   `json:"expirationDate,omitempty"`
-	Website        string   `json:"website,omitempty"`
-	Notes          string   `json:"notes,omitempty"`
-	Status         string   `json:"status"`
-	TagIDs         []string `json:"tagIds,omitempty"`
-	CreatedAt      string   `json:"createdAt"`
-	UpdatedAt      string   `json:"updatedAt"`
+	ID             string  `json:"id"`
+	Name           string  `json:"name"`
+	MonthlyPrice   float64 `json:"monthlyPrice"`
+	ExpirationDate string  `json:"expirationDate,omitempty"`
+	Website        string  `json:"website,omitempty"`
+	Notes          string  `json:"notes,omitempty"`
+	Status         string  `json:"status"`
+	// tagIds is always an array on the wire (the old stack normalises missing
+	// tagIds to []), so this field deliberately has no omitempty.
+	TagIDs    []string `json:"tagIds"`
+	CreatedAt string   `json:"createdAt"`
+	UpdatedAt string   `json:"updatedAt"`
 }
 
 // ProxySubscriptionTag is a tag scoped to proxy subscriptions.

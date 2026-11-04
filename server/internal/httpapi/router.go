@@ -26,6 +26,9 @@ type Options struct {
 	// Auth verifies session cookies and owns credentials. Nil disables the
 	// session gate's ability to authenticate anyone, which only tests use.
 	Auth AuthService
+	// Proxy serves the proxy-subscription CRUD and tag catalog (ADR-0009).
+	// Nil leaves those routes unregistered.
+	Proxy ProxyService
 }
 
 // New builds the application router.
@@ -48,6 +51,9 @@ func New(opts Options) http.Handler {
 		}
 		api.Get("/providers", handleProviders(opts))
 		api.Get("/providers/unregistered", handleUnregisteredProviders(opts))
+		if opts.Proxy != nil {
+			mountProxyRoutes(api, opts.Proxy)
+		}
 		api.NotFound(writeJSONNotFound)
 	})
 
