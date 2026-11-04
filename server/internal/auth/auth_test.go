@@ -355,7 +355,16 @@ func TestSessionTokenRejectsTamperingAndForeignSecrets(t *testing.T) {
 		t.Fatalf("Authenticate: %v", err)
 	}
 
-	tampered := result.Token[:len(result.Token)-1] + "X"
+	// Tamper with the payload (a significant character), not the trailing
+	// character: RawURLEncoding's final character carries padding bits, so
+	// flipping it can decode to the very same signature bytes and make this
+	// assertion flaky.
+	tampered := result.Token
+	if tampered[0] == 'A' {
+		tampered = "B" + tampered[1:]
+	} else {
+		tampered = "A" + tampered[1:]
+	}
 	if _, ok := svc.Verify(tampered); ok {
 		t.Error("tampered token verified")
 	}
