@@ -74,7 +74,7 @@ export async function logout(): Promise<void> {
 
 /**
  * changePassword posts the shape-unchanged old-stack endpoint. The server
- * invalidates every session (including the caller's) on success.
+ * kills every pre-change session and reissues the caller's cookie.
  */
 export async function changePassword(
   oldPassword: string,
