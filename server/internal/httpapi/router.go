@@ -20,6 +20,9 @@ type Options struct {
 	// Assets is the built SPA file tree (index.html at the root). A nil or
 	// index-less tree makes non-API routes answer 503 with a build hint.
 	Assets fs.FS
+	// ProviderRefs supplies subscription/tool references for provider
+	// enrichment. Nil means a fresh install with no references.
+	ProviderRefs ProviderRefSource
 }
 
 // New builds the application router.
@@ -28,6 +31,8 @@ func New(opts Options) http.Handler {
 
 	r.Route("/api", func(api chi.Router) {
 		api.Get("/health", handleHealth)
+		api.Get("/providers", handleProviders(opts))
+		api.Get("/providers/unregistered", handleUnregisteredProviders(opts))
 		api.NotFound(writeJSONNotFound)
 	})
 
