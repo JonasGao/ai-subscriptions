@@ -1,4 +1,4 @@
-import type { Component } from "solid-js";
+import { Show, type Accessor, type Component } from "solid-js";
 import { themeStore } from "../theme";
 
 const THEME_TITLES: Record<string, string> = {
@@ -7,49 +7,57 @@ const THEME_TITLES: Record<string, string> = {
   system: "跟随系统",
 };
 
-function ThemeIcon(props: { theme: string }) {
-  if (props.theme === "light") {
-    return (
-      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-        <circle cx="12" cy="12" r="4" fill="currentColor" />
-        <path
-          d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"
-          stroke="currentColor"
-          stroke-width="1.6"
-          stroke-linecap="round"
-        />
-      </svg>
-    );
-  }
-  if (props.theme === "dark") {
-    return (
-      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-        <path
-          d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"
-          fill="currentColor"
-        />
-      </svg>
-    );
-  }
+/**
+ * The icon reads the theme through an accessor inside <Show>, so it swaps on
+ * every cycle (a plain `if` in the component body runs once and would pin the
+ * initial icon — found in the #40 walkthrough).
+ */
+function ThemeIcon(props: { theme: Accessor<string> }) {
+  const isLight = () => props.theme() === "light";
+  const isDark = () => props.theme() === "dark";
+
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-      <rect
-        x="3"
-        y="4"
-        width="18"
-        height="13"
-        rx="1.5"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.6"
-      />
-      <path
-        d="M8 21h8M12 17v4"
-        stroke="currentColor"
-        stroke-width="1.6"
-        stroke-linecap="round"
-      />
-    </svg>
+    <>
+      <Show when={isLight()}>
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <circle cx="12" cy="12" r="4" fill="currentColor" />
+          <path
+            d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+          />
+        </svg>
+      </Show>
+      <Show when={isDark()}>
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <path
+            d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"
+            fill="currentColor"
+          />
+        </svg>
+      </Show>
+      <Show when={!isLight() && !isDark()}>
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <rect
+            x="3"
+            y="4"
+            width="18"
+            height="13"
+            rx="1.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+          />
+          <path
+            d="M8 21h8M12 17v4"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+          />
+        </svg>
+      </Show>
+    </>
   );
 }
 
@@ -68,7 +76,7 @@ export const ThemeToggle: Component = () => {
       title={`当前主题: ${store.theme()}`}
       aria-label={`切换主题（当前: ${THEME_TITLES[store.theme()]}）`}
     >
-      <ThemeIcon theme={store.theme()} />
+      <ThemeIcon theme={store.theme} />
     </button>
   );
 };
