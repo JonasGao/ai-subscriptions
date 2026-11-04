@@ -18,7 +18,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | reset-alignment.test.ts           |   27 | 重置对齐/校准                  | ☐    |
 | payload.test.ts                   |   27 | 飞书消息构造                   | ☐    |
 | models-resolver.test.ts           |   26 | 模型查询解析                   | ☑    |
-| alibaba-tokenplan.test.ts         |   26 | provider: alibaba（ACS3 签名） | ☐    |
+| alibaba-tokenplan.test.ts         |   26 | provider: alibaba（ACS3 签名） | ☑    |
 | github.test.ts                    |   25 | provider: github（token 交换） | ☑    |
 | fangzhou-codingplan.test.ts       |   24 | provider: fangzhou             | ☐    |
 | opencode.test.ts                  |   23 | provider: opencode             | ☐    |
@@ -424,6 +424,25 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 覆盖：用量百分比渲染（新栈 toFixed(0) "50%"；旧栈 toFixed(1) "50.0%"——新栈取整，无小数位，已记偏差）、100% 触发 toggle、<100% 不触发、禁用计划不触发、已用尽计划不触发、多窗口同时用尽、一次性订阅不触发（余额查询）、limit≤0 不触发、多窗口顺序触发（await 每个）、无匹配计划类型跳过。
 
 偏差：Solid 信号替代 React 状态；toggle 回调通过 card props 透传（与旧栈同一接缝）；provider 目录作为 props 传入（服务端注册表 ADR-0006）。用例名"below the progress bar"沿用旧栈，但新栈进度条渲染归 #34，本票仅断言百分比标签本身；百分比格式取整（toFixed(0)），旧栈保留一位小数（toFixed(1)）。
+
+### 已闭合文件的用例级对账（#31）
+
+`alibaba-tokenplan.test.ts` → `server/internal/providers/alibaba_tokenplan_test.go`（子测试名逐字沿用旧用例名）：
+
+| 旧 describe             | 例数 | Go 测试                      |
+| ----------------------- | ---: | ---------------------------- |
+| buildAcsCanonicalQuery  |    4 | `TestBuildAcsCanonicalQuery` |
+| signAcsRequest          |    4 | `TestSignAcsRequest`         |
+| fetchTokenPlanUsage     |   11 | `TestFetchTokenPlanUsage`    |
+| testTokenPlanConnection |    7 | `TestTokenPlanConnection`    |
+
+`signAcsRequest` 的确定性子用例含逐字节签名断言（`expectedSignature` / `expectedAuth` /
+`fixed-uuid-for-test`），由独立 ACS3 规范重实现（Python）产出黄金值，锁定 canonical request、
+string-to-sign 与 HMAC-SHA256 签名的字节级一致性。
+
+`server/internal/httpapi/alibaba_usage_route_test.go` 额外锁定路由级端到端：GET
+`/api/subscriptions/{id}/usage` 对 recurring alibaba:token-plan 订阅签名请求、分桶
+equity、回写 subscription echo，覆盖浏览器演示路径。
 
 ## → solid（web/）
 
