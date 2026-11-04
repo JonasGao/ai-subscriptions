@@ -44,7 +44,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | subscription-status-edit.test.ts  |    4 | 订阅状态编辑                   | ☑    |
 | status-policy.test.ts             |    3 | 状态策略                       | ☑    |
 | models-route.test.ts              |    3 | 模型查询路由                   | ☑    |
-| usage-route.test.ts               |    2 | 用量查询路由                   | ☐    |
+| usage-route.test.ts               |    2 | 用量查询路由                   | ☑    |
 | tags-api-cache.test.ts            |    1 | 标签 API 缓存                  | ☑    |
 | proxy-tags-route.test.ts          |    1 | 代理标签路由                   | ☑    |
 
@@ -405,6 +405,26 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
   `web/src/components/SubscriptionCard.query.test.tsx`（23 例，含新栈补充守卫）闭合；该行因 `it.each`
   展开实际 21 例，此前 #26 已闭合 deletion(2)+tags(1)。
 
+### 已闭合文件的用例级对账（#29）
+
+`usage-route.test.ts`（2 例）→ `server/internal/httpapi/usage_test.go`（路由守卫 + provider 分发）：
+
+| 旧 describe                                          | 例数 | Go 测试                                          |
+| ---------------------------------------------------- | ---: | ------------------------------------------------ |
+| GET /api/subscriptions/[id]/usage calibration write-back |    2 | `TestUsageRouteDispatchesToProviderHandler` + `TestUsageRouteProviderFailures` |
+
+偏差：旧用例断言校准回写（`calibrateSubscriptionFromUsage`）；该校准由 #34 接入，本票锁定路由框架（provider 分发、响应形状、缓存头、失败 502）。
+
+`auto-exhaust.test.tsx`（10 例）→ `web/src/components/SubscriptionCard.autoexhaust.test.tsx`（逐字沿用旧用例名）：
+
+| 旧 describe                                      | 例数 | 新用例                                          |
+| ------------------------------------------------ | ---: | ----------------------------------------------- |
+| SubscriptionCard auto-exhaust on usage query     |   10 | 同名 describe                                   |
+
+覆盖：用量百分比渲染、100% 触发 toggle、<100% 不触发、禁用计划不触发、已用尽计划不触发、多窗口同时用尽、一次性订阅不触发（余额查询）、limit≤0 不触发、多窗口顺序触发（await 每个）、无匹配计划类型跳过。
+
+偏差：Solid 信号替代 React 状态；toggle 回调通过 card props 透传（与旧栈同一接缝）；provider 目录作为 props 传入（服务端注册表 ADR-0006）。
+
 ## → solid（web/）
 
 | 测试文件                            | 用例 | 目标区域               | 状态 |
@@ -412,7 +432,7 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 | SubscriptionCard.test.tsx           |   18 | SubscriptionCard       | ☑    |
 | model-button.test.tsx               |   18 | 模型查询按钮           | ☑    |
 | SortablePriorityList.test.tsx       |   13 | 优先级拖拽列表         | ☐    |
-| auto-exhaust.test.tsx               |   10 | 自动用尽标记（卡片侧） | ☐    |
+| auto-exhaust.test.tsx               |   10 | 自动用尽标记（卡片侧） | ☑    |
 | TagInput.test.tsx                   |    6 | 标签输入               | ☑    |
 | useNow.test.ts                      |    5 | 时间信号原语           | ☑    |
 | query-calibration-callback.test.tsx |    2 | 校准回调局部更新       | ☐    |
