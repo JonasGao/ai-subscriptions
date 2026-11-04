@@ -130,12 +130,14 @@ func HasUsageHandler(key string) bool {
 // UsageHandlers returns the implemented usage handlers. Keys that are
 // registered in the old stack but whose bodies land with later tickets are
 // absent here, so a lookup for them finds no handler instead of one that
-// cannot work.
-func UsageHandlers() map[string]UsageHandler {
+// cannot work. An optional injected client (nil = DefaultHTTPClient) is bound
+// into every handler so route-level tests can stub the outbound call.
+func UsageHandlers(clients ...HTTPDoer) map[string]UsageHandler {
+	client := resolveClient(clients)
 	return map[string]UsageHandler{
-		"fangzhou:agentplan":  &agentPlanUsageHandler{client: DefaultHTTPClient},
-		"fangzhou:codingplan": &codingPlanUsageHandler{client: DefaultHTTPClient},
-		"moonshot:kimi-code":  &moonshotUsageHandler{client: DefaultHTTPClient},
+		"fangzhou:agentplan":  &agentPlanUsageHandler{client: client},
+		"fangzhou:codingplan": &codingPlanUsageHandler{client: client},
+		"moonshot:kimi-code":  &moonshotUsageHandler{client: client},
 	}
 }
 

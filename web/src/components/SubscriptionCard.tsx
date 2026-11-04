@@ -7,6 +7,18 @@ import type {
 } from "../subscriptions/types";
 import { resolveStatus } from "../subscriptions/status";
 import { ResetScheduleGrid } from "./ResetScheduleGrid";
+import { createSubscriptionQuery } from "../subscriptions/query";
+import {
+  resolveModelsApiUrl,
+  resolveModelsRequireCredentials,
+  resolveQueryKind,
+} from "../subscriptions/urls";
+import {
+  BalanceInfoRows,
+  oneTimeBalance,
+  UsageWindows,
+} from "./query-display";
+import { ModelListDialog } from "./ModelListDialog";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
@@ -21,6 +33,8 @@ interface SubscriptionCardProps {
     scheduleId: string,
     exhausted: boolean
   ) => void;
+  onBalanceUpdate?: (id: string, balance: number, currency: string) => void;
+  onSubscriptionUpdate?: (subscription: Subscription) => void;
 }
 
 const STATUS_LABELS: Record<SubscriptionStatus, string> = {
@@ -66,15 +80,19 @@ function priceLabel(subscription: Subscription): string {
 }
 
 /**
- * SubscriptionCard is the rendering baseline of components/SubscriptionCard.tsx
- * for ticket #26: identity, provider/plan, category, tags in association order,
- * type, price, renewal date, notes, status badge with manual toggle, and the
- * two-step delete confirmation. Query affordances (额度/模型 buttons, cooldown,
- * balance display) land with the query tickets (#28/#29).
+ * SubscriptionCard renders one subscription: identity, provider/plan, category,
+ * tags in association order, type, price, renewal date, notes, status badge with
+ * manual toggle, the two-step delete confirmation, and (from #28) the live quota
+ * query affordances — 额度 for usage/balance per subscription type and planId,
+ * 模型 for model listing.
+ *
+ * #29 adds the usage-window auto-exhaust linkage; #34 adds reset-time
+ * calibration. The usage window rendering covers what #28's demo needs.
  */
 export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
   const [deleteOpen, setDeleteOpen] = createSignal(false);
   const [deleteStep, setDeleteStep] = createSignal<1 | 2>(1);
+  const [modelsOpen, setModelsOpen] = createSignal(false);
 
   const subscriptionTags = () =>
     (props.subscription.tagIds ?? [])
@@ -91,6 +109,55 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
       props.subscription.provider,
       props.subscription.planId,
       props.providers ?? []
+    );
+
+  const providerConfig = () =>
+    (props.providers ?? []).find(
+      (item) => item.id === props.subscription.provider
+    );
+
+  const queryKind = () =>
+    resolveQueryKind(
+      providerConfig(),
+      props.subscription.subscriptionType,
+      props.subscription.planId
+    );
+
+  const canQueryModels = () => {
+    const provider = providerConfig();
+    if (!provider) return false;
+    return Boolean(resolveModelsApiUrl(provider, props.subscription.planId));
+  };
+
+  const modelsRequireCredentials = () => {
+    const provider = providerConfig();
+    if (!provider) return true;
+    return resolveModelsRequireCredentials(provider, props.subscription.planId);
+  };
+
+  const query = createSubscriptionQuery({
+    subscription: props.subscription,
+    canQuery: () => queryKind() !== null,
+    onEdit: props.onEdit,
+    onBalanceUpdate: props.onBalanceUpdate,
+    onSubscriptionUpdate: props.onSubscriptionUpdate,
+  });
+
+  const handleModelsClick = () => {
+    // Auth-required endpoints with no credentials open the edit dialog; public
+    // endpoints (modelsRequireCredentials: false) open the list directly.
+    if (modelsRequireCredentials() && !props.subscription.hasCredentials) {
+      props.onEdit(props.subscription);
+      return;
+    }
+    setModelsOpen(true);
+  };
+
+  const balanceLabel = () =>
+    oneTimeBalance(
+      props.subscription,
+      query.balance(),
+      query.previousBalance()
     );
 
   const closeDelete = () => {
@@ -177,6 +244,25 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
             <dd>{props.subscription.renewalDate}</dd>
           </div>
         </Show>
+        <Show when={!isRecurring()}>
+          <div class="subscription-card-balance">
+            <dt>余额</dt>
+            <dd>
+              <span class="balance-amount">{balanceLabel().text}</span>
+              <Show when={balanceLabel().previous}>
+                {(previous) => (
+                  <span class="balance-previous">（{previous()}）</span>
+                )}
+              </Show>
+            </dd>
+          </div>
+        </Show>
+        <Show when={query.balance()}>
+          {(balance) => <BalanceInfoRows balance={balance()} />}
+        </Show>
+        <Show when={query.usage()}>
+          {(usage) => <UsageWindows usage={usage()} />}
+        </Show>
       </dl>
 
       <Show
@@ -198,6 +284,12 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
         />
       </Show>
 
+      <Show when={query.error()}>
+        <p class="subscription-card-query-error" role="alert">
+          {query.error()}
+        </p>
+      </Show>
+
       <Show when={props.subscription.notes}>
         <div class="subscription-card-notes">
           <span>备注</span>
@@ -206,6 +298,31 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
       </Show>
 
       <footer class="subscription-card-actions">
+        <Show when={queryKind() !== null}>
+          <button
+            type="button"
+            class="quota-query"
+            onClick={query.handleQueryClick}
+            disabled={query.loading()}
+            title={
+              query.inCooldown() && !query.loading()
+                ? "60 秒内已查询过，再次点击需确认"
+                : "查询额度"
+            }
+          >
+            额度
+          </button>
+        </Show>
+        <Show when={canQueryModels()}>
+          <button
+            type="button"
+            class="model-query"
+            onClick={handleModelsClick}
+            title="模型列表"
+          >
+            模型
+          </button>
+        </Show>
         <button
           type="button"
           onClick={() => props.onEdit(props.subscription)}
@@ -262,6 +379,35 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
             </div>
           </div>
         </div>
+      </Show>
+
+      <Show when={query.confirmOpen()}>
+        <div class="dialog-backdrop">
+          <div class="dialog" role="dialog" aria-modal="true">
+            <h2>再次查询确认</h2>
+            <p>距上次查询不足 60 秒，确定要再次查询吗？</p>
+            <div class="form-actions">
+              <button
+                type="button"
+                class="ghost"
+                onClick={() => query.setConfirmOpen(false)}
+              >
+                取消
+              </button>
+              <button type="button" onClick={query.handleConfirmQuery}>
+                确认查询
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
+
+      <Show when={canQueryModels()}>
+        <ModelListDialog
+          open={modelsOpen()}
+          onOpenChange={setModelsOpen}
+          subscriptionId={props.subscription.id}
+        />
       </Show>
     </article>
   );

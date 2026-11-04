@@ -13,7 +13,6 @@ import (
 
 	"ai-subscriptions/internal/crypto"
 	"ai-subscriptions/internal/model"
-	"ai-subscriptions/internal/providers"
 	"ai-subscriptions/internal/store"
 )
 
@@ -521,6 +520,7 @@ func handleDeleteSubscription(opts Options) http.HandlerFunc {
 	}
 }
 
+
 // handleToggleScheduleExhausted serves
 // POST /api/subscriptions/{id}/schedules/{scheduleId}/toggle
 // (app/api/subscriptions/[id]/schedules/[scheduleId]/toggle/route.ts).
@@ -551,73 +551,6 @@ func handleToggleScheduleExhausted(opts Options) http.HandlerFunc {
 		writeJSONAligned(w, http.StatusOK, newSubscriptionPayload(*updated))
 	}
 }
-
-// handleSubscriptionUsage serves GET /api/subscriptions/{id}/usage.
-//
-// The guard chain (404 / not-recurring / unsupported / credentials) is
-// byte-aligned with the old stack. Dispatching to the provider handler lands
-// with the query framework (#28); until then the terminal branch reports the
-// same 502 family the old stack uses when a handler cannot complete.
-func handleSubscriptionUsage(opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		sub, err := opts.Data.SubscriptionByID(chi.URLParam(r, "id"))
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, "Failed to query usage")
-			return
-		}
-		if sub == nil {
-			writeError(w, http.StatusNotFound, "Subscription not found")
-			return
-		}
-		if sub.SubscriptionType != "recurring" {
-			writeError(w, http.StatusBadRequest, "Usage query is only supported for recurring subscriptions")
-			return
-		}
-		provider, ok := providers.ProviderByID(sub.Provider)
-		if !ok || providers.ResolveUsageAPIURL(provider, sub.PlanID) == "" {
-			writeError(w, http.StatusBadRequest, fmt.Sprintf("Usage query not supported for %s", sub.Provider))
-			return
-		}
-		if !providers.HasUsageHandler(providers.ResolveUsageHandlerKey(sub.Provider, sub.PlanID)) {
-			writeError(w, http.StatusBadRequest, "Unsupported provider")
-			return
-		}
-		if sub.Credentials == "" {
-			writeError(w, http.StatusBadRequest, "Credentials are not configured for this subscription")
-			return
-		}
-		// #28 wires the provider fetch + #29 auto-exhaust + #34 calibration.
-		writeError(w, http.StatusBadGateway, "Usage query failed")
-	}
-}
-
-// handleSubscriptionModels serves GET /api/subscriptions/{id}/models. Guard
-// chain aligned with the old stack; the fetch lands with #28.
-func handleSubscriptionModels(opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		sub, err := opts.Data.SubscriptionByID(chi.URLParam(r, "id"))
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, "Failed to query models")
-			return
-		}
-		if sub == nil {
-			writeError(w, http.StatusNotFound, "Subscription not found")
-			return
-		}
-		provider, ok := providers.ProviderByID(sub.Provider)
-		if !ok || providers.ResolveModelsAPIURL(provider, sub.PlanID) == "" {
-			writeError(w, http.StatusBadRequest, fmt.Sprintf("Model query not supported for %s", sub.Provider))
-			return
-		}
-		if providers.ResolveModelsRequireCredentials(provider, sub.PlanID) && sub.Credentials == "" {
-			writeError(w, http.StatusBadRequest, "Credentials are not configured for this subscription")
-			return
-		}
-		// #28 wires the models fetchers.
-		writeError(w, http.StatusBadGateway, "Model query failed")
-	}
-}
-
 // encryptCredentialsBody turns a {credentials: {k: v}} object into the stored
 // ciphertext. The created-route semantics differ slightly from update: POST
 // encrypts any submitted object (the old form always sends `{}`, and

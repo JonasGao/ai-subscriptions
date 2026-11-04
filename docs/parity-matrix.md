@@ -17,7 +17,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | provider-plans.test.ts            |   29 | providers 注册表               | ☑    |
 | reset-alignment.test.ts           |   27 | 重置对齐/校准                  | ☐    |
 | payload.test.ts                   |   27 | 飞书消息构造                   | ☐    |
-| models-resolver.test.ts           |   26 | 模型查询解析                   | ☐    |
+| models-resolver.test.ts           |   26 | 模型查询解析                   | ☑    |
 | alibaba-tokenplan.test.ts         |   26 | provider: alibaba（ACS3 签名） | ☐    |
 | github.test.ts                    |   25 | provider: github（token 交换） | ☐    |
 | fangzhou-codingplan.test.ts       |   24 | provider: fangzhou             | ☐    |
@@ -25,7 +25,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | enrichment.test.ts                |   23 | providers 能力标记             | ☑    |
 | zhipu.test.ts                     |   22 | provider: zhipu（窗口解码）    | ☐    |
 | feishu-app.test.ts                |   21 | 飞书应用机器人                 | ☑    |
-| provider-models.test.ts           |   15 | providers 模型查询             | ☐    |
+| provider-models.test.ts           |   15 | providers 模型查询             | ☑    |
 | fangzhou-models.test.ts           |   15 | provider: fangzhou 模型列表    | ☐    |
 | feishu-listener.test.ts           |   13 | 飞书 WS 监听                   | ☑    |
 | feishu-helpers.test.ts            |   13 | 飞书辅助                       | ☑    |
@@ -33,17 +33,17 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | reset-schedule-uniqueness.test.ts |   10 | 重置计划唯一性                 | ☑    |
 | notifications-storage.test.ts     |   10 | 通知存储                       | ☑    |
 | providers.test.ts                 |    9 | providers 注册表               | ☑    |
-| models-generic-fetch.test.ts      |    8 | 通用模型获取回退               | ☐    |
+| models-generic-fetch.test.ts      |    8 | 通用模型获取回退               | ☑    |
 | github-models.test.ts             |    8 | provider: github 模型列表      | ☐    |
 | feishu-credentials.test.ts        |    8 | 飞书凭据                       | ☑    |
 | proxy-subscriptions.test.ts       |    7 | 代理订阅                       | ☑    |
 | volcengine-signer.test.ts         |    6 | 火山 HMAC 签名器               | ☐    |
 | tags.test.ts                      |    6 | 标签稳定标识                   | ☑    |
 | db.test.ts                        |    6 | 存储层（SQLite，ADR-0017）     | ☑    |
-| balance-handlers.test.ts          |    5 | 余额查询注册表                 | ☐    |
+| balance-handlers.test.ts          |    5 | 余额查询注册表                 | ☑    |
 | subscription-status-edit.test.ts  |    4 | 订阅状态编辑                   | ☑    |
 | status-policy.test.ts             |    3 | 状态策略                       | ☑    |
-| models-route.test.ts              |    3 | 模型查询路由                   | ☐    |
+| models-route.test.ts              |    3 | 模型查询路由                   | ☑    |
 | usage-route.test.ts               |    2 | 用量查询路由                   | ☐    |
 | tags-api-cache.test.ts            |    1 | 标签 API 缓存                  | ☑    |
 | proxy-tags-route.test.ts          |    1 | 代理标签路由                   | ☑    |
@@ -263,13 +263,13 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 
 `SubscriptionCard.test.tsx` 拆分（行内子表，本票只闭合渲染基线，余下随查询/调度/收尾票）：
 
-| 旧 describe           | 例数 | 去向                                                           |
-| --------------------- | ---: | -------------------------------------------------------------- |
-| deletion confirmation |    2 | **#26** 闭合（`web/src/components/SubscriptionCard.test.tsx`） |
-| tags                  |    1 | **#26** 闭合（标签按关联顺序渲染）                             |
-| auto-query on mount   |    9 | #28（查询框架/余额/用量），#29（用尽联动）                     |
-| quota query cooldown  |    5 | #28                                                            |
-| balance display       |    4 | #28                                                            |
+| 旧 describe           | 例数 | 去向                                                                              |
+| --------------------- | ---: | --------------------------------------------------------------------------------- |
+| deletion confirmation |    2 | **#26** 闭合（`web/src/components/SubscriptionCard.test.tsx`）                    |
+| tags                  |    1 | **#26** 闭合（标签按关联顺序渲染）                                                |
+| auto-query on mount   |    9 | **#28** 闭合（`SubscriptionCard.query.test.tsx`；自动用尽联动仍归 #29）          |
+| quota query cooldown  |    5 | **#28** 闭合（`SubscriptionCard.query.test.tsx`）                                 |
+| balance display       |    4 | **#28** 闭合（`SubscriptionCard.query.test.tsx`）                                 |
 
 #26 另新增 4 条渲染基线断言（标识/方案/类型/价格、一次性充值金额、用尽标记、状态徽标切换），
 属新栈自有用例，不占旧行。注：按 `it.each` 展开后该文件实际 21 例（矩阵原记 18 例）。
@@ -352,13 +352,64 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
   新栈保持该形状；唯一性与去重由 store 的写路径与导入器保证。
 - 紧迫度颜色只在卡片的周/月计划行着色（`getResetUrgencyColor` 的载体在 #28 的用量窗口到位前，
   先用于本地计划倒计时；ADR-0013 的固定阈值与曲线完全复用同一函数）。
+### 已闭合文件的用例级对账（#28）
+
+`balance-handlers.test.ts`（5 例）→ `server/internal/providers/balance_test.go`（子测试名逐字沿用旧用例名）：
+
+| 旧 describe                  | 例数 | Go 测试                              |
+| ---------------------------- | ---: | ------------------------------------ |
+| moonshot                     |    1 | `TestBalanceHandlerUnification` 子项 |
+| deepseek（含 currency 兜底） |    2 | 同上                                 |
+| siliconflow (semantics fixed)|    1 | 同上                                 |
+| openrouter (semantics fixed) |    1 | 同上                                 |
+
+`models-resolver.test.ts`（26 例）→ `server/internal/providers/models_test.go`：
+
+| 旧 describe                     | 例数 | Go 测试                                |
+| ------------------------------- | ---: | -------------------------------------- |
+| resolveModelsHandlerKey         |    3 | `TestResolveModelsHandlerKey`          |
+| resolveModelsHandler            |   12 | `TestResolveModelsHandler`             |
+| resolveModelsRequireCredentials |    4 | `TestResolveModelsRequireCredentials`  |
+| normalizeModels                 |    7 | `TestNormalizeModels`                  |
+
+`models-generic-fetch.test.ts`（8 例）→ `server/internal/providers/models_fetch_test.go`（`TestGenericOpenAIFetchModels` 8 个子项）。
+
+`provider-models.test.ts`（15 例）→ `server/internal/providers/provider_models_test.go`（14 例：provider 级 6、plan 级 5、覆盖 2、`ModelsHandler` 契约 1）+ `server/internal/httpapi/models_test.go`（1 例：`ModelsResult` 线形 `{models:string[]}` 由路由断言锁定）。
+
+`models-route.test.ts`（3 例）→ `server/internal/httpapi/models_test.go`（`TestModelsRouteCredentialsGating` 3 个子项）。
+
+`model-button.test.tsx`（18 例：卡片按钮 10 + `ModelListDialog` 8）→ `web/src/components/model-button.test.tsx`。
+
+#28 偏差与说明：
+
+- **异常模型处理器**：旧栈的 github / fangzhou 专属模型列表实现随 #32/#30 落地；`ModelsHandlers()`
+  当前为空，fangzhou/github 走通用回退。`models-resolver` 中「plan 级异常处理器优先于 provider 级」
+  的规则用 `ResolveModelsHandlerWith`（显式注入注册表）钉住，处理器落地时只往 `ModelsHandlers()`
+  加条目，不改解析规则。
+- **HTTP seam**：旧用例 stub 全局 `fetch`；Go 侧 handler 接受注入的 `HTTPDoer`（`Options.ProviderHTTP`
+  走路由、纯函数走参数），断言的行为不变。`models-generic-fetch` 的 header 断言在请求对象上复核
+  （有 apiKey → `Authorization: Bearer …`；公开端点无该头）。
+- **balance 路由回写**：旧栈无余额路由测试行；按 `app/api/subscriptions/[id]/balance/route.ts` 实现
+  （首条 balanceInfo 的 available 与 currency 回写订阅，不触发客户端 PUT），由
+  `server/internal/httpapi/balance_test.go` 的守卫/回写/四家端到端用例补锁。
+- **usage 路由框架**：本票接上 provider 分发与旧响应形状（usage 字段内联 + 脱敏 subscription 回显、
+  `Cache-Control: no-store`）；`usage-route`（2 例校准回写）仍归 #29/#34，自动用尽联动归 #29。
+- **前端**：卡片从 props 接收服务端注册表（ADR-0006）而非旧栈的模块级 `defaultProviders`，因此测试
+  按需传入 provider 目录；旧「rerender 强制重算」在 Solid 中改为信号驱动，「60 秒后」用假时钟推进。
+  无 toast 库（#40 页面壳），模型列表失败改为对话框内联错误态（旧用例只断言「查询失败」文案）。
+- **列表回写延后**：Solid `<For>` 按对象身份 keyed，把 usage 回显/余额回写替换进列表会让该卡片重建并
+  再次触发挂载查询（循环）。卡片自身直接渲染查询结果、服务端已持久化余额，因此 #28 暂不把回调接到
+  `SubscriptionsPage`；列表级回显（校准后的订阅）随 #34 与「身份稳定」的列表更新一起做。
+- `SubscriptionCard.test.tsx` 的 auto-query/cooldown/balance-display 三个子行由
+  `web/src/components/SubscriptionCard.query.test.tsx`（23 例，含新栈补充守卫）闭合；该行因 `it.each`
+  展开实际 21 例，此前 #26 已闭合 deletion(2)+tags(1)。
 
 ## → solid（web/）
 
 | 测试文件                            | 用例 | 目标区域               | 状态 |
 | ----------------------------------- | ---: | ---------------------- | ---- |
-| SubscriptionCard.test.tsx           |   18 | SubscriptionCard       | ◑    |
-| model-button.test.tsx               |   18 | 模型查询按钮           | ☐    |
+| SubscriptionCard.test.tsx           |   18 | SubscriptionCard       | ☑    |
+| model-button.test.tsx               |   18 | 模型查询按钮           | ☑    |
 | SortablePriorityList.test.tsx       |   13 | 优先级拖拽列表         | ☐    |
 | auto-exhaust.test.tsx               |   10 | 自动用尽标记（卡片侧） | ☐    |
 | TagInput.test.tsx                   |    6 | 标签输入               | ☑    |

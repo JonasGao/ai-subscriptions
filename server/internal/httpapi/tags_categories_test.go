@@ -183,8 +183,8 @@ func TestCategoriesRoutes(t *testing.T) {
 	}
 }
 
-// The usage route's guard chain is byte-aligned with the old stack; the actual
-// provider query lands with #28, which flips the terminal branch in.
+// The usage route's guard chain is byte-aligned with the old stack. The provider
+// dispatch landed with #28; these must short-circuit before any outbound call.
 func TestUsageRouteGuards(t *testing.T) {
 	srv, session, db := newSubscriptionRouter(t)
 

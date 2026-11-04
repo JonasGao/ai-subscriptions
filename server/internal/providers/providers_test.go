@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -24,12 +25,25 @@ func (c cannedHTTPDoer) Do(*http.Request) (*http.Response, error) {
 	}
 	return &http.Response{
 		StatusCode: status,
+		Status:     fmt.Sprintf("%d %s", status, http.StatusText(status)),
 		Body:       io.NopCloser(strings.NewReader(c.body)),
 		Header:     make(http.Header),
 	}, nil
 }
 
 func ptr(s string) *string { return &s }
+
+// httpStatusLine renders "<code> <text>" the way net/http fills Response.Status,
+// which the generic models fetcher reports verbatim ("Models query failed: 401
+// Unauthorized").
+func httpStatusLine(status int) string {
+	return fmt.Sprintf("%d %s", status, http.StatusText(status))
+}
+
+// nopCloser keeps test fixtures free of an io import at every call site.
+func nopCloser(body string) io.ReadCloser {
+	return io.NopCloser(strings.NewReader(body))
+}
 
 func assertWindow(t *testing.T, label string, got *UsageWindow, limit, used, remaining, resetTime string) {
 	t.Helper()
