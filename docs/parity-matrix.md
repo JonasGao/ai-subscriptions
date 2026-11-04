@@ -38,8 +38,8 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | feishu-credentials.test.ts        |    8 | 飞书凭据                       | ☐    |
 | proxy-subscriptions.test.ts       |    7 | 代理订阅                       | ☐    |
 | volcengine-signer.test.ts         |    6 | 火山 HMAC 签名器               | ☐    |
-| tags.test.ts                      |    6 | 标签稳定标识                   | ☐    |
-| db.test.ts                        |    6 | 存储层（SQLite，ADR-0017）     | ☐    |
+| tags.test.ts                      |    6 | 标签稳定标识                   | ☑    |
+| db.test.ts                        |    6 | 存储层（SQLite，ADR-0017）     | ☑    |
 | balance-handlers.test.ts          |    5 | 余额查询注册表                 | ☐    |
 | subscription-status-edit.test.ts  |    4 | 订阅状态编辑                   | ☐    |
 | status-policy.test.ts             |    3 | 状态策略                       | ☐    |
