@@ -100,7 +100,7 @@ func ResolveUsageHandlerKey(provider, planID string) string {
 // usageHandlerKeys is the static registration key set of
 // lib/providers/index.ts usageHandlers. Capability flags derive from this set
 // (ADR-0006). Handler bodies for providers owned by later parity tickets
-// (#30-#33) are not implemented yet; those tickets add them to UsageHandlers
+// (#32-#33) are not implemented yet; those tickets add them to UsageHandlers
 // without changing this key set.
 func usageHandlerKeys() []string {
 	return []string{
@@ -135,6 +135,7 @@ func HasUsageHandler(key string) bool {
 func UsageHandlers(clients ...HTTPDoer) map[string]UsageHandler {
 	client := resolveClient(clients)
 	return map[string]UsageHandler{
+		"alibaba:token-plan":  &tokenPlanUsageHandler{client: client},
 		"fangzhou:agentplan":  &agentPlanUsageHandler{client: client},
 		"fangzhou:codingplan": &codingPlanUsageHandler{client: client},
 		"moonshot:kimi-code":  &moonshotUsageHandler{client: client},

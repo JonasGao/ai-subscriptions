@@ -86,14 +86,14 @@ func TestUsageRouteProviderFailures(t *testing.T) {
 	})
 
 	t.Run("502s a provider whose handler body has not landed yet", func(t *testing.T) {
-		// alibaba:token-plan is a registered usage key (#31 lands its body).
+		// github is a registered usage key; #31 landed alibaba:token-plan, so
+		// github is the next not-yet-implemented handler in this family.
 		f := newSubscriptionQueryFixture(t, `{}`)
 		id := seedOneTimeSubscription(t, f, store.SubscriptionInput{
-			Provider:         "alibaba",
-			PlanID:           "token-plan",
+			Provider:         "github",
 			SubscriptionType: "recurring",
 			BillingCycle:     "monthly",
-			Credentials:      f.encrypt(t, map[string]string{"apiKey": "k"}),
+			Credentials:      f.encrypt(t, map[string]string{"token": "t"}),
 		})
 		rec := request(t, f.srv, http.MethodGet, "/api/subscriptions/"+id+"/usage", "", f.cookie)
 		if rec.Code != http.StatusBadGateway {
