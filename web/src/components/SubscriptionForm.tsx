@@ -8,6 +8,7 @@ import {
   type Component,
 } from "solid-js";
 import { TagInput } from "./TagInput";
+import { ResetScheduleConfig } from "./ResetScheduleConfig";
 import {
   defaultCategories,
   type BillingCycle,
@@ -77,9 +78,7 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
     () => formData().subscriptionType === "recurring"
   );
   const billingCycle = createMemo(() => formData().billingCycle ?? "monthly");
-  const showCustomProvider = createMemo(
-    () => formData().provider === "other"
-  );
+  const showCustomProvider = createMemo(() => formData().provider === "other");
 
   // Editing pins the form to the subscription; opening fresh resets it. The
   // pending tag text resets in both cases so a stale value cannot leak into
@@ -141,9 +140,7 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
       const saved = await props.onSubmit(payload);
       if (saved) props.onOpenChange(false);
     } catch (submitError) {
-      setError(
-        submitError instanceof Error ? submitError.message : "保存失败"
-      );
+      setError(submitError instanceof Error ? submitError.message : "保存失败");
     } finally {
       setSubmitting(false);
     }
@@ -193,7 +190,10 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
                 id="provider"
                 value={formData().provider}
                 onChange={(event) =>
-                  patch({ provider: event.currentTarget.value, planId: undefined })
+                  patch({
+                    provider: event.currentTarget.value,
+                    planId: undefined,
+                  })
                 }
               >
                 <For each={providers()}>
@@ -387,6 +387,15 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
                   autocomplete="off"
                 />
               </label>
+            </Show>
+
+            <Show when={isRecurring()}>
+              <div class="form-field-wide">
+                <ResetScheduleConfig
+                  schedules={formData().resetSchedules ?? []}
+                  onChange={(resetSchedules) => patch({ resetSchedules })}
+                />
+              </div>
             </Show>
 
             <div class="form-field-wide">

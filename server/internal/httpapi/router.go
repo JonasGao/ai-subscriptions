@@ -82,6 +82,7 @@ func New(opts Options) http.Handler {
 			api.Get("/subscriptions/{id}/usage", handleSubscriptionUsage(opts))
 			api.Get("/subscriptions/{id}/balance", handleSubscriptionBalance(opts))
 			api.Get("/subscriptions/{id}/models", handleSubscriptionModels(opts))
+			api.Post("/subscriptions/{id}/schedules/{scheduleId}/toggle", handleToggleScheduleExhausted(opts))
 			api.Get("/tags", handleListTags(opts))
 			api.Patch("/tags/{id}", handleRenameTag(opts))
 			api.Delete("/tags/{id}", handleDeleteTag(opts))

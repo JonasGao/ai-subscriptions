@@ -31,6 +31,10 @@ type DataService interface {
 	Tags() ([]model.Tag, error)
 	RenameTag(id, name string) (*model.Tag, error)
 	DeleteTag(id string) (*store.DeleteTagResult, error)
+	// Reset-schedule surface (#27). AddResetSchedule/UpdateResetSchedule/
+	// DeleteResetSchedule back the schedule CRUD; ToggleScheduleExhausted is
+	// the manual "已用尽" switch (ADR-0007).
+	ToggleScheduleExhausted(subscriptionID, scheduleID string, exhausted bool) (*model.Subscription, error)
 }
 
 // subscriptionPayload is the wire shape of a subscription
@@ -513,6 +517,37 @@ func handleDeleteSubscription(opts Options) http.HandlerFunc {
 			return
 		}
 		writeJSONAligned(w, http.StatusOK, map[string]bool{"success": true})
+	}
+}
+
+// handleToggleScheduleExhausted serves
+// POST /api/subscriptions/{id}/schedules/{scheduleId}/toggle
+// (app/api/subscriptions/[id]/schedules/[scheduleId]/toggle/route.ts).
+func handleToggleScheduleExhausted(opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, err := decodeObjectBody(r)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "Invalid JSON in request body")
+			return
+		}
+		exhausted, ok := body["exhausted"].(bool)
+		if !ok {
+			writeError(w, http.StatusBadRequest, `Invalid request body. "exhausted" must be a boolean`)
+			return
+		}
+
+		updated, err := opts.Data.ToggleScheduleExhausted(
+			chi.URLParam(r, "id"), chi.URLParam(r, "scheduleId"), exhausted,
+		)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "Failed to toggle schedule exhausted flag")
+			return
+		}
+		if updated == nil {
+			writeError(w, http.StatusNotFound, "Subscription or schedule not found")
+			return
+		}
+		writeJSONAligned(w, http.StatusOK, newSubscriptionPayload(*updated))
 	}
 }
 

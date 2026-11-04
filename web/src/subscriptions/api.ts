@@ -79,6 +79,26 @@ export function deleteSubscription(id: string): Promise<{ success: boolean }> {
   });
 }
 
+/**
+ * toggleScheduleExhausted marks one schedule available or exhausted
+ * (POST /api/subscriptions/{id}/schedules/{scheduleId}/toggle). The route
+ * answers the updated subscription, so the caller can replace its copy.
+ */
+export function toggleScheduleExhausted(
+  subscriptionId: string,
+  scheduleId: string,
+  exhausted: boolean
+): Promise<Subscription> {
+  return requestJSON<Subscription>(
+    `/api/subscriptions/${subscriptionId}/schedules/${scheduleId}/toggle`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ exhausted }),
+    }
+  );
+}
+
 export function renameTag(id: string, name: string): Promise<Tag> {
   return requestJSON<Tag>(`/api/tags/${id}`, {
     method: "PATCH",
@@ -88,5 +108,7 @@ export function renameTag(id: string, name: string): Promise<Tag> {
 }
 
 export function deleteTag(id: string): Promise<{ tagId: string }> {
-  return requestJSON<{ tagId: string }>(`/api/tags/${id}`, { method: "DELETE" });
+  return requestJSON<{ tagId: string }>(`/api/tags/${id}`, {
+    method: "DELETE",
+  });
 }

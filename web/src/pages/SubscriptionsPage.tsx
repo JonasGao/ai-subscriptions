@@ -10,6 +10,7 @@ import {
   fetchProviders,
   fetchSubscriptions,
   fetchTags,
+  toggleScheduleExhausted,
   updateSubscription,
 } from "../subscriptions/api";
 import type {
@@ -119,7 +120,10 @@ export const SubscriptionsPage: Component = () => {
     }
   };
 
-  const handleStatusChange = async (id: string, status: "active" | "paused") => {
+  const handleStatusChange = async (
+    id: string,
+    status: "active" | "paused"
+  ) => {
     const original = subscriptions().find((item) => item.id === id);
     if (!original) return;
 
@@ -143,12 +147,26 @@ export const SubscriptionsPage: Component = () => {
   // already displays the fresh balance from its own query result, and the
   // server persists the write-back; the list-level echo (calibrated schedules)
   // lands with #34 together with a remount-safe list update.
+
+  const handleScheduleToggle = async (
+    id: string,
+    scheduleId: string,
+    exhausted: boolean
+  ) => {
+    try {
+      const updated = await toggleScheduleExhausted(id, scheduleId, exhausted);
+      setSubscriptions((previous) =>
+        previous.map((item) => (item.id === updated.id ? updated : item))
+      );
+    } catch {
+      setErrorMessage("重置计划切换失败，请重试");
+    }
+  };
+
   const handleDelete = async (id: string) => {
     try {
       await deleteSubscription(id);
-      setSubscriptions((previous) =>
-        previous.filter((item) => item.id !== id)
-      );
+      setSubscriptions((previous) => previous.filter((item) => item.id !== id));
     } catch {
       setErrorMessage("删除订阅失败，请重试");
     }
@@ -166,7 +184,9 @@ export const SubscriptionsPage: Component = () => {
             <span>分类</span>
             <select
               value={selectedCategory()}
-              onChange={(event) => setSelectedCategory(event.currentTarget.value)}
+              onChange={(event) =>
+                setSelectedCategory(event.currentTarget.value)
+              }
             >
               <option value="all">全部</option>
               <For each={categories()}>
@@ -195,7 +215,9 @@ export const SubscriptionsPage: Component = () => {
       <Show when={!loading()} fallback={<p class="loading">加载中...</p>}>
         <Show
           when={visibleSubscriptions().length > 0}
-          fallback={<p class="empty-state">还没有订阅，点击「添加订阅」开始记录。</p>}
+          fallback={
+            <p class="empty-state">还没有订阅，点击「添加订阅」开始记录。</p>
+          }
         >
           <section class="subscription-list">
             <For each={visibleSubscriptions()}>
@@ -207,6 +229,7 @@ export const SubscriptionsPage: Component = () => {
                   onEdit={openEdit}
                   onDelete={handleDelete}
                   onStatusChange={handleStatusChange}
+                  onScheduleToggle={handleScheduleToggle}
                 />
               )}
             </For>
