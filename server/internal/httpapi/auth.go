@@ -128,9 +128,15 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleSession serves GET /api/auth/session. The unauthenticated body is an
-// empty object (no user), which keeps the container healthcheck green.
+// empty object (no user). The response must never be cached: the old stack's
+// NextAuth session route sends Cache-Control/Pragma/Expires no-cache headers
+// (@auth/core), and without them a browser or intermediary could replay one
+// caller's session body to another or keep a stale logged-in view after logout.
 func handleSession(opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "private, no-cache, no-store")
+		w.Header().Set("Expires", "0")
+		w.Header().Set("Pragma", "no-cache")
 		user, ok := opts.currentUser(r)
 		if !ok {
 			writeJSONAligned(w, http.StatusOK, map[string]any{})

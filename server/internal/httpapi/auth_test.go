@@ -225,13 +225,59 @@ func TestSessionEndpointWithoutCookieIsEmptyAndAnonymous(t *testing.T) {
 	f := newAuthFixture(t)
 
 	rec := getWithCookie(t, f.handler, "/api/auth/session")
-	// The container healthcheck probes this endpoint, so it must answer 200
-	// when nobody is logged in — but with no user attached.
+	// The login page reads this endpoint before anybody signs in, so anonymous
+	// callers get a 200 with no user attached (the healthcheck probes
+	// /api/health, not this route).
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 (body=%q)", rec.Code, rec.Body.String())
 	}
 	if body := decodeJSON(t, rec); body["user"] != nil {
 		t.Errorf("anonymous session body = %v, want no user", body)
+	}
+}
+
+// The old stack's NextAuth session route answers with
+// "Cache-Control: private, no-cache, no-store" (@auth/core). Without it a
+// browser or intermediary cache may replay one caller's session body to
+// another (or keep showing a logged-in user after logout).
+func TestSessionEndpointIsNotCacheable(t *testing.T) {
+	f := newAuthFixture(t)
+
+	for _, tc := range []struct {
+		name     string
+		login    bool
+		wantUser bool
+	}{
+		{name: "anonymous"},
+		{name: "authenticated", login: true, wantUser: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var cookies []*http.Cookie
+			if tc.login {
+				rec := postJSON(t, f.handler, "/api/auth/login", map[string]string{
+					"username": "admin", "password": "admin123",
+				})
+				cookies = append(cookies, sessionCookie(t, rec))
+			}
+
+			rec := getWithCookie(t, f.handler, "/api/auth/session", cookies...)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want 200 (body=%q)", rec.Code, rec.Body.String())
+			}
+			if got := rec.Header().Get("Cache-Control"); got != "private, no-cache, no-store" {
+				t.Errorf("Cache-Control = %q, want private, no-cache, no-store", got)
+			}
+			if got := rec.Header().Get("Pragma"); got != "no-cache" {
+				t.Errorf("Pragma = %q, want no-cache", got)
+			}
+			if got := rec.Header().Get("Expires"); got != "0" {
+				t.Errorf("Expires = %q, want 0", got)
+			}
+			hasUser := decodeJSON(t, rec)["user"] != nil
+			if hasUser != tc.wantUser {
+				t.Errorf("session body has user = %v, want %v", hasUser, tc.wantUser)
+			}
+		})
 	}
 }
 
