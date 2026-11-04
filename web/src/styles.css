@@ -888,6 +888,89 @@ body {
   font-size: 0.85rem;
 }
 
+/* ---------- provider credentials (form) ---------- */
+
+.credentials-section {
+  align-items: stretch;
+}
+
+.credentials-toggle {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.credentials-configured {
+  color: #16a34a;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.credentials-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-left: 1rem;
+  border-left: 2px solid color-mix(in srgb, var(--fg) 18%, transparent);
+}
+
+.credentials-test-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.credentials-test-button {
+  align-self: flex-start;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 25%, transparent);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.credentials-test-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.credential-test-result {
+  font-size: 0.8rem;
+}
+
+.credential-test-ok {
+  color: #16a34a;
+}
+
+.credential-test-error {
+  color: #dc2626;
+}
+
+:root.dark .credentials-configured,
+:root.dark .credential-test-ok {
+  color: #4ade80;
+}
+
+:root.dark .credential-test-error {
+  color: #f87171;
+}
+
+:root.dark .credentials-test-button {
+  color: var(--fg);
+}
+
 /* ---------- subscription tag chips & card tag list (#26) ---------- */
 
 .tag-chip-label {
@@ -946,6 +1029,35 @@ body {
 .usage-percent {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+}
+
+.usage-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.usage-progress {
+  width: 100%;
+  height: 0.35rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fg) 12%, transparent);
+}
+
+.usage-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+.usage-progress-fill.warning {
+  background: #f59e0b;
+}
+
+.usage-progress-fill.danger {
+  background: #dc2626;
 }
 
 .model-list-dialog {

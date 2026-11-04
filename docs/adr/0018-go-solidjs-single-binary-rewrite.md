@@ -6,13 +6,17 @@
 
 - **后端**：chi 路由。除 auth 端点外全部 API 字节对齐（路径/方法/JSON 形状）；`/api/auth/is-initial` 与 `/api/auth/change-password` 形状不变，NextAuth 流程替换为 `POST /api/auth/login`、`POST /api/auth/logout`、`GET /api/auth/session` 三个简单端点。session 为自研**无状态 HMAC 签名 cookie**（7 天，对齐 NextAuth JWT 的重启存活语义；cutover 时重新登录一次）。
 - **存储与加密**：SQLite（ADR-0017）；`NEXTAUTH_SECRET` 变量名与 dev 兜底行为原样沿用，密文格式字节级兼容。
-- **前端**：Vite SPA 经 `go:embed` 打进单二进制；solid-ui + Kobalte；unplugin-icons + Iconify（lucide 集，34 个图标）；@thisbeyond/solid-dnd、solid-sonner；主题切换手写 class toggle（`@solid-primitives/theme` 不存在）。
+- **前端**：Vite SPA 经 `go:embed` 打进单二进制；solid-js + `@solidjs/router` + `@thisbeyond/solid-dnd`；对话框与 `select`/`radio` 用原生元素（`role="dialog"`），图标为手写内联 SVG，toast 降级为页面/对话框内联错误条；主题切换手写 class toggle（`@solid-primitives/theme` 不存在）。初版曾计划 solid-ui + Kobalte、unplugin-icons + Iconify（lucide 集 34 图标）、solid-sonner，实施中均未引入（见下方修订记录）。
 - **飞书与调度**：oapi-sdk-go v3（Channel 模块 WS 长连接）；node-cron → `time.Ticker`（5min tick）；登录限流、飞书 token 缓存、WS 连接保持进程内驻留语义。
 
 ## 范围修订（相对全量 parity 仅两处）
 
 1. 存储引擎 JSON → SQLite（ADR-0017）。
 2. **移除图表功能**：订阅页饼图区块不移植，recharts 依赖消失；图表无对应测试用例，parity 矩阵零受影响行。
+
+## 修订记录
+
+- **2026-11-04（终审）：前端技术栈与实现对齐。** 初版决定的 solid-ui + Kobalte、unplugin-icons + Iconify（lucide 集 34 图标）、solid-sonner 自始未进入 `web/`：`web/package.json` 的运行时依赖只有 `solid-js`、`@solidjs/router`、`@thisbeyond/solid-dnd`，分支历史也从未引入过这些包。实际实现为原生 `dialog`/`select`/`radio`（对话框以 `div role="dialog"` 手写）、5 个内联 SVG 图标、内联错误条替代 toast。该偏差由 parity 矩阵的组件用例与全站走查锁定；本 ADR 的范围修订、验收指标与 cutover gate 不变。`docs/rewrite-plan.md` 的 P5 阶段描述同步订正。
 
 ## 验收指标
 

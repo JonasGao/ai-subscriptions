@@ -12,6 +12,7 @@ import { ResetScheduleConfig } from "./ResetScheduleConfig";
 import {
   defaultCategories,
   type BillingCycle,
+  type CredentialField,
   type Provider,
   type Subscription,
   type SubscriptionFormData,
@@ -42,6 +43,7 @@ const emptyFormData = (category: string): SubscriptionFormData => ({
   renewalDate: "",
   status: "active",
   notes: "",
+  credentials: {},
   balance: undefined,
   lowBalanceThreshold: undefined,
   resetSchedules: [],
@@ -52,8 +54,10 @@ const emptyFormData = (category: string): SubscriptionFormData => ({
 /**
  * SubscriptionForm ports components/SubscriptionForm.tsx for the subscription
  * core: identity, category, provider/plan, type and billing cycle, dates,
- * balance fields, status, notes, and tag input. Provider credential fields and
- * the connection test belong to the query framework (#28).
+ * balance fields, status, notes, tag input, and the provider credential area
+ * with its "test connection" probe (POST /api/test-connection). Credentials
+ * travel as plaintext fields in the submitted form data; the server encrypts
+ * them on write.
  */
 export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
   const [formData, setFormData] = createSignal<SubscriptionFormData>(
@@ -62,6 +66,12 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
   const [pendingTagInput, setPendingTagInput] = createSignal("");
   const [submitting, setSubmitting] = createSignal(false);
   const [error, setError] = createSignal("");
+  const [credentialsOpen, setCredentialsOpen] = createSignal(false);
+  const [testLoading, setTestLoading] = createSignal(false);
+  const [testResult, setTestResult] = createSignal<{
+    ok: boolean;
+    message: string;
+  } | null>(null);
 
   const categories = createMemo(() =>
     props.categories.length ? props.categories : defaultCategories
@@ -79,6 +89,31 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
   );
   const billingCycle = createMemo(() => formData().billingCycle ?? "monthly");
   const showCustomProvider = createMemo(() => formData().provider === "other");
+  const selectedPlan = createMemo(() =>
+    plans().find((plan) => plan.id === formData().planId)
+  );
+  const credentialFields = createMemo<CredentialField[]>(
+    () => providerConfig()?.credentialFields ?? []
+  );
+  // Old form: the credential section shows only when the provider/plan exposes
+  // a query endpoint (balance, selected plan, the sole plan, or provider-wide
+  // usage for no explicit plan).
+  const hasQuerySupport = createMemo(() => {
+    const provider = providerConfig();
+    if (!provider) return false;
+    return Boolean(
+      provider.balanceApiUrl ||
+      selectedPlan()?.usageApiUrl ||
+      (plans().length === 1 && plans()[0].usageApiUrl) ||
+      (!formData().planId && provider.usageApiUrl)
+    );
+  });
+  const showCredentials = createMemo(
+    () => hasQuerySupport() && credentialFields().length > 0
+  );
+  const hasExistingCredentials = createMemo(
+    () => props.subscription?.hasCredentials === true
+  );
 
   // Editing pins the form to the subscription; opening fresh resets it. The
   // pending tag text resets in both cases so a stale value cannot leak into
@@ -87,6 +122,10 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
     const subscription = props.subscription;
     setPendingTagInput("");
     setError("");
+    setTestResult(null);
+    // Old form auto-expands the credential section when the edited subscription
+    // has none, so an expired/missing key can be entered immediately.
+    setCredentialsOpen(!subscription || subscription.hasCredentials !== true);
     // Only the edited subscription drives the reset. Reading categories/tags
     // untracked keeps a background catalogue refresh from wiping the user's
     // half-filled form.
@@ -107,6 +146,9 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
         renewalDate: subscription.renewalDate || "",
         status: subscription.status,
         notes: subscription.notes || "",
+        // Existing credentials never travel back to the client; an empty
+        // object means "leave the stored blob alone" on update.
+        credentials: {},
         balance: subscription.balance,
         lowBalanceThreshold: subscription.lowBalanceThreshold,
         resetSchedules: subscription.resetSchedules || [],
@@ -143,6 +185,49 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
       setError(submitError instanceof Error ? submitError.message : "保存失败");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCredentialChange = (key: string, value: string) => {
+    patch({
+      credentials: { ...(formData().credentials ?? {}), [key]: value },
+    });
+    setTestResult(null);
+  };
+
+  // Ports the old form's probe: plan-aware for multi-plan providers, sending
+  // the single implicit plan when the provider has exactly one.
+  const handleTestConnection = async () => {
+    const credentials = formData().credentials ?? {};
+    if (!formData().provider || Object.keys(credentials).length === 0) return;
+
+    setTestLoading(true);
+    setTestResult(null);
+    const effectivePlanId =
+      formData().planId || (plans().length === 1 ? plans()[0].id : undefined);
+    try {
+      const res = await fetch("/api/test-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: formData().provider,
+          planId: effectivePlanId,
+          credentials,
+        }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        message?: string;
+        error?: string;
+      };
+      setTestResult({
+        ok: data.ok ?? false,
+        message: data.message || data.error || "未知错误",
+      });
+    } catch {
+      setTestResult({ ok: false, message: "网络请求失败" });
+    } finally {
+      setTestLoading(false);
     }
   };
 
@@ -413,6 +498,79 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
                 disabled={submitting()}
               />
             </div>
+
+            <Show when={showCredentials()}>
+              <div class="form-field-wide credentials-section">
+                <button
+                  type="button"
+                  class="credentials-toggle"
+                  aria-expanded={credentialsOpen()}
+                  onClick={() => setCredentialsOpen((open) => !open)}
+                >
+                  <span aria-hidden="true">
+                    {credentialsOpen() ? "▾" : "▸"}
+                  </span>
+                  认证凭据
+                  <Show when={hasExistingCredentials()}>
+                    <span class="credentials-configured">已配置</span>
+                  </Show>
+                </button>
+                <Show when={credentialsOpen()}>
+                  <div class="credentials-fields">
+                    <For each={credentialFields()}>
+                      {(field) => (
+                        <label for={`cred-${field.key}`}>
+                          <span>{field.label}</span>
+                          <input
+                            id={`cred-${field.key}`}
+                            type={
+                              field.type === "password" ? "password" : "text"
+                            }
+                            value={formData().credentials?.[field.key] ?? ""}
+                            onInput={(event) =>
+                              handleCredentialChange(
+                                field.key,
+                                event.currentTarget.value
+                              )
+                            }
+                            placeholder={
+                              hasExistingCredentials()
+                                ? "已配置，留空保持不变"
+                                : `输入 ${field.label}`
+                            }
+                            autocomplete="off"
+                          />
+                        </label>
+                      )}
+                    </For>
+                    <div class="credentials-test-row">
+                      <button
+                        type="button"
+                        class="credentials-test-button"
+                        onClick={handleTestConnection}
+                        disabled={testLoading()}
+                      >
+                        {testLoading() ? "测试中..." : "测试连接"}
+                      </button>
+                      <Show when={testResult()}>
+                        {(result) => (
+                          <span
+                            class="credential-test-result"
+                            classList={{
+                              "credential-test-ok": result().ok,
+                              "credential-test-error": !result().ok,
+                            }}
+                            role="status"
+                          >
+                            {result().message}
+                          </span>
+                        )}
+                      </Show>
+                    </div>
+                  </div>
+                </Show>
+              </div>
+            </Show>
 
             <label for="notes" class="form-field-wide">
               <span>备注</span>

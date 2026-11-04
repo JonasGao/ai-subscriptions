@@ -32,7 +32,7 @@ priorities / tool-priorities / tools / tags（含 API 缓存）/ proxy-subscript
 
 ### P5 SolidJS 前端
 
-`web/` 脚手架（Vite + TS + vitest + jsdom）；solid-ui/Kobalte 原语与主题 tokens 平移；unplugin-icons（lucide 34 图标）；订阅页（无饼图区块）、表单、卡片、优先级拖拽、工具/标签/代理订阅/通知页、登录与改密；`go:embed` 集成。
+`web/` 脚手架（Vite + TS + vitest + jsdom）；主题 tokens 与原生 `dialog`/`select`/`radio` 原语平移；内联 SVG 图标；订阅页（无饼图区块）、表单（含凭据测试）、卡片、优先级拖拽、工具/标签/代理订阅/通知页、登录与改密；`go:embed` 集成。初版计划的 solid-ui/Kobalte、unplugin-icons、solid-sonner 未引入（见 ADR-0018 修订记录）。
 **Gate**：solid 侧 9 文件 74 例闭合；全站手动走查。
 
 ### P6 部署 + cutover

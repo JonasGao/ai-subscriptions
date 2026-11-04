@@ -3,11 +3,19 @@
 // previous-value comparison, and the usage window list.
 
 import { For, Show, type Component } from "solid-js";
-import type { BalanceInfo, BalanceResult, Subscription, UsageWindow } from "../subscriptions/types";
+import type {
+  BalanceInfo,
+  BalanceResult,
+  Subscription,
+  UsageWindow,
+} from "../subscriptions/types";
 import { formatBalance, getProviderCurrency } from "../subscriptions/format";
+import { getProgressTier, getUsagePercent } from "../subscriptions/usage";
 
 /** BalanceInfoRows renders the non-null amount lines of a balance result. */
-export const BalanceInfoRows: Component<{ balance: BalanceResult }> = (props) => (
+export const BalanceInfoRows: Component<{ balance: BalanceResult }> = (
+  props
+) => (
   <For each={props.balance.balanceInfos}>
     {(info: BalanceInfo) => (
       <>
@@ -100,23 +108,66 @@ export function oneTimeBalance(
   };
 }
 
-const USAGE_LABELS: { key: "fiveHour" | "weekly" | "monthly"; label: string }[] =
-  [
-    { key: "fiveHour", label: "5 小时" },
-    { key: "weekly", label: "每周" },
-    { key: "monthly", label: "每月" },
-  ];
+const USAGE_LABELS: {
+  key: "fiveHour" | "weekly" | "monthly";
+  label: string;
+}[] = [
+  { key: "fiveHour", label: "5 小时" },
+  { key: "weekly", label: "每周" },
+  { key: "monthly", label: "每月" },
+];
 
-function usagePercent(window: UsageWindow): number {
-  const limit = Number(window.limit);
-  const used = Number(window.used);
-  if (!Number.isFinite(limit) || limit <= 0 || !Number.isFinite(used)) return 0;
-  return Math.min(100, Math.max(0, (used / limit) * 100));
-}
+/**
+ * UsageWindowRow renders one usage bucket: the amounts, the rounded ratio and
+ * the threshold-colored progress bar. The ratio helpers return null when the
+ * limit is missing/zero/negative — the old stack hid the percent label and the
+ * bar in that case instead of rendering a misleading "0%".
+ */
+const UsageWindowRow: Component<{ label: string; window: UsageWindow }> = (
+  props
+) => {
+  const percent = () => getUsagePercent(props.window.used, props.window.limit);
+  const tier = () => {
+    const value = percent();
+    return value === null ? null : getProgressTier(value);
+  };
+  const rounded = () => Math.round(percent() ?? 0);
+
+  return (
+    <div class="usage-block">
+      <div class="usage-row">
+        <span class="usage-label">{props.label}</span>
+        <span class="usage-amount">
+          {props.window.used} / {props.window.limit}
+        </span>
+        <Show when={percent() !== null}>
+          <span class="usage-percent">{percent()!.toFixed(1)}%</span>
+        </Show>
+      </div>
+      <Show when={tier()}>
+        {(value) => (
+          <div
+            class="usage-progress"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={rounded()}
+          >
+            <div
+              class={`usage-progress-fill ${value()}`}
+              style={{ width: `${rounded()}%` }}
+            />
+          </div>
+        )}
+      </Show>
+    </div>
+  );
+};
 
 /**
  * UsageWindows renders the non-null usage buckets with their consumption
- * ratio. Reset-time urgency coloring belongs to the countdown ticket (#27/#40).
+ * ratio and normal/warning/danger progress tier. Reset-time urgency coloring
+ * belongs to the countdown ticket (#27/#40).
  */
 export const UsageWindows: Component<{
   usage: {
@@ -128,17 +179,7 @@ export const UsageWindows: Component<{
   <For each={USAGE_LABELS}>
     {(entry) => (
       <Show when={props.usage[entry.key]}>
-        {(window) => (
-          <div class="usage-row">
-            <span class="usage-label">{entry.label}</span>
-            <span class="usage-amount">
-              {window().used} / {window().limit}
-            </span>
-            <span class="usage-percent">
-              {usagePercent(window()).toFixed(0)}%
-            </span>
-          </div>
-        )}
+        {(window) => <UsageWindowRow label={entry.label} window={window()} />}
       </Show>
     )}
   </For>

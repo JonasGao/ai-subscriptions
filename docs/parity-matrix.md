@@ -13,7 +13,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | 测试文件                          | 用例 | 目标区域                       | 状态 |
 | --------------------------------- | ---: | ------------------------------ | ---- |
 | dispatcher.test.ts                |   36 | notifications 调度器           | ☑    |
-| utils.test.ts                     |   34 | 领域工具                       | ◑    |
+| utils.test.ts                     |   34 | 领域工具                       | ☑    |
 | provider-plans.test.ts            |   29 | providers 注册表               | ☑    |
 | reset-alignment.test.ts           |   27 | 重置对齐/校准                  | ☑    |
 | payload.test.ts                   |   27 | 飞书消息构造                   | ☑    |
@@ -392,19 +392,47 @@ auto-query on mount（9）、quota query cooldown（5）、balance display（4�
 
 `utils.test.ts` 中重置数学部分（行内子表；该行整体仍为 ◑，其余用例随 #28）：
 
-| 旧 describe                                   | 例数 | 新用例（`web/src/subscriptions/reset.test.ts`） | 说明                                          |
-| --------------------------------------------- | ---: | ----------------------------------------------- | --------------------------------------------- |
-| getResetUrgencyColor › threshold constants    |    1 | 同名 describe                                   | ADR-0013 阈值常量                             |
-| getResetUrgencyColor › boundary points        |    4 | 同名 describe                                   | 72h/24h 与 240h/120h 端点                     |
-| getResetUrgencyColor › red clamp              |    3 | 同名 describe                                   | 红区夹取与过期                                |
-| getResetUrgencyColor › midpoint interpolation |    2 | 同名 describe                                   | 周/月 48h、180h 中点                          |
-| getResetUrgencyColor › exponential easing     |    3 | 同名 describe                                   | 2^x−1 缓动                                    |
-| getResetUrgencyColor › gradient monotonicity  |    1 | 同名 describe                                   | 色相单调                                      |
-| getResetUrgencyColor › edge cases             |    3 | 同名 describe                                   | null/注入时钟/非法 ISO                        |
-| （小计）                                      |   17 | —                                               | 其余 17 例（用量百分比/区间/币种/余额）归 #28 |
+| 旧 describe                                   | 例数 | 新用例（`web/src/subscriptions/reset.test.ts`） | 说明                               |
+| --------------------------------------------- | ---: | ----------------------------------------------- | ---------------------------------- |
+| getResetUrgencyColor › threshold constants    |    1 | 同名 describe                                   | ADR-0013 阈值常量                  |
+| getResetUrgencyColor › boundary points        |    4 | 同名 describe                                   | 72h/24h 与 240h/120h 端点          |
+| getResetUrgencyColor › red clamp              |    3 | 同名 describe                                   | 红区夹取与过期                     |
+| getResetUrgencyColor › midpoint interpolation |    2 | 同名 describe                                   | 周/月 48h、180h 中点               |
+| getResetUrgencyColor › exponential easing     |    3 | 同名 describe                                   | 2^x−1 缓动                         |
+| getResetUrgencyColor › gradient monotonicity  |    1 | 同名 describe                                   | 色相单调                           |
+| getResetUrgencyColor › edge cases             |    3 | 同名 describe                                   | null/注入时钟/非法 ISO             |
+| （小计）                                      |   17 | —                                               | 见下方「utils 其余 17 例终审对账」 |
 
 偏差：`getResetUrgencyColor` 是纯展示数学，新栈落在 Solid 前端（`web/src/subscriptions/reset.ts`），
 不经 Go；矩阵该行的 `→ Go` 目标区域因此对重置数学部分改判为 solid 侧。
+
+### utils.test.ts 其余 17 例终审对账（final）
+
+行 16 的 `◑` 随本节闭合。此前「归 #28」的指针失效（#28 用例级对账未包含这 17 例，
+且 #23–#41 已全部完结）：
+
+| 旧 describe                                           | 例数 | 新用例（逐字沿用旧 describe/it）       |
+| ----------------------------------------------------- | ---: | -------------------------------------- |
+| getUsagePercent                                       |    4 | `web/src/subscriptions/usage.test.ts`  |
+| getProgressTier                                       |    4 | 同上                                   |
+| tier follows the exact ratio, not the rounded percent |    2 | 同上                                   |
+| getCurrencySymbol                                     |    2 | `web/src/subscriptions/format.test.ts` |
+| formatBalance                                         |    3 | 同上                                   |
+| getProviderCurrency                                   |    2 | 同上                                   |
+| （小计）                                              |   17 | —                                      |
+
+偏差与说明：
+
+- **用量百分比/分级此前整体缺失**：`query-display.tsx` 的私有 `usagePercent` 在 limit
+  缺失/为零/为负时返回 0（渲染成误导性的 "0%"），且 70/90 阈值分级配色不存在。终审把
+  `getUsagePercent`/`getProgressTier` 逐字移植到 `web/src/subscriptions/usage.ts`，
+  `UsageWindows` 恢复旧行为：比例不可计算时不渲染百分比与进度条；按**精确比例**分级
+  （90 恰为 warning，>90 为 danger）；显示保留一位小数（`toFixed(1)`）。
+- **金额格式化此前零测试**：`formatBalance`/`getCurrencySymbol`/`getProviderCurrency`
+  已由 `format.ts` 实现并被 `query-display.tsx` 的金额渲染使用，本节补 7 例锁定。
+- 组件级佐证：`web/src/components/query-display.test.tsx`（4 例）锁定 null 语义、
+  70/90 分级与精确比例分级。#29 偏差栏「新栈取整 toFixed(0)」已撤销：
+  `SubscriptionCard.autoexhaust.test.tsx` 的百分比断言改回旧栈的 `50.0%`。
 
 另：本票新增 `server/internal/reset/reset_test.go`（时长解析、偏移推断、周/月/五小时递推、
 月末 clamp 与 31→28→31 不漂移、时区、五小时锚点不漂移/跳过错过的周期）、
@@ -493,9 +521,9 @@ auto-query on mount（9）、quota query cooldown（5）、balance display（4�
 | -------------------------------------------- | ---: | ------------- |
 | SubscriptionCard auto-exhaust on usage query |   10 | 同名 describe |
 
-覆盖：用量百分比渲染（新栈 toFixed(0) "50%"；旧栈 toFixed(1) "50.0%"——新栈取整，无小数位，已记偏差）、100% 触发 toggle、<100% 不触发、禁用计划不触发、已用尽计划不触发、多窗口同时用尽、一次性订阅不触发（余额查询）、limit≤0 不触发、多窗口顺序触发（await 每个）、无匹配计划类型跳过。
+覆盖：用量百分比渲染（`toFixed(1)`，如 "50.0%"）、100% 触发 toggle、<100% 不触发、禁用计划不触发、已用尽计划不触发、多窗口同时用尽、一次性订阅不触发（余额查询）、limit≤0 不触发、多窗口顺序触发（await 每个）、无匹配计划类型跳过。
 
-偏差：Solid 信号替代 React 状态；toggle 回调通过 card props 透传（与旧栈同一接缝）；provider 目录作为 props 传入（服务端注册表 ADR-0006）。用例名"below the progress bar"沿用旧栈，但新栈进度条渲染归 #34，本票仅断言百分比标签本身；百分比格式取整（toFixed(0)），旧栈保留一位小数（toFixed(1)）。
+偏差：Solid 信号替代 React 状态；toggle 回调通过 card props 透传（与旧栈同一接缝）；provider 目录作为 props 传入（服务端注册表 ADR-0006）。百分比与进度条已由终审补齐（见「utils.test.ts 其余 17 例终审对账」），恢复旧栈的 `toFixed(1)` 与 70/90 分级。
 
 ### 已闭合文件的用例级对账（#31）
 
@@ -713,8 +741,8 @@ opencode 的 `rate-limited` 强制 100（保留 >100 的超额）、缺失 `perc
 
 `MainPageShell.test.tsx`（1 例）→ `web/src/components/MainPageShell.test.tsx`（原用例名逐字沿用）：
 
-| 旧用例（逐字）                                                   | 例数 | 新用例                       |
-| ---------------------------------------------------------------- | ---: | ---------------------------- |
+| 旧用例（逐字）                                                  | 例数 | 新用例                      |
+| --------------------------------------------------------------- | ---: | --------------------------- |
 | links every main page to its own path and marks the active page |    1 | 同名用例（`MainPageShell`） |
 
 `SubscriptionCard.test.tsx` 余下子行本票注销：全部 21 例（`it.each` 展开）已在 #26/#28 闭合，见上文
@@ -722,17 +750,37 @@ opencode 的 `rate-limited` 强制 100（保留 >100 的超额）、缺失 `perc
 
 #40 新栈自有用例（旧栈无对应行，不占矩阵行）：
 
-| 行为                              | 例数 | 测试                                                |
-| --------------------------------- | ---: | --------------------------------------------------- |
-| 主题解析/持久化/class 切换/循环   |    4 | `web/src/theme.test.tsx`                            |
-| 主题按钮展示当前值并轮换          |    1 | `web/src/theme.test.tsx`                            |
-| 主题按钮图标随轮换切换            |    1 | `web/src/theme.test.tsx`                            |
-| 统计卡金额与计数（含空列表）      |    2 | `web/src/components/StatsCards.test.tsx`            |
-| 根路径重定向到 /subscriptions     |    1 | `web/src/routes.test.tsx`                           |
-| 列表页筛选恢复/持久化 + 统计/壳   |    2 | `web/src/pages/SubscriptionsPage.test.tsx`（#40 段） |
-| 暗色 ghost/danger 按钮级联特异度  |    3 | `web/src/styles.test.ts`                            |
+| 行为                             | 例数 | 测试                                                 |
+| -------------------------------- | ---: | ---------------------------------------------------- |
+| 主题解析/持久化/class 切换/循环  |    4 | `web/src/theme.test.tsx`                             |
+| 主题按钮展示当前值并轮换         |    1 | `web/src/theme.test.tsx`                             |
+| 主题按钮图标随轮换切换           |    1 | `web/src/theme.test.tsx`                             |
+| 统计卡金额与计数（含空列表）     |    2 | `web/src/components/StatsCards.test.tsx`             |
+| 根路径重定向到 /subscriptions    |    1 | `web/src/routes.test.tsx`                            |
+| 列表页筛选恢复/持久化 + 统计/壳  |    2 | `web/src/pages/SubscriptionsPage.test.tsx`（#40 段） |
+| 暗色 ghost/danger 按钮级联特异度 |    3 | `web/src/styles.test.ts`                             |
 
 全站走查清单（问题与修复）见 [walkthrough.md](walkthrough.md)。
+
+## 终审补齐：凭据测试 API 与表单凭据区（final）
+
+spec #21 的「31 条 API 除 auth 外全部字节对齐」在终审前缺两条旧栈路由；provider 层
+`TestConnection` 已全部移植，只差 HTTP 暴露。终审补齐：
+
+| 旧栈路由                                       | 新栈实现                                                            | 测试                                                                                                      |
+| ---------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `POST /api/test-connection`                    | `server/internal/httpapi/test_connection.go` `handleTestConnection` | `TestTestConnectionRoute`（6 子例：plan usage 分发、balance 回退、上游拒绝、缺 provider、缺凭据、不支持） |
+| `POST /api/subscriptions/{id}/test-connection` | 同文件 `handleSubscriptionTestConnection`                           | `TestSubscriptionTestConnectionRoute`（4 子例：用存储的 provider/plan、404、缺凭据、不支持）              |
+
+行为对齐旧 `route.ts`：usage handler（键为 `provider[:planId]`）优先于 balance handler；
+成功返回 `{ok,message}`；未支持 provider 返回 400 `Test connection not supported for <provider>`；
+缺 provider / 缺凭据 400；上游 4xx 由 handler 转成 `{ok:false,message:"API 返回 N"}`（仍 200）。
+
+前端 `web/src/components/SubscriptionForm.tsx` 恢复旧栈凭据区（终审前缺失，导致新建订阅 /
+更换过期 Key 无法录入）：按 `credentialFields` 渲染输入、编辑无凭据时自动展开、已配置时折叠
+并显示「已配置」、`测试连接` 按钮 POST 上述路由（单计划时自动带 planId）。由
+`web/src/components/SubscriptionForm.test.tsx`（5 例）锁定。旧栈这两条路由无测试文件，
+故不占 582 例行；ADR-0018 与 `docs/rewrite-plan.md` 的前端栈描述同步订正（见 ADR 修订记录）。
 
 ## 不适用
 

@@ -79,6 +79,7 @@ func New(opts Options) http.Handler {
 		}
 		api.Get("/providers", handleProviders(opts))
 		api.Get("/providers/unregistered", handleUnregisteredProviders(opts))
+		api.Post("/test-connection", handleTestConnection(opts))
 		if opts.Data != nil {
 			api.Get("/subscriptions", handleListSubscriptions(opts))
 			api.Post("/subscriptions", handleCreateSubscription(opts))
@@ -88,6 +89,7 @@ func New(opts Options) http.Handler {
 			api.Get("/subscriptions/{id}/usage", handleSubscriptionUsage(opts))
 			api.Get("/subscriptions/{id}/balance", handleSubscriptionBalance(opts))
 			api.Get("/subscriptions/{id}/models", handleSubscriptionModels(opts))
+			api.Post("/subscriptions/{id}/test-connection", handleSubscriptionTestConnection(opts))
 			api.Post("/subscriptions/{id}/schedules/{scheduleId}/toggle", handleToggleScheduleExhausted(opts))
 			api.Get("/tags", handleListTags(opts))
 			api.Patch("/tags/{id}", handleRenameTag(opts))

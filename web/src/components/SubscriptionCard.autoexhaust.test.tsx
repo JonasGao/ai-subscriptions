@@ -6,11 +6,7 @@
 //  - The toggle callback is passed through the card to the parent; the card
 //    itself does not own the toggle logic (same seam as the old stack).
 
-import {
-  cleanup,
-  render,
-  waitFor,
-} from "@solidjs/testing-library";
+import { cleanup, render, waitFor } from "@solidjs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SubscriptionCard } from "./SubscriptionCard";
 import type {
@@ -86,10 +82,8 @@ describe("SubscriptionCard auto-exhaust on usage query", () => {
     cleanup();
   });
 
-  // Verbatim port of the old test name; the old stack nested the percent
-  // label under a progress bar, while the new stack's progress bar belongs to
-  // #34 — this case only asserts the percentage label itself (see parity
-  // matrix deviation note for #29).
+  // Verbatim port of the old test name. The final parity pass restored the
+  // percent label and progress bar to the old stack's toFixed(1) rendering.
   it("renders the usage percentage below the progress bar", async () => {
     fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -115,9 +109,8 @@ describe("SubscriptionCard auto-exhaust on usage query", () => {
       />
     ));
 
-    // New stack renders percentage as toFixed(0) ("50%") vs old stack toFixed(1) ("50.0%").
-    // The progress bar rendering is deferred to #34; this test verifies the percentage label appears.
-    const percentElement = await findByText("50%");
+    // Old-stack rendering: one decimal place.
+    const percentElement = await findByText("50.0%");
     expect(percentElement).toBeTruthy();
   });
 
