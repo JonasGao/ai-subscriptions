@@ -37,6 +37,9 @@ type Options struct {
 	// Proxy serves the proxy-subscription CRUD and tag catalog (ADR-0009).
 	// Nil leaves those routes unregistered.
 	Proxy ProxyService
+	// Notify serves notification-channel CRUD, the low-balance threshold and
+	// channel test sends. Nil leaves those routes unregistered.
+	Notify NotificationService
 }
 
 // New builds the application router.
@@ -76,6 +79,9 @@ func New(opts Options) http.Handler {
 		}
 		if opts.Proxy != nil {
 			mountProxyRoutes(api, opts.Proxy)
+		}
+		if opts.Notify != nil {
+			mountNotificationRoutes(api, opts.Notify)
 		}
 		api.NotFound(writeJSONNotFound)
 	})

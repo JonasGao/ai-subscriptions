@@ -68,8 +68,14 @@ export const AuthProvider: Component<{ children: JSX.Element }> = (props) => {
     },
     async changePassword(oldPassword, newPassword) {
       await apiChangePassword(oldPassword, newPassword);
-      // The server revokes every token bound to the old hash.
-      setSession(null);
+      // The server revokes every token bound to the old hash but reissues one
+      // for the caller, so refresh the session instead of dropping it: the
+      // non-forced flow stays signed in (and isInitial flips to false).
+      try {
+        setSession(await fetchSession());
+      } catch {
+        setSession(null);
+      }
     },
   };
 

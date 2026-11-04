@@ -4,9 +4,9 @@ import { useAuth } from "../auth/AuthProvider";
 
 /**
  * ChangePasswordPage ports app/change-password/page.tsx. force=1 marks the
- * first-login flow; either way a successful change ends the session (the
- * server revokes every cookie bound to the old hash), so the page lands on
- * /login to sign in again.
+ * first-login flow: the old stack signs out there and lands on /login, while
+ * the non-forced flow keeps the caller signed in and returns to
+ * /subscriptions (the server reissues their session on the new hash).
  */
 export const ChangePasswordPage: Component = () => {
   const auth = useAuth();
@@ -39,7 +39,13 @@ export const ChangePasswordPage: Component = () => {
     setLoading(true);
     try {
       await auth.changePassword(oldPassword(), newPassword());
-      navigate("/login", { replace: true });
+      if (forced()) {
+        // app/change-password/page.tsx: signOut() only on the forced flow.
+        await auth.logout();
+        navigate("/login", { replace: true });
+        return;
+      }
+      navigate("/subscriptions", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "修改失败，请重试");
     } finally {

@@ -31,7 +31,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | feishu-helpers.test.ts            |   13 | 飞书辅助                       | ☐    |
 | signing.test.ts                   |   12 | 火山 V4 签名                   | ☐    |
 | reset-schedule-uniqueness.test.ts |   10 | 重置计划唯一性                 | ☐    |
-| notifications-storage.test.ts     |   10 | 通知存储                       | ☐    |
+| notifications-storage.test.ts     |   10 | 通知存储                       | ☑    |
 | providers.test.ts                 |    9 | providers 注册表               | ☑    |
 | models-generic-fetch.test.ts      |    8 | 通用模型获取回退               | ☐    |
 | github-models.test.ts             |    8 | provider: github 模型列表      | ☐    |
@@ -116,10 +116,10 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 
 | 新用例文件 | 例数 | 覆盖的旧栈行为 |
 | ---------- | ---: | -------------- |
-| `server/internal/auth/auth_test.go` | 15 | 种子账号 admin/admin123 与 bcrypt cost 10、首启 isInitial、改密规则（新密码≥6 位先于校验原密码、原密码错、成功后清标记并更新时间戳）、登录限流 5 次/15 分（窗口过期、成功登录清零、按 IP 隔离）、会话 7 天且跨实例存活、改密后旧会话失效、篡改/异密钥令牌拒绝、`NEXTAUTH_SECRET` 缺省随机兜底 |
-| `server/internal/httpapi/auth_test.go` | 14 | `POST /api/auth/login`、`POST /api/auth/logout`、`GET /api/auth/session`（ADR-0018 形状例外）；`is-initial` / `change-password` 形状不变（含 `未登录` / `请填写完整` / `密码长度至少6位` / `原密码错误` 文案）；除 auth 白名单（`/api/auth/{login,logout,session,is-initial}` 与 `/api/health`）外所有 API（含未知路径）经会话门禁 401 |
+| `server/internal/auth/auth_test.go` | 16 | 种子账号 admin/admin123 与 bcrypt cost 10、首启 isInitial、改密规则（新密码≥6 位先于校验原密码、原密码错、成功后清标记并更新时间戳）、登录限流 5 次/15 分（窗口过期、成功登录清零、按 IP 隔离）、会话 7 天且跨实例存活、改密后旧会话全部失效而调用者拿到绑定新哈希的替换令牌、篡改/异密钥令牌拒绝、`NEXTAUTH_SECRET` 缺省随机兜底 |
+| `server/internal/httpapi/auth_test.go` | 17 | `POST /api/auth/login`、`POST /api/auth/logout`、`GET /api/auth/session`（ADR-0018 形状例外）；`is-initial` / `change-password` 形状不变（含 `未登录` / `请填写完整` / `密码长度至少6位` / `原密码错误` 文案）；改密成功为调用者重签发 cookie（非强制流保持登录，旧 cookie 仍失效）；`/api/auth/session` 沿用 NextAuth 的 `Cache-Control: private, no-cache, no-store` + `Pragma`/`Expires`（@auth/core），未登录/已登录两种响应均不可缓存；登出拒绝跨站来源（Origin / Sec-Fetch-Site），替代 NextAuth signout 的 CSRF 令牌；除 auth 白名单（`/api/auth/{login,logout,session,is-initial}` 与 `/api/health`）外所有 API（含未知路径）经会话门禁 401 |
 | `web/src/auth/login.test.tsx` | 4 | 登录页：isInitial 提示、按 isInitial 分流 `/change-password?force=1` 或 `/subscriptions`、凭据错误与 429 限流文案 |
-| `web/src/auth/change-password.test.tsx` | 5 | 改密页：force=1 标题与「默认密码」提示、两次不一致/少于 6 位本地拦截、原密码错误透传、非强制态返回首页入口 |
+| `web/src/auth/change-password.test.tsx` | 6 | 改密页：force=1 标题与「默认密码」提示、两次不一致/少于 6 位本地拦截、原密码错误透传、非强制态返回首页入口、强制流改密成功后登出回登录页、非强制流改密成功后保持登录落 `/subscriptions` |
 | `web/src/auth/session-gate.test.tsx` | 6 | 路由门禁：未登录访问任意页→`/login`、种子密码会话→强制改密、已登录访问 `/login`→`/subscriptions`、`/`→`/subscriptions`、登出后回登录页 |
 | `web/src/App.test.tsx` | 1 | 应用外壳：未登录进入即落登录页 |
 
@@ -127,7 +127,35 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 NextAuth 的 `null`，保持容器 healthcheck 拿到 200；② 登录限流键用 peer 地址而非
 `x-forwarded-for`（旧栈取该头，但部署直接暴露 3000 端口，该头可伪造出无限配额）；③ 旧栈
 `/api/auth/[...nextauth]` 流程不移植（由三端点替代）；④ `/api/health` 保持免登录——
-distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会话 cookie，且该端点只回 `{"status":"ok"}`。
+distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会话 cookie，且该端点只回 `{"status":"ok"}`；
+⑤ 改密成功的会话处理按旧栈分流：强制流（`force=1`）前端登出并回 `/login`，非强制流为调用者重签发
+绑定新哈希的 cookie 并落 `/subscriptions`——其余全部旧会话依然立即失效（票面验收项「改密后旧会话失效」）；
+⑥ 登出的跨站防护用 Origin / `Sec-Fetch-Site` 校验替代 NextAuth signout 的 CSRF 双提交令牌（同源浏览器请求
+与 curl 等非浏览器客户端不受影响）。
+
+### 已闭合文件的用例级对账（#37）
+
+`notifications-storage.test.ts`（10 例）→ `server/internal/store/notifications_test.go`（旧用例名逐字沿用为 Go 测试名）：
+
+| 旧 describe                     | 旧用例（逐字）                                                     | 例数 | Go 测试 |
+| ------------------------------- | ------------------------------------------------------------------ | ---: | ------- |
+| notification storage: channel CRUD | createChannel assigns id, timestamps, and defaults enabled=true |    1 | `TestCreateChannelAssignsIDTimestampsAndDefaultsEnabled` |
+| notification storage: channel CRUD | createChannel preserves explicit enabled=false and secret        |    1 | `TestCreateChannelPreservesExplicitDisabledAndSecret` |
+| notification storage: channel CRUD | getChannelById returns the channel or null                       |    1 | `TestGetChannelByIDReturnsChannelOrNil` |
+| notification storage: channel CRUD | updateChannel merges fields and refreshes updatedAt              |    1 | `TestUpdateChannelMergesFieldsAndRefreshesUpdatedAt` |
+| notification storage: channel CRUD | updateChannel returns null for unknown id                        |    1 | `TestUpdateChannelReturnsNilForUnknownID` |
+| notification storage: channel CRUD | deleteChannel removes and returns true; false for unknown        |    1 | `TestDeleteChannelRemovesAndReturnsTrueFalseForUnknown` |
+| notification storage: channel CRUD | toggleChannelEnabled flips state in a single read+write          |    1 | `TestToggleChannelEnabledFlipsState` |
+| notification storage: channel CRUD | toggleChannelEnabled performs one read and one write             |    1 | `TestToggleChannelEnabledPerformsSingleUpdate` |
+| notification storage: global default threshold | defaults to DEFAULT_LOW_BALANCE_THRESHOLD (10)      |    1 | `TestDefaultLowBalanceThresholdDefaultsToTen` |
+| notification storage: global default threshold | setter persists the new value                       |    1 | `TestSetDefaultLowBalanceThresholdPersists` |
+
+偏差：第 8 例在旧栈用 `fs.readFileSync`/`writeFileSync` 调用次数守卫「单次读+写」；SQLite 没有对应 syscall 层，本票把该保证改为结构断言——toggle 用单条 `UPDATE` 语句完成翻转（不存在读后写），测试断言 `changes()` 恰为 1 且其它列未被扰动。
+
+存储层补强（矩阵外新增）：`TestUpdateChannelSendResultPersists`（lastSendResult 落库且不改 `updatedAt`，未知 id 静默忽略）、`TestBalanceTransitionStateRoundTrip`、`TestNotificationChannelsKeepInsertionOrder`。
+路由形状（旧栈无路由测试，按旧 handler 实现锁定）：`server/internal/httpapi/notifications_test.go` 30 例——GET 列表/阈值、创建校验文案（8 条）、feishu-app 字段校验与 secrets 脱敏、PUT 合并/清空/400/404、DELETE、toggle、未知 action、阈值 PUT、以及签名测试发送端到端（钉钉 URL 签名、飞书 body 签名、通用 webhook payload、失败 502 与 lastSendResult 记录、禁用渠道拒绝）。
+
+偏差与边界：① `feishu-app` 的测试发送需要应用机器人发送器，随 #38 提供；本票端点形状不变，该类型测试发送以 502 记录明确的失败原因，不静默成功。② `payload` 构造只移植了测试发送所需的 low-balance 分支；`payload.test.ts`（27 例）与 `dispatcher.test.ts`（36 例）行仍归 #39，本票未关闭。③ 旧 `toLocaleString("zh-CN")` 的本地化依赖运行时 ICU，新栈用 `2006/1/2 15:04:05`（服务器本地时区）近似；精确字节语义留给 #39 的 payload 对账钉住。④ feishu-app 的 appSecret 守卫逐字移植了旧 handler 的兜底行为（显式清空若已有存量值则先通过），未按注释意图「修正」。
 
 ### 已闭合文件的用例级对账（#26）
 
