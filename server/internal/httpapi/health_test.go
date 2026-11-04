@@ -8,9 +8,10 @@ import (
 )
 
 func TestHealthEndpoint(t *testing.T) {
-	srv := New(Options{})
+	srv, session := newSessionRouter(t, Options{})
 
 	req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	req.AddCookie(session)
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
 
@@ -31,9 +32,10 @@ func TestHealthEndpoint(t *testing.T) {
 }
 
 func TestHealthRejectsNonGET(t *testing.T) {
-	srv := New(Options{})
+	srv, session := newSessionRouter(t, Options{})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/health", nil)
+	req.AddCookie(session)
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
 

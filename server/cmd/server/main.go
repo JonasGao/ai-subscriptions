@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"ai-subscriptions/internal/auth"
 	"ai-subscriptions/internal/config"
 	"ai-subscriptions/internal/healthcheck"
 	"ai-subscriptions/internal/httpapi"
@@ -59,9 +60,22 @@ func run() error {
 		log.Printf("backup snapshot: %s", snapshot)
 	}
 
+	// Authentication: seed account, password change and stateless HMAC
+	// session cookies (ADR-0018). An unset NEXTAUTH_SECRET falls back to a
+	// random secret like lib/auth.ts, so sessions do not survive a restart
+	// until the operator configures it.
+	sessionSecret, generated := auth.SecretFromEnv(os.Getenv)
+	if generated {
+		log.Print("WARNING: NEXTAUTH_SECRET is not set. Using a random secret. Sessions will be invalidated on restart.")
+	}
+	authService := auth.New(db, sessionSecret)
+
 	srv := &http.Server{
-		Addr:              cfg.Addr,
-		Handler:           httpapi.New(httpapi.Options{Assets: assets}),
+		Addr: cfg.Addr,
+		Handler: httpapi.New(httpapi.Options{
+			Assets: assets,
+			Auth:   authService,
+		}),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
