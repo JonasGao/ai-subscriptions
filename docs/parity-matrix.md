@@ -14,7 +14,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | --------------------------------- | ---: | ------------------------------ | ---- |
 | dispatcher.test.ts                |   36 | notifications 调度器           | ☐    |
 | utils.test.ts                     |   34 | 领域工具                       | ☐    |
-| provider-plans.test.ts            |   29 | providers 注册表               | ☐    |
+| provider-plans.test.ts            |   29 | providers 注册表               | ☑    |
 | reset-alignment.test.ts           |   27 | 重置对齐/校准                  | ☐    |
 | payload.test.ts                   |   27 | 飞书消息构造                   | ☐    |
 | models-resolver.test.ts           |   26 | 模型查询解析                   | ☐    |
@@ -22,7 +22,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | github.test.ts                    |   25 | provider: github（token 交换） | ☐    |
 | fangzhou-codingplan.test.ts       |   24 | provider: fangzhou             | ☐    |
 | opencode.test.ts                  |   23 | provider: opencode             | ☐    |
-| enrichment.test.ts                |   23 | providers 能力标记             | ☐    |
+| enrichment.test.ts                |   23 | providers 能力标记             | ☑    |
 | zhipu.test.ts                     |   22 | provider: zhipu（窗口解码）    | ☐    |
 | feishu-app.test.ts                |   21 | 飞书应用机器人                 | ☐    |
 | provider-models.test.ts           |   15 | providers 模型查询             | ☐    |
@@ -32,7 +32,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | signing.test.ts                   |   12 | 火山 V4 签名                   | ☐    |
 | reset-schedule-uniqueness.test.ts |   10 | 重置计划唯一性                 | ☐    |
 | notifications-storage.test.ts     |   10 | 通知存储                       | ☐    |
-| providers.test.ts                 |    9 | providers 注册表               | ☐    |
+| providers.test.ts                 |    9 | providers 注册表               | ☑    |
 | models-generic-fetch.test.ts      |    8 | 通用模型获取回退               | ☐    |
 | github-models.test.ts             |    8 | provider: github 模型列表      | ☐    |
 | feishu-credentials.test.ts        |    8 | 飞书凭据                       | ☐    |
@@ -47,6 +47,43 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | usage-route.test.ts               |    2 | 用量查询路由                   | ☐    |
 | tags-api-cache.test.ts            |    1 | 标签 API 缓存                  | ☐    |
 | proxy-tags-route.test.ts          |    1 | 代理标签路由                   | ☐    |
+
+### 已闭合文件的用例级对账（#25）
+
+`provider-plans.test.ts` → `server/internal/providers/plan_test.go`（子测试名逐字沿用旧用例名）：
+
+| 旧 describe             | 例数 | Go 测试                                                                 |
+| ----------------------- | ---: | ----------------------------------------------------------------------- |
+| resolvePlanId           |    9 | `TestResolvePlanID`                                                     |
+| createSubscription      |    4 | `TestCreateSubscriptionPlanResolution`                                  |
+| updateSubscription      |    2 | `TestUpdateSubscriptionPlanResolution`                                  |
+| migrateProviderPlans    |    7 | `TestMigrateProviderPlans`                                              |
+| resolveUsageHandlerKey  |    2 | `TestResolveUsageHandlerKey`                                            |
+| resolveUsageApiUrl      |    3 | `TestResolveUsageAPIURL`                                                |
+| usageHandlers 注册      |    2 | `TestUsageHandlersRegistration`                                         |
+
+偏差：旧用例经 `db.createSubscription`/`db.updateSubscription` 与
+`subscriptions.json` 文件迁移落地；新栈的存储与 CRUD 属 #23/#26，故这 11 例在
+领域规则 seam 上平移（`ResolvePlanIDOnCreate`/`OnUpdate`、
+`MigrateProviderPlans(records)`），行为断言不变。
+
+`providers.test.ts` → `server/internal/providers/providers_test.go`：
+
+| 旧 describe        | 例数 | Go 测试              |
+| ------------------ | ---: | -------------------- |
+| fangzhou-agentplan |    3 | `TestAgentPlanUsage` |
+| fangzhou-codingplan|    2 | `TestCodingPlanUsage`|
+| moonshot           |    4 | `TestMoonshotUsage`  |
+
+`enrichment.test.ts` → `server/internal/providers/enrichment_test.go`：
+
+| 旧 describe                 | 例数 | Go 测试                       |
+| --------------------------- | ---: | ----------------------------- |
+| supportsUsageQuery          |    5 | `TestSupportsUsageQuery`      |
+| supportsBalanceQuery        |    4 | `TestSupportsBalanceQuery`    |
+| supportsModelsQuery         |    6 | `TestSupportsModelsQuery`     |
+| enrichProviders             |    4 | `TestEnrichProviders`         |
+| getUnregisteredProviderNames|    4 | `TestUnregisteredProviderNames` |
 
 ## → solid（web/）
 
