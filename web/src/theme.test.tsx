@@ -79,4 +79,21 @@ describe("ThemeToggle", () => {
     expect(document.documentElement.classList.contains("dark")).toBe(true);
     expect(button.getAttribute("title")).toBe("当前主题: dark");
   });
+
+  it("swaps the icon as the theme cycles", () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, "light");
+    resetThemeStoreForTest();
+
+    render(() => <ThemeToggle />);
+    const button = screen.getByRole("button", { name: /切换主题/ });
+    // light = sun (a circle), dark = moon (a path-only crescent).
+    expect(button.querySelector("circle")).not.toBeNull();
+
+    fireEvent.click(button); // light -> dark
+    expect(button.querySelector("circle")).toBeNull();
+
+    fireEvent.click(button); // dark -> system
+    expect(button.querySelector("circle")).toBeNull();
+    expect(button.querySelector("rect")).not.toBeNull();
+  });
 });

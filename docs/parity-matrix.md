@@ -726,6 +726,7 @@ opencode 的 `rate-limited` 强制 100（保留 >100 的超额）、缺失 `perc
 | --------------------------------- | ---: | --------------------------------------------------- |
 | 主题解析/持久化/class 切换/循环   |    4 | `web/src/theme.test.tsx`                            |
 | 主题按钮展示当前值并轮换          |    1 | `web/src/theme.test.tsx`                            |
+| 主题按钮图标随轮换切换            |    1 | `web/src/theme.test.tsx`                            |
 | 统计卡金额与计数（含空列表）      |    2 | `web/src/components/StatsCards.test.tsx`            |
 | 根路径重定向到 /subscriptions     |    1 | `web/src/routes.test.tsx`                           |
 | 列表页筛选恢复/持久化 + 统计/壳   |    2 | `web/src/pages/SubscriptionsPage.test.tsx`（#40 段） |

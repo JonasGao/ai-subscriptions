@@ -7,7 +7,7 @@
 ## 走查方法与结论
 
 - 静态走查：逐页阅读组件与 `web/src/styles.css`，对照旧栈页面壳、统计卡、筛选、主题 token。
-- 自动化验证：`web/` 下 `npx vitest run`（184 例）与 `npx tsc --noEmit`；根路径重定向、主题持久化、
+- 自动化验证：`web/` 下 `npx vitest run`（188 例）与 `npx tsc --noEmit`；根路径重定向、主题持久化、
   统计卡与筛选、暗色按钮级联均有对应用例。
 - 结论：下列问题已修复；其余页面结构与旧栈行为一致，无需改动。
 
@@ -26,6 +26,7 @@
 | 9 | 页面壳           | 旧壳含 `/providers`、`/notifications` 图标入口，新栈尚无这两个页面   | 新壳只保留已实现路由（三主页面 + `/change-password`），避免死链；提供商/通知页面不在本票范围                | 路由表 `routes.tsx` 核对                                 |
 | 10 | 根路径           | `/` 重定向语义                                                       | 已有 `Home` 组件 `navigate("/subscriptions", { replace: true })`，本票补测试锁定                            | `routes.test.tsx` 1 例                                   |
 | 11 | 登录/改密页      | 无主题按钮                                                           | 与旧栈一致（旧栈 MainPageShell 才有 ThemeToggle），不新增；主题按钮切换的 class 对全站生效                  | `LoginPage`/`ChangePasswordPage` 用例保持绿              |
+| 12 | 主题按钮         | 图标在主题轮换后不更新（组件体内 `if` 在 Solid 中只执行一次，只有 title 是响应式的） | `ThemeIcon` 改为接收 accessor，并用 `<Show>` 包裹三个图标分支，随每次轮换响应式切换 | `theme.test.tsx`「swaps the icon as the theme cycles」1 例 |
 
 ## 备注
 
