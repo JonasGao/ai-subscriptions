@@ -36,7 +36,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | models-generic-fetch.test.ts      |    8 | 通用模型获取回退               | ☐    |
 | github-models.test.ts             |    8 | provider: github 模型列表      | ☐    |
 | feishu-credentials.test.ts        |    8 | 飞书凭据                       | ☐    |
-| proxy-subscriptions.test.ts       |    7 | 代理订阅                       | ☐    |
+| proxy-subscriptions.test.ts       |    7 | 代理订阅                       | ☑    |
 | volcengine-signer.test.ts         |    6 | 火山 HMAC 签名器               | ☐    |
 | tags.test.ts                      |    6 | 标签稳定标识                   | ☑    |
 | db.test.ts                        |    6 | 存储层（SQLite，ADR-0017）     | ☑    |
@@ -46,7 +46,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | models-route.test.ts              |    3 | 模型查询路由                   | ☐    |
 | usage-route.test.ts               |    2 | 用量查询路由                   | ☐    |
 | tags-api-cache.test.ts            |    1 | 标签 API 缓存                  | ☑    |
-| proxy-tags-route.test.ts          |    1 | 代理标签路由                   | ☐    |
+| proxy-tags-route.test.ts          |    1 | 代理标签路由                   | ☑    |
 
 ### 已闭合文件的用例级对账（#23）
 
@@ -187,8 +187,38 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 | TagInput.test.tsx                   |    6 | 标签输入               | ☑    |
 | useNow.test.ts                      |    5 | 时间信号原语           | ☐    |
 | query-calibration-callback.test.tsx |    2 | 校准回调局部更新       | ☐    |
-| ProxySubscriptionTab.test.tsx       |    1 | 代理订阅页签           | ☐    |
+| ProxySubscriptionTab.test.tsx       |    1 | 代理订阅页签           | ☑    |
 | MainPageShell.test.tsx              |    1 | 主页骨架               | ☐    |
+
+### 已闭合文件的用例级对账（#36）
+
+`proxy-subscriptions.test.ts`（7 例）→ `server/internal/proxy/proxy_test.go` 5 例 + `server/internal/store/proxy_test.go` 2 例。
+前置 `lib/proxy-utils.ts` 的日期规则与新栈 `internal/proxy` 同源，故五例日期规则落在该包，两例存储语义落在 SQLite 存储层（ADR-0017 取代 JSON 读写）：
+
+| 旧 describe                | 旧用例（逐字）                                                        | 例数 | Go 测试 |
+| -------------------------- | --------------------------------------------------------------------- | ---: | ------- |
+| proxy subscription date rules | calculates an inclusive expiration date                            |    1 | `TestCalculateProxyExpirationDateIsInclusive` |
+| proxy subscription date rules | skips expiration notices for unused subscriptions                  |    1 | `TestDateNoticeSkipsUnusedSubscriptions` |
+| proxy subscription date rules | skips expiration notices for unlimited in-use subscriptions        |    1 | `TestDateNoticeSkipsUnlimitedInUseSubscriptions` |
+| proxy subscription date rules | reports overdue days only for in-use subscriptions                 |    1 | `TestDateNoticeReportsOverdueDaysOnlyForInUse` |
+| proxy subscription date rules | uses China calendar dates around UTC midnight                      |    1 | `TestTodayDateUsesChinaCalendarAroundUTCMidnight` |
+| proxy subscription storage | creates, updates, and deletes independent proxy tags                |    1 | `TestCreateUpdateDeleteProxySubscriptionsWithIndependentProxyTags` |
+| proxy subscription storage | supports unlimited subscriptions and clearing an expiration date    |    1 | `TestCreateProxySubscriptionSupportsUnlimitedAndClearingExpiration` |
+
+`proxy-tags-route.test.ts`（1 例）→ `server/internal/httpapi/proxy_test.go`：
+旧用例断言 Next.js 的 `dynamic = "force-dynamic"` 导出；Go 路由没有该开关（每次请求直读 SQLite，静态快照问题不存在），故改为断言可观察行为——写入后立刻可读到最新标签：
+
+| 旧用例（逐字）                                  | 例数 | Go 测试 |
+| ----------------------------------------------- | ---: | ------- |
+| reads mutable proxy tags dynamically            |    1 | `TestProxyTagsRouteReadsMutableTagsDynamically` |
+
+`ProxySubscriptionTab.test.tsx`（1 例）→ `web/src/proxy/ProxySubscriptionTab.test.tsx`：
+
+| 旧用例（逐字）                                                  | 例数 | 新用例 |
+| --------------------------------------------------------------- | ---: | ------ |
+| saves a typed tag when the user submits without pressing Enter   |    1 | 同名用例（`ProxySubscriptionForm`） |
+
+偏差：① 同上，`force-dynamic` 无对应物，改为行为断言；② 旧组件自取数据（`useEffect` + fetch），新栈由路由页持有数据、页签只渲染 props，故 `ProxySubscriptionTab` 的取数路径由路由级用例覆盖；③ 旧表单的 Dialog/Select/RadioGroup 来自 shadcn+Radix，新栈用原生 `dialog` 结构与原生 `select`/`radio`，`getByLabelText`/`placeholder` 定位保持不变。另补 `server/internal/httpapi/proxy_test.go` 的 4 例路由级用例（CRUD 回环、清空到期日、400 校验文案、会话门禁）——旧栈这五个 handler 无路由测试，本票按「行为以旧栈实现为规范」补锁定。
 
 ## 不适用
 

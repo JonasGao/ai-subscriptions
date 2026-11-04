@@ -172,6 +172,9 @@ export const SubscriptionsPage: Component = () => {
           <button type="button" onClick={openCreate}>
             添加订阅
           </button>
+          <nav class="shell-nav">
+            <a href="/proxy-subscriptions">代理订阅</a>
+          </nav>
           <button type="button" class="ghost" onClick={handleLogout}>
             退出登录
           </button>

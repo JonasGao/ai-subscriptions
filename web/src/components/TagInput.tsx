@@ -160,7 +160,7 @@ export const TagInput: Component<TagInputProps> = (props) => {
         />
 
         <Show when={open() && !props.disabled && candidates().length > 0}>
-          <div id="subscription-tag-options" role="listbox" class="tag-options">
+          <div id="subscription-tag-options" role="listbox" class="tag-input-options">
             <For each={candidates()}>
               {(tag, index) => (
                 <button

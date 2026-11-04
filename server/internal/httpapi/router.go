@@ -34,6 +34,9 @@ type Options struct {
 	// Cipher encrypts credential blobs on write. Nil derives one from
 	// NEXTAUTH_SECRET like the old stack.
 	Cipher *crypto.Cipher
+	// Proxy serves the proxy-subscription CRUD and tag catalog (ADR-0009).
+	// Nil leaves those routes unregistered.
+	Proxy ProxyService
 }
 
 // New builds the application router.
@@ -70,6 +73,9 @@ func New(opts Options) http.Handler {
 			api.Get("/categories", handleListCategories(opts))
 			api.Post("/categories", handleAddCategory(opts))
 			api.Delete("/categories", handleDeleteCategory(opts))
+		}
+		if opts.Proxy != nil {
+			mountProxyRoutes(api, opts.Proxy)
 		}
 		api.NotFound(writeJSONNotFound)
 	})

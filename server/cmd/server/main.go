@@ -77,6 +77,7 @@ func run() error {
 			Auth:         authService,
 			Data:         db,
 			ProviderRefs: db,
+			Proxy:        db,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
