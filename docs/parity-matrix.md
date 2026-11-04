@@ -421,9 +421,9 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 | ------------------------------------------------ | ---: | ----------------------------------------------- |
 | SubscriptionCard auto-exhaust on usage query     |   10 | 同名 describe                                   |
 
-覆盖：用量百分比渲染、100% 触发 toggle、<100% 不触发、禁用计划不触发、已用尽计划不触发、多窗口同时用尽、一次性订阅不触发（余额查询）、limit≤0 不触发、多窗口顺序触发（await 每个）、无匹配计划类型跳过。
+覆盖：用量百分比渲染（新栈 toFixed(0) "50%"；旧栈 toFixed(1) "50.0%"——新栈取整，无小数位，已记偏差）、100% 触发 toggle、<100% 不触发、禁用计划不触发、已用尽计划不触发、多窗口同时用尽、一次性订阅不触发（余额查询）、limit≤0 不触发、多窗口顺序触发（await 每个）、无匹配计划类型跳过。
 
-偏差：Solid 信号替代 React 状态；toggle 回调通过 card props 透传（与旧栈同一接缝）；provider 目录作为 props 传入（服务端注册表 ADR-0006）。
+偏差：Solid 信号替代 React 状态；toggle 回调通过 card props 透传（与旧栈同一接缝）；provider 目录作为 props 传入（服务端注册表 ADR-0006）。用例名"below the progress bar"沿用旧栈，但新栈进度条渲染归 #34，本票仅断言百分比标签本身；百分比格式取整（toFixed(0)），旧栈保留一位小数（toFixed(1)）。
 
 ## → solid（web/）
 

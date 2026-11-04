@@ -86,6 +86,10 @@ describe("SubscriptionCard auto-exhaust on usage query", () => {
     cleanup();
   });
 
+  // Verbatim port of the old test name; the old stack nested the percent
+  // label under a progress bar, while the new stack's progress bar belongs to
+  // #34 — this case only asserts the percentage label itself (see parity
+  // matrix deviation note for #29).
   it("renders the usage percentage below the progress bar", async () => {
     fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -111,7 +115,10 @@ describe("SubscriptionCard auto-exhaust on usage query", () => {
       />
     ));
 
-    await waitFor(() => expect(findByText("50.0%")).toBeTruthy());
+    // New stack renders percentage as toFixed(0) ("50%") vs old stack toFixed(1) ("50.0%").
+    // The progress bar rendering is deferred to #34; this test verifies the percentage label appears.
+    const percentElement = await findByText("50%");
+    expect(percentElement).toBeTruthy();
   });
 
   it("calls onScheduleToggle when usage reaches 100% for a window", async () => {
