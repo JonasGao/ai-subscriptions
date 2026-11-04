@@ -26,6 +26,83 @@ const (
 // ValidTypes are the supported schedule types in display order.
 var ValidTypes = []string{FiveHour, Weekly, Monthly}
 
+// Duration is a parsed offset such as "3d 5h 44m" (parseDurationString).
+type Duration struct {
+	Days    int
+	Hours   int
+	Minutes int
+}
+
+// TotalMinutes returns the offset in whole minutes.
+func (d Duration) TotalMinutes() int {
+	return d.Days*24*60 + d.Hours*60 + d.Minutes
+}
+
+// ParseDuration parses an offset string like "3d 5h 44m" (parseDurationString).
+//
+// Whitespace is ignored and the unit letters are case-insensitive. A value
+// with no components, or with hours >= 24 / minutes >= 60, is rejected — the
+// old stack treated those as malformed rather than normalizing them.
+func ParseDuration(value string) (Duration, bool) {
+	cleaned := strings.ToLower(strings.Join(strings.Fields(value), ""))
+
+	days, hasDays := leadingNumber(cleaned, "d")
+	hours, hasHours := leadingNumber(cleaned, "h")
+	minutes, hasMinutes := leadingNumber(cleaned, "m")
+
+	if !hasDays && !hasHours && !hasMinutes {
+		return Duration{}, false
+	}
+	duration := Duration{Days: days, Hours: hours, Minutes: minutes}
+	if duration.Days == 0 && duration.Hours == 0 && duration.Minutes == 0 {
+		return Duration{}, false
+	}
+	if duration.Hours > 23 || duration.Minutes > 59 {
+		return Duration{}, false
+	}
+	return duration, true
+}
+
+// leadingNumber extracts the digits immediately preceding unit (first match),
+// the same first-occurrence behaviour as the old regular expressions.
+func leadingNumber(value, unit string) (int, bool) {
+	index := strings.Index(value, unit)
+	if index <= 0 {
+		return 0, false
+	}
+	start := index
+	for start > 0 && value[start-1] >= '0' && value[start-1] <= '9' {
+		start--
+	}
+	if start == index {
+		return 0, false
+	}
+	number, err := strconv.Atoi(value[start:index])
+	if err != nil {
+		return 0, false
+	}
+	return number, true
+}
+
+// FormatDuration renders a parsed offset the way the old UI did ("3d 5h 44m",
+// or "0m" when every component is zero).
+func FormatDuration(duration Duration) string {
+	parts := make([]string, 0, 3)
+	if duration.Days > 0 {
+		parts = append(parts, strconv.Itoa(duration.Days)+"d")
+	}
+	if duration.Hours > 0 {
+		parts = append(parts, strconv.Itoa(duration.Hours)+"h")
+	}
+	if duration.Minutes > 0 {
+		parts = append(parts, strconv.Itoa(duration.Minutes)+"m")
+	}
+	if len(parts) == 0 {
+		return "0m"
+	}
+	return strings.Join(parts, " ")
+}
+
 // Spec is the recurrence-defining subset of a reset schedule.
 type Spec struct {
 	Type       string
@@ -174,4 +251,33 @@ func nextMonth(year int, month time.Month) (int, time.Month) {
 		return year + 1, time.January
 	}
 	return year, month + 1
+}
+
+// ExtractScheduleFromOffset infers dayOfWeek / dayOfMonth / timeOfDay from a
+// relative offset (ADR-0003 "从现在起" creation).
+//
+// The values are read off the resulting instant in the schedule's timezone, so
+// a weekly offset beyond seven days simply wraps to the next occurrence of that
+// weekday, and a monthly offset stores the actual inferred day rather than an
+// idealized 31st the calculator would later clamp.
+func ExtractScheduleFromOffset(specType string, offset Duration, timezone string, now time.Time) (Spec, error) {
+	if err := Validate(Spec{Type: specType}); err != nil {
+		return Spec{}, err
+	}
+	target := now.Add(time.Duration(offset.TotalMinutes()) * time.Minute).In(location(timezone))
+
+	spec := Spec{Type: specType, TimeOfDay: formatTimeOfDay(target)}
+	switch specType {
+	case Weekly:
+		day := int(target.Weekday())
+		spec.DayOfWeek = &day
+	case Monthly:
+		day := target.Day()
+		spec.DayOfMonth = &day
+	}
+	return spec, nil
+}
+
+func formatTimeOfDay(t time.Time) string {
+	return fmt.Sprintf("%02d:%02d", t.Hour(), t.Minute())
 }

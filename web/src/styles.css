@@ -913,6 +913,260 @@ body {
   font-size: 0.8rem;
 }
 
+/* ---------- live query affordances (#28) ---------- */
+
+.subscription-card-balance .balance-previous {
+  margin-left: 0.25rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.subscription-card-query-error {
+  margin: 0.5rem 0 0;
+  color: #dc2626;
+  font-size: 0.85rem;
+}
+
+.balance-row,
+.usage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.usage-row {
+  font-size: 0.85rem;
+}
+
+.usage-percent {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.model-list-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+
+.model-list-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.model-list-toolbar input {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+}
+
+.model-list-updated,
+.model-list-count {
+  margin: 0.25rem 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.model-list-body {
+  flex: 1;
+  min-height: 6rem;
+  overflow-y: auto;
+}
+
+.model-list-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.model-list-item {
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.model-list-item:nth-child(odd) {
+  background: color-mix(in srgb, var(--fg) 5%, transparent);
+}
+
+.model-list-empty,
+.model-list-loading {
+  padding: 2rem 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+.model-list-error {
+  padding: 2rem 0;
+  color: #dc2626;
+  text-align: center;
+}
+
+.model-list-error-message {
+  font-size: 0.85rem;
+}
+
+/* ---------- reset schedules (#27) ---------- */
+
+.reset-schedule-config {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+}
+
+.reset-schedule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.reset-schedule-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.reset-schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reset-schedule-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  border-radius: 0.5rem;
+}
+
+.reset-schedule-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.reset-schedule-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.reset-schedule-type {
+  font-weight: 600;
+}
+
+.reset-schedule-time,
+.reset-schedule-timezone,
+.reset-schedule-countdown {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.reset-schedule-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border: 1px dashed color-mix(in srgb, var(--fg) 20%, transparent);
+  border-radius: 0.5rem;
+}
+
+.reset-schedule-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.reset-schedule-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.reset-schedule-hint {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.reset-schedule-preview {
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-size: 0.78rem;
+}
+
+.reset-schedule-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: 0.78rem;
+}
+
+.reset-schedule-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid color-mix(in srgb, var(--fg) 10%, transparent);
+}
+
+.reset-schedule-grid-title {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.reset-schedule-grid-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.reset-schedule-grid-row {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 5.5rem 1fr auto;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+}
+
+.reset-schedule-grid-type {
+  font-weight: 600;
+}
+
+.reset-schedule-grid-row button {
+  padding: 0.05rem 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  border-radius: 0.3rem;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.reset-schedule-grid-row button.reset-schedule-exhausted {
+  border-color: #dc2626;
+  background: color-mix(in srgb, #dc2626 14%, transparent);
+  color: #dc2626;
+}
+
 /* ---------- priority scenes & tools (#35) ---------- */
 
 .text-red-500 {

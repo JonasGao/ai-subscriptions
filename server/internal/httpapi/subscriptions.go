@@ -13,7 +13,6 @@ import (
 
 	"ai-subscriptions/internal/crypto"
 	"ai-subscriptions/internal/model"
-	"ai-subscriptions/internal/providers"
 	"ai-subscriptions/internal/store"
 )
 
@@ -32,6 +31,10 @@ type DataService interface {
 	Tags() ([]model.Tag, error)
 	RenameTag(id, name string) (*model.Tag, error)
 	DeleteTag(id string) (*store.DeleteTagResult, error)
+	// Reset-schedule surface (#27). AddResetSchedule/UpdateResetSchedule/
+	// DeleteResetSchedule back the schedule CRUD; ToggleScheduleExhausted is
+	// the manual "已用尽" switch (ADR-0007).
+	ToggleScheduleExhausted(subscriptionID, scheduleID string, exhausted bool) (*model.Subscription, error)
 }
 
 // subscriptionPayload is the wire shape of a subscription
@@ -517,69 +520,34 @@ func handleDeleteSubscription(opts Options) http.HandlerFunc {
 	}
 }
 
-// handleSubscriptionUsage serves GET /api/subscriptions/{id}/usage.
-//
-// The guard chain (404 / not-recurring / unsupported / credentials) is
-// byte-aligned with the old stack. Dispatching to the provider handler lands
-// with the query framework (#28); until then the terminal branch reports the
-// same 502 family the old stack uses when a handler cannot complete.
-func handleSubscriptionUsage(opts Options) http.HandlerFunc {
+// handleToggleScheduleExhausted serves
+// POST /api/subscriptions/{id}/schedules/{scheduleId}/toggle
+// (app/api/subscriptions/[id]/schedules/[scheduleId]/toggle/route.ts).
+func handleToggleScheduleExhausted(opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		sub, err := opts.Data.SubscriptionByID(chi.URLParam(r, "id"))
+		body, err := decodeObjectBody(r)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "Failed to query usage")
+			writeError(w, http.StatusBadRequest, "Invalid JSON in request body")
 			return
 		}
-		if sub == nil {
-			writeError(w, http.StatusNotFound, "Subscription not found")
+		exhausted, ok := body["exhausted"].(bool)
+		if !ok {
+			writeError(w, http.StatusBadRequest, `Invalid request body. "exhausted" must be a boolean`)
 			return
 		}
-		if sub.SubscriptionType != "recurring" {
-			writeError(w, http.StatusBadRequest, "Usage query is only supported for recurring subscriptions")
-			return
-		}
-		provider, ok := providers.ProviderByID(sub.Provider)
-		if !ok || providers.ResolveUsageAPIURL(provider, sub.PlanID) == "" {
-			writeError(w, http.StatusBadRequest, fmt.Sprintf("Usage query not supported for %s", sub.Provider))
-			return
-		}
-		if !providers.HasUsageHandler(providers.ResolveUsageHandlerKey(sub.Provider, sub.PlanID)) {
-			writeError(w, http.StatusBadRequest, "Unsupported provider")
-			return
-		}
-		if sub.Credentials == "" {
-			writeError(w, http.StatusBadRequest, "Credentials are not configured for this subscription")
-			return
-		}
-		// #28 wires the provider fetch + #29 auto-exhaust + #34 calibration.
-		writeError(w, http.StatusBadGateway, "Usage query failed")
-	}
-}
 
-// handleSubscriptionModels serves GET /api/subscriptions/{id}/models. Guard
-// chain aligned with the old stack; the fetch lands with #28.
-func handleSubscriptionModels(opts Options) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		sub, err := opts.Data.SubscriptionByID(chi.URLParam(r, "id"))
+		updated, err := opts.Data.ToggleScheduleExhausted(
+			chi.URLParam(r, "id"), chi.URLParam(r, "scheduleId"), exhausted,
+		)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "Failed to query models")
+			writeError(w, http.StatusInternalServerError, "Failed to toggle schedule exhausted flag")
 			return
 		}
-		if sub == nil {
-			writeError(w, http.StatusNotFound, "Subscription not found")
+		if updated == nil {
+			writeError(w, http.StatusNotFound, "Subscription or schedule not found")
 			return
 		}
-		provider, ok := providers.ProviderByID(sub.Provider)
-		if !ok || providers.ResolveModelsAPIURL(provider, sub.PlanID) == "" {
-			writeError(w, http.StatusBadRequest, fmt.Sprintf("Model query not supported for %s", sub.Provider))
-			return
-		}
-		if providers.ResolveModelsRequireCredentials(provider, sub.PlanID) && sub.Credentials == "" {
-			writeError(w, http.StatusBadRequest, "Credentials are not configured for this subscription")
-			return
-		}
-		// #28 wires the models fetchers.
-		writeError(w, http.StatusBadGateway, "Model query failed")
+		writeJSONAligned(w, http.StatusOK, newSubscriptionPayload(*updated))
 	}
 }
 
