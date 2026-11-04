@@ -76,16 +76,74 @@ export interface SubscriptionFormData {
 export interface PlanDefinition {
   id: string;
   name: string;
+  usageApiUrl?: string;
+  modelsApiUrl?: string;
+  modelsRequireCredentials?: boolean;
+}
+
+export interface CredentialField {
+  key: string;
+  label: string;
+  type: "text" | "password";
 }
 
 export interface Provider {
   id: string;
   name: string;
   description?: string;
+  website?: string;
+  balanceApiUrl?: string;
+  usageApiUrl?: string;
+  modelsApiUrl?: string;
+  modelsRequireCredentials?: boolean;
+  credentialFields?: CredentialField[];
   plans?: PlanDefinition[];
   supportsBalanceQuery?: boolean;
   supportsUsageQuery?: boolean;
   supportsModelsQuery?: boolean;
+}
+
+/** BalanceInfo is one currency line of a balance query result. */
+export interface BalanceInfo {
+  currency: string;
+  available: string;
+  total: string | null;
+  toppedUp: string | null;
+  granted: string | null;
+  used: string | null;
+  frozen: string | null;
+  extras?: { label: string; value: string }[];
+}
+
+export interface BalanceResult {
+  provider: string;
+  isAvailable: boolean;
+  balanceInfos: BalanceInfo[];
+}
+
+export interface UsageWindow {
+  limit: string;
+  used: string;
+  remaining: string;
+  resetTime: string | null;
+}
+
+export interface UsageResult {
+  provider: string;
+  fiveHour: UsageWindow | null;
+  weekly: UsageWindow | null;
+  monthly: UsageWindow | null;
+  warnings?: string[];
+}
+
+/** UsageQueryResponse is the usage route body: usage fields + the subscription. */
+export interface UsageQueryResponse extends UsageResult {
+  subscription?: Subscription;
+}
+
+/** ModelsResult is the models route body: deduped, sorted model ids. */
+export interface ModelsResult {
+  models: string[];
 }
 
 /** defaultCategories mirrors lib/types.ts (the server seeds the same list). */

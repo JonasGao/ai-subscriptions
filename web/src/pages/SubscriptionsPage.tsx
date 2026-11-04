@@ -41,24 +41,23 @@ export const SubscriptionsPage: Component = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [subs, cats, catalog] = await Promise.all([
+      // Providers load together with the subscriptions: the cards decide their
+      // query affordances from the catalog, so it must be present on first
+      // render (and the card auto-query fires from it).
+      const [subs, cats, catalog, providerCatalog] = await Promise.all([
         fetchSubscriptions(),
         fetchCategories(),
         fetchTags(),
+        fetchProviders().catch(() => [] as Provider[]),
       ]);
       setSubscriptions(subs);
       setCategories(cats);
       setTags(catalog);
+      setProviders(providerCatalog);
     } catch {
       setErrorMessage("加载订阅失败，请刷新页面");
     } finally {
       setLoading(false);
-    }
-    try {
-      setProviders(await fetchProviders());
-    } catch {
-      // Provider names are cosmetic; the id still renders.
-      setProviders([]);
     }
   };
 
@@ -138,6 +137,12 @@ export const SubscriptionsPage: Component = () => {
     }
   };
 
+  // NOTE: the balance/usage echo updates are deliberately not wired into this
+  // list yet. Solid's <For> keys by object identity, so replacing the echoed
+  // subscription would remount that card and re-run its mount query. The card
+  // already displays the fresh balance from its own query result, and the
+  // server persists the write-back; the list-level echo (calibrated schedules)
+  // lands with #34 together with a remount-safe list update.
   const handleDelete = async (id: string) => {
     try {
       await deleteSubscription(id);
