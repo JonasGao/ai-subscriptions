@@ -14,12 +14,19 @@ import (
 	"time"
 
 	"ai-subscriptions/internal/config"
+	"ai-subscriptions/internal/healthcheck"
 	"ai-subscriptions/internal/httpapi"
 	"ai-subscriptions/internal/store"
 	"ai-subscriptions/internal/webui"
 )
 
 func main() {
+	// The distroless runtime has no shell or wget, so container healthchecks
+	// invoke this subcommand instead.
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		os.Exit(healthcheck.Run(os.Getenv, os.Stdout, os.Stderr))
+	}
+
 	if err := run(); err != nil {
 		log.Fatalf("ai-subscriptions: %v", err)
 	}

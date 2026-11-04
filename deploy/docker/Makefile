@@ -4,15 +4,27 @@ IMAGE := ${PROJECT_NAME}:latest
 DEPLOY_DIR := $(HOME)/docker/${PROJECT_NAME}
 COMPOSE := docker compose --project-directory ${DEPLOY_DIR} -f $(REPO_ROOT)/deploy/docker/docker-compose.yml
 
-# Base image; machine-level override lives in $(DEPLOY_DIR)/build.env
-# (e.g. NODE_IMAGE=z.my/node:24-alpine where docker.io is unreachable)
+# Base images and Go module proxy; machine-level override lives in
+# $(DEPLOY_DIR)/build.env (e.g. NODE_IMAGE=z.my/node:24-alpine where docker.io
+# is unreachable — see README.md).
 NODE_IMAGE ?= node:24-alpine
+GO_IMAGE ?= golang:1.27-alpine
+RUNTIME_IMAGE ?= gcr.io/distroless/static-debian12:nonroot
+GOPROXY ?= https://proxy.golang.org,direct
 -include $(DEPLOY_DIR)/build.env
 
-.PHONY: image deploy up down restart status logs uninstall help
+.PHONY: image deploy smoke up down restart status logs uninstall help
 
-image: ## Build docker image locally
-	docker build --build-arg NODE_IMAGE=$(NODE_IMAGE) -t ${IMAGE} ${REPO_ROOT}
+image: ## Build docker image locally (multi-stage: web -> go -> distroless)
+	docker build \
+		--build-arg NODE_IMAGE=$(NODE_IMAGE) \
+		--build-arg GO_IMAGE=$(GO_IMAGE) \
+		--build-arg RUNTIME_IMAGE=$(RUNTIME_IMAGE) \
+		--build-arg GOPROXY=$(GOPROXY) \
+		-t ${IMAGE} ${REPO_ROOT}
+
+smoke: ## Verify the built image against the deployment contract (throw-away container)
+	$(REPO_ROOT)/deploy/docker/smoke.sh ${IMAGE}
 
 deploy: ## Build image and (re)start the deployment
 	@${MAKE} image

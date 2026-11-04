@@ -9,13 +9,16 @@ WEB_DIST := $(WEB_DIR)/dist
 EMBED_DIST := $(SERVER_DIR)/internal/webui/dist
 BIN := $(SERVER_DIR)/bin/$(PROJECT_NAME)
 
-.PHONY: deploy image up down restart status logs uninstall build test run \
+.PHONY: deploy image smoke up down restart status logs uninstall build test run \
         server-build web-build web-install legacy-build clean help
 
-deploy: ## Build image and (re)start the deployment (see deploy/docker) — old stack
+deploy: ## Build image and (re)start the deployment (see deploy/docker)
 	@$(MAKE) -C deploy/docker $@
 
 image: ## Build docker image locally
+	@$(MAKE) -C deploy/docker $@
+
+smoke: ## Verify the built image contract on a throw-away container
 	@$(MAKE) -C deploy/docker $@
 
 up: ## Start the container

@@ -152,15 +152,15 @@ ai-subscriptions/
 
 ### 构建生产版本
 
-```bash
-npm run build
-```
-
-### 启动生产服务器
+新栈是 Go 单二进制（SolidJS SPA 经 `go:embed` 打进二进制）：
 
 ```bash
-npm start
+make build     # web/ 构建 SPA → 暂存 server/internal/webui/dist → go build
+make test      # Go + vitest 全量
+./server/bin/ai-subscriptions   # 直接跑单二进制（默认 :3000）
 ```
+
+旧栈（Next.js）构建保留备用至 cutover：`make legacy-build`（即 `npm run build`）。
 
 ### 部署方式
 
@@ -168,7 +168,7 @@ npm start
 
 #### Docker（默认）
 
-部署配置在仓库的 `deploy/docker/`（`Makefile` 与 `docker-compose.yml`），根目录 `Makefile` 只是转发代理，命令用法不变。运行时目录 `~/docker/ai-subscriptions/` 只放 `data/`、`.env`（含 `NEXTAUTH_SECRET`）与可选的 `build.env`。容器以非 root 用户（1000:1000）运行，CPU 限制 1.0 核、内存限制 512M，数据卷 `~/docker/ai-subscriptions/data` 挂载为 `/data`。基础镜像默认 `node:24-alpine`，可通过 `NODE_IMAGE` 覆盖（见 `deploy/docker/README.md`）。
+部署配置在仓库的 `deploy/docker/`（`Makefile`、`docker-compose.yml`、`smoke.sh`），根目录 `Makefile` 只是转发代理，命令用法不变。镜像由根 `Dockerfile` 多阶段构建（`node` 构建 SPA → `go` 以 `CGO_ENABLED=0` 编译 → `distroless/static` 运行，约 25MB），运行镜像内无 shell/Node。运行时目录 `~/docker/ai-subscriptions/` 只放 `data/`、`.env`（含 `NEXTAUTH_SECRET`）与可选的 `build.env`。容器以非 root 用户（1000:1000）运行，CPU 限制 1.0 核、内存限制 512M，数据卷 `~/docker/ai-subscriptions/data` 挂载为 `/data`。基础镜像与 Go 代理由构建参数 `NODE_IMAGE` / `GO_IMAGE` / `RUNTIME_IMAGE` / `GOPROXY` 决定，可在 `build.env` 覆盖（见 `deploy/docker/README.md`）。
 
 **日常更新（构建镜像并重启容器）：**
 
