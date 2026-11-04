@@ -31,7 +31,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | feishu-helpers.test.ts            |   13 | 飞书辅助                       | ☐    |
 | signing.test.ts                   |   12 | 火山 V4 签名                   | ☐    |
 | reset-schedule-uniqueness.test.ts |   10 | 重置计划唯一性                 | ☐    |
-| notifications-storage.test.ts     |   10 | 通知存储                       | ☐    |
+| notifications-storage.test.ts     |   10 | 通知存储                       | ☑    |
 | providers.test.ts                 |    9 | providers 注册表               | ☑    |
 | models-generic-fetch.test.ts      |    8 | 通用模型获取回退               | ☐    |
 | github-models.test.ts             |    8 | provider: github 模型列表      | ☐    |
@@ -128,6 +128,30 @@ NextAuth 的 `null`，保持容器 healthcheck 拿到 200；② 登录限流键�
 `x-forwarded-for`（旧栈取该头，但部署直接暴露 3000 端口，该头可伪造出无限配额）；③ 旧栈
 `/api/auth/[...nextauth]` 流程不移植（由三端点替代）；④ `/api/health` 保持免登录——
 distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会话 cookie，且该端点只回 `{"status":"ok"}`。
+
+### 已闭合文件的用例级对账（#37）
+
+`notifications-storage.test.ts`（10 例）→ `server/internal/store/notifications_test.go`（旧用例名逐字沿用为 Go 测试名）：
+
+| 旧 describe                     | 旧用例（逐字）                                                     | 例数 | Go 测试 |
+| ------------------------------- | ------------------------------------------------------------------ | ---: | ------- |
+| notification storage: channel CRUD | createChannel assigns id, timestamps, and defaults enabled=true |    1 | `TestCreateChannelAssignsIDTimestampsAndDefaultsEnabled` |
+| notification storage: channel CRUD | createChannel preserves explicit enabled=false and secret        |    1 | `TestCreateChannelPreservesExplicitDisabledAndSecret` |
+| notification storage: channel CRUD | getChannelById returns the channel or null                       |    1 | `TestGetChannelByIDReturnsChannelOrNil` |
+| notification storage: channel CRUD | updateChannel merges fields and refreshes updatedAt              |    1 | `TestUpdateChannelMergesFieldsAndRefreshesUpdatedAt` |
+| notification storage: channel CRUD | updateChannel returns null for unknown id                        |    1 | `TestUpdateChannelReturnsNilForUnknownID` |
+| notification storage: channel CRUD | deleteChannel removes and returns true; false for unknown        |    1 | `TestDeleteChannelRemovesAndReturnsTrueFalseForUnknown` |
+| notification storage: channel CRUD | toggleChannelEnabled flips state in a single read+write          |    1 | `TestToggleChannelEnabledFlipsState` |
+| notification storage: channel CRUD | toggleChannelEnabled performs one read and one write             |    1 | `TestToggleChannelEnabledPerformsSingleUpdate` |
+| notification storage: global default threshold | defaults to DEFAULT_LOW_BALANCE_THRESHOLD (10)      |    1 | `TestDefaultLowBalanceThresholdDefaultsToTen` |
+| notification storage: global default threshold | setter persists the new value                       |    1 | `TestSetDefaultLowBalanceThresholdPersists` |
+
+偏差：第 8 例在旧栈用 `fs.readFileSync`/`writeFileSync` 调用次数守卫「单次读+写」；SQLite 没有对应 syscall 层，本票把该保证改为结构断言——toggle 用单条 `UPDATE` 语句完成翻转（不存在读后写），测试断言 `changes()` 恰为 1 且其它列未被扰动。
+
+存储层补强（矩阵外新增）：`TestUpdateChannelSendResultPersists`（lastSendResult 落库且不改 `updatedAt`，未知 id 静默忽略）、`TestBalanceTransitionStateRoundTrip`、`TestNotificationChannelsKeepInsertionOrder`。
+路由形状（旧栈无路由测试，按旧 handler 实现锁定）：`server/internal/httpapi/notifications_test.go` 30 例——GET 列表/阈值、创建校验文案（8 条）、feishu-app 字段校验与 secrets 脱敏、PUT 合并/清空/400/404、DELETE、toggle、未知 action、阈值 PUT、以及签名测试发送端到端（钉钉 URL 签名、飞书 body 签名、通用 webhook payload、失败 502 与 lastSendResult 记录、禁用渠道拒绝）。
+
+偏差与边界：① `feishu-app` 的测试发送需要应用机器人发送器，随 #38 提供；本票端点形状不变，该类型测试发送以 502 记录明确的失败原因，不静默成功。② `payload` 构造只移植了测试发送所需的 low-balance 分支；`payload.test.ts`（27 例）与 `dispatcher.test.ts`（36 例）行仍归 #39，本票未关闭。③ 旧 `toLocaleString("zh-CN")` 的本地化依赖运行时 ICU，新栈用 `2006/1/2 15:04:05`（服务器本地时区）近似；精确字节语义留给 #39 的 payload 对账钉住。④ feishu-app 的 appSecret 守卫逐字移植了旧 handler 的兜底行为（显式清空若已有存量值则先通过），未按注释意图「修正」。
 
 ## → solid（web/）
 
