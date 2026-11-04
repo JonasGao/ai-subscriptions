@@ -1,4 +1,5 @@
 import { createSignal, For, onMount, Show, type Component } from "solid-js";
+import { createStore, reconcile } from "solid-js/store";
 import { useNavigate } from "@solidjs/router";
 import { useAuth } from "../auth/AuthProvider";
 import { SubscriptionCard } from "../components/SubscriptionCard";
@@ -32,7 +33,10 @@ export const SubscriptionsPage: Component = () => {
   const auth = useAuth();
   const navigate = useNavigate();
 
-  const [subscriptions, setSubscriptions] = createSignal<Subscription[]>([]);
+  // A store (not a signal) keeps list updates identity-stable: reconcile
+  // merges by id in place, so replacing a subscription never remounts its card
+  // and re-fires the mount query (#34). A plain signal array would.
+  const [subscriptions, setSubscriptions] = createStore<Subscription[]>([]);
   const [categories, setCategories] = createSignal<string[]>([]);
   const [tags, setTags] = createSignal<Tag[]>([]);
   const [providers, setProviders] = createSignal<Provider[]>([]);
@@ -54,7 +58,7 @@ export const SubscriptionsPage: Component = () => {
         fetchTags(),
         fetchProviders().catch(() => [] as Provider[]),
       ]);
-      setSubscriptions(subs);
+      setSubscriptions(reconcile(subs, { key: "id" }));
       setCategories(cats);
       setTags(catalog);
       setProviders(providerCatalog);
@@ -77,7 +81,7 @@ export const SubscriptionsPage: Component = () => {
   };
 
   const visibleSubscriptions = () =>
-    subscriptions().filter(
+    subscriptions.filter(
       (subscription) =>
         selectedCategory() === "all" ||
         subscription.category === selectedCategory()
@@ -103,12 +107,15 @@ export const SubscriptionsPage: Component = () => {
     try {
       if (editing()) {
         const updated = await updateSubscription(editing()!.id, data);
-        setSubscriptions((previous) =>
-          previous.map((item) => (item.id === updated.id ? updated : item))
+        setSubscriptions(
+          reconcile(
+            subscriptions.map((item) => (item.id === updated.id ? updated : item)),
+            { key: "id" }
+          )
         );
       } else {
         const created = await createSubscription(data);
-        setSubscriptions((previous) => [...previous, created]);
+        setSubscriptions(reconcile([...subscriptions, created], { key: "id" }));
         if (!categories().includes(created.category)) {
           setCategories((previous) => [...previous, created.category]);
         }
@@ -127,29 +134,40 @@ export const SubscriptionsPage: Component = () => {
     id: string,
     status: "active" | "paused"
   ) => {
-    const original = subscriptions().find((item) => item.id === id);
+    const original = subscriptions.find((item) => item.id === id);
     if (!original) return;
 
-    setSubscriptions((previous) =>
-      previous.map((item) => (item.id === id ? { ...item, status } : item))
+    setSubscriptions(
+      reconcile(
+        subscriptions.map((item) => (item.id === id ? { ...item, status } : item)),
+        { key: "id" }
+      )
     );
 
     try {
       await updateSubscription(id, { status });
     } catch {
-      setSubscriptions((previous) =>
-        previous.map((item) => (item.id === id ? original : item))
+      setSubscriptions(
+        reconcile(
+          subscriptions.map((item) => (item.id === id ? original : item)),
+          { key: "id" }
+        )
       );
       setErrorMessage("状态切换失败，请重试");
     }
   };
 
-  // NOTE: the balance/usage echo updates are deliberately not wired into this
-  // list yet. Solid's <For> keys by object identity, so replacing the echoed
-  // subscription would remount that card and re-run its mount query. The card
-  // already displays the fresh balance from its own query result, and the
-  // server persists the write-back; the list-level echo (calibrated schedules)
-  // lands with #34 together with a remount-safe list update.
+  // Server-calibrated subscription echoed back by the usage query route
+  // (ADR-0016, #34): merge it into the list in place so the card and its edit
+  // form show the calibrated schedule without a refetch or a card remount.
+  const handleSubscriptionUpdate = (updated: Subscription) => {
+    setSubscriptions(
+      reconcile(
+        subscriptions.map((item) => (item.id === updated.id ? updated : item)),
+        { key: "id" }
+      )
+    );
+  };
 
   const handleScheduleToggle = async (
     id: string,
@@ -158,8 +176,11 @@ export const SubscriptionsPage: Component = () => {
   ) => {
     try {
       const updated = await toggleScheduleExhausted(id, scheduleId, exhausted);
-      setSubscriptions((previous) =>
-        previous.map((item) => (item.id === updated.id ? updated : item))
+      setSubscriptions(
+        reconcile(
+          subscriptions.map((item) => (item.id === updated.id ? updated : item)),
+          { key: "id" }
+        )
       );
     } catch {
       setErrorMessage("重置计划切换失败，请重试");
@@ -169,7 +190,12 @@ export const SubscriptionsPage: Component = () => {
   const handleDelete = async (id: string) => {
     try {
       await deleteSubscription(id);
-      setSubscriptions((previous) => previous.filter((item) => item.id !== id));
+      setSubscriptions(
+        reconcile(
+          subscriptions.filter((item) => item.id !== id),
+          { key: "id" }
+        )
+      );
     } catch {
       setErrorMessage("删除订阅失败，请重试");
     }
@@ -233,6 +259,7 @@ export const SubscriptionsPage: Component = () => {
                   onEdit={openEdit}
                   onDelete={handleDelete}
                   onStatusChange={handleStatusChange}
+                  onSubscriptionUpdate={handleSubscriptionUpdate}
                   onScheduleToggle={handleScheduleToggle}
                 />
               )}
@@ -246,7 +273,7 @@ export const SubscriptionsPage: Component = () => {
         <PriorityScenes
           client={priorityScenes}
           orderOf={(scene) => scene.subscriptionOrder}
-          items={subscriptions().map((subscription) => ({
+          items={subscriptions.map((subscription) => ({
             id: subscription.id,
             name: subscription.name,
           }))}
@@ -255,7 +282,7 @@ export const SubscriptionsPage: Component = () => {
           renderList={(order, onRemove) => (
             <SortablePriorityList
               subscriptionOrder={order}
-              subscriptions={subscriptions()}
+              subscriptions={subscriptions}
               onRemove={onRemove}
             />
           )}

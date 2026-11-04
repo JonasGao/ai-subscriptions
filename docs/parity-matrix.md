@@ -15,7 +15,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | dispatcher.test.ts                |   36 | notifications 调度器           | ☑    |
 | utils.test.ts                     |   34 | 领域工具                       | ◑    |
 | provider-plans.test.ts            |   29 | providers 注册表               | ☑    |
-| reset-alignment.test.ts           |   27 | 重置对齐/校准                  | ☐    |
+| reset-alignment.test.ts           |   27 | 重置对齐/校准                  | ☑    |
 | payload.test.ts                   |   27 | 飞书消息构造                   | ☑    |
 | models-resolver.test.ts           |   26 | 模型查询解析                   | ☑    |
 | alibaba-tokenplan.test.ts         |   26 | provider: alibaba（ACS3 签名） | ☑    |
@@ -244,76 +244,76 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 
 `dispatcher.test.ts`（36 例）→ `server/internal/notify/dispatcher_test.go`（36 例逐条对应，另有 2 例矩阵外补强）：
 
-| 旧 describe                  | 旧用例（逐字）                                                              | 例数 | Go 测试                                                                 |
-| ---------------------------- | --------------------------------------------------------------------------- | ---: | ----------------------------------------------------------------------- |
-| resolveThreshold             | uses subscription-level threshold when set                                  |    1 | `TestResolveThresholdUsesSubscriptionThreshold`                         |
-| resolveThreshold             | falls back to global default when unset                                     |    1 | `TestResolveThresholdFallsBackToGlobal`                                 |
-| evaluateLowBalanceTransition | does NOT fire on first observation even when balance below threshold        |    1 | `TestEvaluateLowBalanceTransitionDoesNotFireOnFirstObservationBelow`    |
-| evaluateLowBalanceTransition | does NOT fire on first observation when balance above threshold             |    1 | `TestEvaluateLowBalanceTransitionDoesNotFireOnFirstObservationAbove`    |
-| evaluateLowBalanceTransition | does NOT fire when already below and still below                            |    1 | `TestEvaluateLowBalanceTransitionDoesNotFireWhenStillBelow`             |
-| evaluateLowBalanceTransition | FIRES when transition from above to below                                   |    1 | `TestEvaluateLowBalanceTransitionFiresOnAboveToBelow`                   |
-| evaluateLowBalanceTransition | does NOT fire when still above                                              |    1 | `TestEvaluateLowBalanceTransitionDoesNotFireWhenStillAbove`             |
-| evaluateLowBalanceTransition | re-arms after balance goes back above then below                            |    1 | `TestEvaluateLowBalanceTransitionRearmsAfterRecovery`                   |
-| detectLowBalanceEvents       | skips recurring subscriptions                                               |    1 | `TestDetectLowBalanceEventsSkipsRecurring`                              |
-| detectLowBalanceEvents       | skips cancelled subscriptions                                               |    1 | `TestDetectLowBalanceEventsSkipsCancelled`                              |
-| detectLowBalanceEvents       | skips subscriptions without balance                                         |    1 | `TestDetectLowBalanceEventsSkipsWithoutBalance`                         |
-| detectLowBalanceEvents       | first observation: records state but does NOT emit event                    |    1 | `TestDetectLowBalanceEventsRecordsFirstObservationWithoutEvent`         |
-| detectLowBalanceEvents       | second tick: still below but already notified, does not emit                |    1 | `TestDetectLowBalanceEventsDoesNotRepeatWhileBelow`                     |
-| detectLowBalanceEvents       | third tick after above-to-below crossing: emits event                       |    1 | `TestDetectLowBalanceEventsEmitsOnAboveToBelowCrossing`                 |
-| detectLowBalanceEvents       | uses per-subscription threshold over global default                         |    1 | `TestDetectLowBalanceEventsUsesSubscriptionThreshold`                   |
-| dispatchEvent                | sends to all enabled channels                                               |    1 | `TestDispatchEventSendsToAllEnabledChannels`                            |
-| dispatchEvent                | skips disabled channels                                                     |    1 | `TestDispatchEventSkipsDisabledChannels`                                |
-| dispatchEvent                | single channel failure does not abort other channels                        |    1 | `TestDispatchEventContinuesAfterSingleChannelFailure`                   |
-| rollbackTransition           | sets transition state back to above                                         |    1 | `TestRollbackTransitionSetsAbove`                                       |
-| runNotificationTick          | no-ops when no channels configured                                          |    1 | `TestRunNotificationTickNoOpsWithoutChannels`                           |
-| runNotificationTick          | dispatches low-balance event to configured channel                          |    1 | `TestRunNotificationTickDispatchesLowBalanceEvent`                      |
-| runNotificationTick          | rolls back transition when all channels fail                                |    1 | `TestRunNotificationTickRollsBackWhenAllChannelsFail`                   |
-| runNotificationTick          | persists below when at least one channel succeeds                           |    1 | `TestRunNotificationTickPersistsBelowWhenOneChannelSucceeds`            |
-| detectResetEvents            | emits one event per trigger, resolving subscription by id                   |    1 | `TestDetectResetEventsEmitsOnePerTrigger`                               |
-| detectResetEvents            | emits multiple events for multiple triggers                                 |    1 | `TestDetectResetEventsEmitsMultiple`                                    |
-| detectResetEvents            | silently skips triggers whose subscription no longer exists                 |    1 | `TestDetectResetEventsSkipsMissingSubscription`                         |
-| detectResetEvents            | returns empty when no triggers                                              |    1 | `TestDetectResetEventsEmptyWithoutTriggers`                             |
-| reset event dispatch         | fake sender receives reset payload for each trigger                         |    1 | `TestRunNotificationTickDispatchesResetPayload`                         |
-| reset event dispatch         | no triggers produces no reset notifications                                 |    1 | `TestRunNotificationTickNoResetWithoutTriggers`                         |
-| reset event dispatch         | reset events dispatch to all enabled channels                               |    1 | `TestRunNotificationTickResetFansOutToEnabledChannels`                  |
-| reset event dispatch         | disabled channels do not receive reset notifications                        |    1 | `TestRunNotificationTickResetSkipsDisabledChannels`                     |
-| reset event dispatch         | does not dedupe: same trigger fires every tick                              |    1 | `TestRunNotificationTickDoesNotDedupeResetTriggers`                     |
-| three-channel fanout         | fans out a low-balance event to dingtalk+feishu+webhook with correct shapes |    1 | `TestRunNotificationTickFansOutLowBalanceToThreeChannels`               |
-| three-channel fanout         | fans out a reset event to dingtalk+feishu+webhook                           |    1 | `TestRunNotificationTickFansOutResetToThreeChannels`                    |
-| three-channel fanout         | single-channel failure does not affect the other two                        |    1 | `TestDispatchEventThreeChannelPartialFailure`                           |
-| three-channel fanout         | records lastSendResult for every channel type on success                    |    1 | `TestDispatchEventRecordsLastSendResultPerChannel`                      |
+| 旧 describe                  | 旧用例（逐字）                                                              | 例数 | Go 测试                                                              |
+| ---------------------------- | --------------------------------------------------------------------------- | ---: | -------------------------------------------------------------------- |
+| resolveThreshold             | uses subscription-level threshold when set                                  |    1 | `TestResolveThresholdUsesSubscriptionThreshold`                      |
+| resolveThreshold             | falls back to global default when unset                                     |    1 | `TestResolveThresholdFallsBackToGlobal`                              |
+| evaluateLowBalanceTransition | does NOT fire on first observation even when balance below threshold        |    1 | `TestEvaluateLowBalanceTransitionDoesNotFireOnFirstObservationBelow` |
+| evaluateLowBalanceTransition | does NOT fire on first observation when balance above threshold             |    1 | `TestEvaluateLowBalanceTransitionDoesNotFireOnFirstObservationAbove` |
+| evaluateLowBalanceTransition | does NOT fire when already below and still below                            |    1 | `TestEvaluateLowBalanceTransitionDoesNotFireWhenStillBelow`          |
+| evaluateLowBalanceTransition | FIRES when transition from above to below                                   |    1 | `TestEvaluateLowBalanceTransitionFiresOnAboveToBelow`                |
+| evaluateLowBalanceTransition | does NOT fire when still above                                              |    1 | `TestEvaluateLowBalanceTransitionDoesNotFireWhenStillAbove`          |
+| evaluateLowBalanceTransition | re-arms after balance goes back above then below                            |    1 | `TestEvaluateLowBalanceTransitionRearmsAfterRecovery`                |
+| detectLowBalanceEvents       | skips recurring subscriptions                                               |    1 | `TestDetectLowBalanceEventsSkipsRecurring`                           |
+| detectLowBalanceEvents       | skips cancelled subscriptions                                               |    1 | `TestDetectLowBalanceEventsSkipsCancelled`                           |
+| detectLowBalanceEvents       | skips subscriptions without balance                                         |    1 | `TestDetectLowBalanceEventsSkipsWithoutBalance`                      |
+| detectLowBalanceEvents       | first observation: records state but does NOT emit event                    |    1 | `TestDetectLowBalanceEventsRecordsFirstObservationWithoutEvent`      |
+| detectLowBalanceEvents       | second tick: still below but already notified, does not emit                |    1 | `TestDetectLowBalanceEventsDoesNotRepeatWhileBelow`                  |
+| detectLowBalanceEvents       | third tick after above-to-below crossing: emits event                       |    1 | `TestDetectLowBalanceEventsEmitsOnAboveToBelowCrossing`              |
+| detectLowBalanceEvents       | uses per-subscription threshold over global default                         |    1 | `TestDetectLowBalanceEventsUsesSubscriptionThreshold`                |
+| dispatchEvent                | sends to all enabled channels                                               |    1 | `TestDispatchEventSendsToAllEnabledChannels`                         |
+| dispatchEvent                | skips disabled channels                                                     |    1 | `TestDispatchEventSkipsDisabledChannels`                             |
+| dispatchEvent                | single channel failure does not abort other channels                        |    1 | `TestDispatchEventContinuesAfterSingleChannelFailure`                |
+| rollbackTransition           | sets transition state back to above                                         |    1 | `TestRollbackTransitionSetsAbove`                                    |
+| runNotificationTick          | no-ops when no channels configured                                          |    1 | `TestRunNotificationTickNoOpsWithoutChannels`                        |
+| runNotificationTick          | dispatches low-balance event to configured channel                          |    1 | `TestRunNotificationTickDispatchesLowBalanceEvent`                   |
+| runNotificationTick          | rolls back transition when all channels fail                                |    1 | `TestRunNotificationTickRollsBackWhenAllChannelsFail`                |
+| runNotificationTick          | persists below when at least one channel succeeds                           |    1 | `TestRunNotificationTickPersistsBelowWhenOneChannelSucceeds`         |
+| detectResetEvents            | emits one event per trigger, resolving subscription by id                   |    1 | `TestDetectResetEventsEmitsOnePerTrigger`                            |
+| detectResetEvents            | emits multiple events for multiple triggers                                 |    1 | `TestDetectResetEventsEmitsMultiple`                                 |
+| detectResetEvents            | silently skips triggers whose subscription no longer exists                 |    1 | `TestDetectResetEventsSkipsMissingSubscription`                      |
+| detectResetEvents            | returns empty when no triggers                                              |    1 | `TestDetectResetEventsEmptyWithoutTriggers`                          |
+| reset event dispatch         | fake sender receives reset payload for each trigger                         |    1 | `TestRunNotificationTickDispatchesResetPayload`                      |
+| reset event dispatch         | no triggers produces no reset notifications                                 |    1 | `TestRunNotificationTickNoResetWithoutTriggers`                      |
+| reset event dispatch         | reset events dispatch to all enabled channels                               |    1 | `TestRunNotificationTickResetFansOutToEnabledChannels`               |
+| reset event dispatch         | disabled channels do not receive reset notifications                        |    1 | `TestRunNotificationTickResetSkipsDisabledChannels`                  |
+| reset event dispatch         | does not dedupe: same trigger fires every tick                              |    1 | `TestRunNotificationTickDoesNotDedupeResetTriggers`                  |
+| three-channel fanout         | fans out a low-balance event to dingtalk+feishu+webhook with correct shapes |    1 | `TestRunNotificationTickFansOutLowBalanceToThreeChannels`            |
+| three-channel fanout         | fans out a reset event to dingtalk+feishu+webhook                           |    1 | `TestRunNotificationTickFansOutResetToThreeChannels`                 |
+| three-channel fanout         | single-channel failure does not affect the other two                        |    1 | `TestDispatchEventThreeChannelPartialFailure`                        |
+| three-channel fanout         | records lastSendResult for every channel type on success                    |    1 | `TestDispatchEventRecordsLastSendResultPerChannel`                   |
 
 `payload.test.ts`（27 例）→ `server/internal/notify/payload_test.go`（27 例逐条对应）：
 
-| 旧 describe                  | 旧用例（逐字）                                                      | 例数 | Go 测试                                                       |
-| ---------------------------- | ------------------------------------------------------------------- | ---: | ------------------------------------------------------------- |
-| buildLowBalanceMarkdown      | weaves keyword into title when includeKeyword is true               |    1 | `TestBuildLowBalanceMarkdownWeavesKeywordIntoTitle`           |
-| buildLowBalanceMarkdown      | omits keyword from title when includeKeyword is false               |    1 | `TestBuildLowBalanceMarkdownOmitsKeywordFromTitle`            |
-| buildLowBalanceMarkdown      | renders the event's triggeredAt in the time footer                  |    1 | `TestBuildLowBalanceMarkdownRendersTriggeredAt`               |
-| buildDingtalkPayload         | returns msgtype=markdown with title and body                        |    1 | `TestBuildDingtalkPayloadRendersMarkdown`                     |
-| buildDingtalkUrl             | returns raw URL when no secret                                      |    1 | `TestBuildDingtalkURLReturnsRawURLWithoutSecret`              |
-| buildDingtalkUrl             | appends timestamp+sign query params when secret present             |    1 | `TestBuildDingtalkURLAppendsSignedQueryWithSecret`            |
-| prepareSend                  | throws for disabled channels                                        |    1 | `TestPrepareSendRejectsDisabledChannel`                       |
-| prepareSend                  | includes keyword in DingTalk payload only when channel has no secret|    1 | `TestPrepareSendKeywordsDingtalkOnlyWithoutSecret`            |
-| prepareSend                  | returns JSON body with Content-Type header                          |    1 | `TestPrepareSendReturnsJSONBodyWithContentType`               |
-| prepareSend                  | prepares a Feishu interactive-card payload with JSON content-type   |    1 | `TestPrepareSendPreparesFeishuCard`                           |
-| prepareSend                  | prepares a Feishu payload with timestamp+sign when secret present   |    1 | `TestPrepareSendSignsFeishuPayloadWithSecret`                 |
-| prepareSend                  | prepares a webhook JSON payload with event metadata                 |    1 | `TestPrepareSendPreparesWebhookPayload`                       |
-| formatScheduleType           | maps fiveHour/weekly/monthly to Chinese labels                      |    1 | `TestFormatScheduleTypeMapsLabels`                            |
-| buildResetMarkdown           | includes subscription name, schedule type, and next reset time      |    1 | `TestBuildResetMarkdownIncludesFields`                        |
-| buildResetMarkdown           | weaves keyword into title when includeKeyword is true               |    1 | `TestBuildResetMarkdownWeavesKeyword`                         |
-| buildResetMarkdown           | omits keyword when includeKeyword is false                          |    1 | `TestBuildResetMarkdownOmitsKeyword`                          |
-| buildEventMarkdown           | dispatches to low-balance markdown with event's triggeredAt         |    1 | `TestBuildEventMarkdownDispatchesLowBalance`                  |
-| buildEventMarkdown           | dispatches to reset markdown with event's triggeredAt               |    1 | `TestBuildEventMarkdownDispatchesReset`                       |
-| buildDingtalkPayload (reset) | returns a markdown payload for a reset event                        |    1 | `TestBuildDingtalkPayloadRendersReset`                        |
-| prepareSend (reset)          | prepares a DingTalk reset payload with JSON content-type            |    1 | `TestPrepareSendPreparesDingtalkReset`                        |
-| buildFeishuPayload           | builds an interactive card with markdown element                    |    1 | `TestBuildFeishuPayloadBuildsCard`                            |
-| buildFeishuPayload           | omits timestamp/sign when channel has no secret                     |    1 | `TestBuildFeishuPayloadOmitsSignatureWithoutSecret`           |
-| buildFeishuPayload           | includes timestamp+sign when channel has a secret                   |    1 | `TestBuildFeishuPayloadSignsWithSecret`                       |
-| buildFeishuPayload           | renders reset events with schedule type in markdown body            |    1 | `TestBuildFeishuPayloadRendersReset`                          |
-| buildFeishuPayload           | keyword is present only when channel has no secret                  |    1 | `TestBuildFeishuPayloadKeywordsOnlyWithoutSecret`             |
-| buildWebhookPayload          | includes event discriminator and subscription metadata              |    1 | `TestBuildWebhookPayloadIncludesEventAndMetadata`             |
-| buildWebhookPayload          | includes schedule fields and omits balance fields for reset events  |    1 | `TestBuildWebhookPayloadIncludesScheduleFieldsForReset`       |
+| 旧 describe                  | 旧用例（逐字）                                                       | 例数 | Go 测试                                                 |
+| ---------------------------- | -------------------------------------------------------------------- | ---: | ------------------------------------------------------- |
+| buildLowBalanceMarkdown      | weaves keyword into title when includeKeyword is true                |    1 | `TestBuildLowBalanceMarkdownWeavesKeywordIntoTitle`     |
+| buildLowBalanceMarkdown      | omits keyword from title when includeKeyword is false                |    1 | `TestBuildLowBalanceMarkdownOmitsKeywordFromTitle`      |
+| buildLowBalanceMarkdown      | renders the event's triggeredAt in the time footer                   |    1 | `TestBuildLowBalanceMarkdownRendersTriggeredAt`         |
+| buildDingtalkPayload         | returns msgtype=markdown with title and body                         |    1 | `TestBuildDingtalkPayloadRendersMarkdown`               |
+| buildDingtalkUrl             | returns raw URL when no secret                                       |    1 | `TestBuildDingtalkURLReturnsRawURLWithoutSecret`        |
+| buildDingtalkUrl             | appends timestamp+sign query params when secret present              |    1 | `TestBuildDingtalkURLAppendsSignedQueryWithSecret`      |
+| prepareSend                  | throws for disabled channels                                         |    1 | `TestPrepareSendRejectsDisabledChannel`                 |
+| prepareSend                  | includes keyword in DingTalk payload only when channel has no secret |    1 | `TestPrepareSendKeywordsDingtalkOnlyWithoutSecret`      |
+| prepareSend                  | returns JSON body with Content-Type header                           |    1 | `TestPrepareSendReturnsJSONBodyWithContentType`         |
+| prepareSend                  | prepares a Feishu interactive-card payload with JSON content-type    |    1 | `TestPrepareSendPreparesFeishuCard`                     |
+| prepareSend                  | prepares a Feishu payload with timestamp+sign when secret present    |    1 | `TestPrepareSendSignsFeishuPayloadWithSecret`           |
+| prepareSend                  | prepares a webhook JSON payload with event metadata                  |    1 | `TestPrepareSendPreparesWebhookPayload`                 |
+| formatScheduleType           | maps fiveHour/weekly/monthly to Chinese labels                       |    1 | `TestFormatScheduleTypeMapsLabels`                      |
+| buildResetMarkdown           | includes subscription name, schedule type, and next reset time       |    1 | `TestBuildResetMarkdownIncludesFields`                  |
+| buildResetMarkdown           | weaves keyword into title when includeKeyword is true                |    1 | `TestBuildResetMarkdownWeavesKeyword`                   |
+| buildResetMarkdown           | omits keyword when includeKeyword is false                           |    1 | `TestBuildResetMarkdownOmitsKeyword`                    |
+| buildEventMarkdown           | dispatches to low-balance markdown with event's triggeredAt          |    1 | `TestBuildEventMarkdownDispatchesLowBalance`            |
+| buildEventMarkdown           | dispatches to reset markdown with event's triggeredAt                |    1 | `TestBuildEventMarkdownDispatchesReset`                 |
+| buildDingtalkPayload (reset) | returns a markdown payload for a reset event                         |    1 | `TestBuildDingtalkPayloadRendersReset`                  |
+| prepareSend (reset)          | prepares a DingTalk reset payload with JSON content-type             |    1 | `TestPrepareSendPreparesDingtalkReset`                  |
+| buildFeishuPayload           | builds an interactive card with markdown element                     |    1 | `TestBuildFeishuPayloadBuildsCard`                      |
+| buildFeishuPayload           | omits timestamp/sign when channel has no secret                      |    1 | `TestBuildFeishuPayloadOmitsSignatureWithoutSecret`     |
+| buildFeishuPayload           | includes timestamp+sign when channel has a secret                    |    1 | `TestBuildFeishuPayloadSignsWithSecret`                 |
+| buildFeishuPayload           | renders reset events with schedule type in markdown body             |    1 | `TestBuildFeishuPayloadRendersReset`                    |
+| buildFeishuPayload           | keyword is present only when channel has no secret                   |    1 | `TestBuildFeishuPayloadKeywordsOnlyWithoutSecret`       |
+| buildWebhookPayload          | includes event discriminator and subscription metadata               |    1 | `TestBuildWebhookPayloadIncludesEventAndMetadata`       |
+| buildWebhookPayload          | includes schedule fields and omits balance fields for reset events   |    1 | `TestBuildWebhookPayloadIncludesScheduleFieldsForReset` |
 
 偏差与边界：① 旧 `dispatcher` 用 `vi.mock` 替换 storage 模块，新栈把同一接缝收窄为 `notify.Store`（`TransitionStore` + `ChannelStore`），测试用 `fakeStore` 控制状态；发送器与时钟同为注入缝（`Sender` / `FeishuAppSender` / `Dispatcher.Now`），所以每条旧用例仍是同一接缝上的行为断言。② 旧 `toLocaleString("zh-CN")` 依赖运行时 ICU；新栈 `formatLocalTime` 用 `2006/1/2 15:04:05`（服务器本地时区）近似，测试按旧用例只断言日期/时间分量，不钉死分隔符。③ `WebhookPayload` 按事件类型分流：low-balance 带 `balance`/`threshold`，reset 带 `scheduleType`/`nextResetTime`，另一类的字段在 JSON 中缺席（旧 `payload.test.ts` 末尾两例钉住）。④ 代理订阅到期提醒在旧栈仅是页面提示（`getProxyDateNotice` → 新栈 `internal/proxy.DateNoticeFor`，仅 `in-use` 参与，ADR-0009），旧 `dispatcher`/`payload` 没有该事件类型；本票按「不发明新行为」不新增事件，相关 5 例已由代理票闭合。⑤ 矩阵外补强 2 例：`TestDispatchEventRoutesFeishuAppToAppSender`（feishu-app 渠道走应用机器人发送器，钉住旧 `dispatchEvent` 的路由分支）与 `TestResetEventReachesFeishuWebhookEndToEnd`（真实 `HTTPSender` 投递重置事件到 Feishu webhook，演示「重置事件触达飞书」）。⑥ `cmd/server` 的 5 分钟 tick 在 `ProcessResetTick` 之后调用 `RunNotificationTick`；重置阶段失败不再阻断通知阶段（对应旧 `scheduler.ts` 的分段 try/catch）。
 
@@ -525,17 +525,17 @@ equity、回写 subscription echo，覆盖浏览器演示路径。
 
 `zhipu.test.ts`（22 例）→ `server/internal/providers/zhipu_test.go`（子测试名逐字沿用旧用例名）：
 
-| 旧 describe         | 例数 | Go 测试                 |
-| ------------------- | ---: | ----------------------- |
-| fetchZhipuUsage     |   12 | `TestFetchZhipuUsage`   |
+| 旧 describe         | 例数 | Go 测试                    |
+| ------------------- | ---: | -------------------------- |
+| fetchZhipuUsage     |   12 | `TestFetchZhipuUsage`      |
 | testZhipuConnection |   10 | `TestZhipuConnectionProbe` |
 
 `opencode.test.ts`（23 例）→ `server/internal/providers/opencode_test.go`：
 
-| 旧 describe             | 例数 | Go 测试                     |
-| ----------------------- | ---: | --------------------------- |
-| fetchOpencodeGoUsage    |   15 | `TestFetchOpencodeGoUsage`  |
-| testOpencodeConnection  |    8 | `TestOpencodeConnectionProbe` |
+| 旧 describe            | 例数 | Go 测试                       |
+| ---------------------- | ---: | ----------------------------- |
+| fetchOpencodeGoUsage   |   15 | `TestFetchOpencodeGoUsage`    |
+| testOpencodeConnection |    8 | `TestOpencodeConnectionProbe` |
 
 窗口口径解码边例均逐条移植：zhipu 的未知 type/unit 行降级为 `warnings`、同桶冲突取
 更高 `usage`、`nextResetTime` 缺失时 `resetTime=null`、`currentValue===usage` 的用尽态；
@@ -652,7 +652,7 @@ opencode 的 `rate-limited` 强制 100（保留 >100 的超额）、缺失 `perc
 | auto-exhaust.test.tsx               |   10 | 自动用尽标记（卡片侧） | ☑    |
 | TagInput.test.tsx                   |    6 | 标签输入               | ☑    |
 | useNow.test.ts                      |    5 | 时间信号原语           | ☑    |
-| query-calibration-callback.test.tsx |    2 | 校准回调局部更新       | ☐    |
+| query-calibration-callback.test.tsx |    2 | 校准回调局部更新       | ☑    |
 | ProxySubscriptionTab.test.tsx       |    1 | 代理订阅页签           | ☑    |
 | MainPageShell.test.tsx              |    1 | 主页骨架               | ☐    |
 
@@ -734,3 +734,22 @@ opencode 的 `rate-limited` 强制 100（保留 >100 的超额）、缺失 `perc
 | `deploycontract` `TestRootMakefileKeepsCommandFamily` / `TestDockerMakefileBuildsNewStackImage` | make 命令族不变、镜像标签与 `--project-directory`、构建参数透传                                                  |
 | `deploycontract` `TestSystemdServiceRunsSingleBinary` / `TestSystemdReadmeDocumentsInstallPath` | unit 只 exec 单二进制、安装路径文档化                                                                            |
 | `healthcheck` `TestProbeAcceptsHealthyServer` 等 7 例                                           | distroless 内健康探测语义：2xx 才健康、非 2xx/不可达/PORT 非法均非 0                                             |
+
+### 已闭合文件的用例级对账（#34）
+
+`reset-alignment.test.ts`（27 例）→ Go：
+
+| 旧 describe                    | 例数 | Go 测试                                                                                                                                         |
+| ------------------------------ | ---: | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| alignResetTimes                |   24 | `server/internal/calibration/calibration_test.go`（逐例 `TestAlignResetTimes*`，旧用例名/断言语义一一对应；另加 1 例默认 fetcher 上游错误分支） |
+| calibrateSubscriptionFromUsage |    3 | `server/internal/store/calibration_test.go`（`TestCalibrateSubscriptionFromUsage*`）                                                            |
+
+`query-calibration-callback.test.tsx`（2 例）→ `web/src/components/SubscriptionCard.query-calibration.test.tsx`（同名 describe，逐例沿用旧用例名）。
+列表回显另由 `web/src/pages/SubscriptionsPage.calibration.test.tsx` 锁定：校准后的订阅原地合并进列表（卡片不重建、挂载查询只发一次），编辑表单立即显示反推后的 `dayOfMonth`/`timeOfDay`。
+
+#34 偏差与说明：
+
+- **存储 seam**：旧用例 mock `lib/db`/`lib/encryption`；新栈走真实 SQLite 存储与真实 cipher，调度路径的 provider 调用注入 `UsageFetcher` 接缝（默认实现解析 handler + 解密），守卫分支（无凭据/不可解析/非周期/解密失败/上游失败）由注入的 `HTTPDoer` 覆盖。
+- **写盘检测**：旧用例 `vi.spyOn(writeData)`；新栈以固定时钟下 `updatedAt` 是否变化判定「值无变化不写盘」。
+- **列表更新**：Solid `<For>` 按对象身份 keyed，旧 React 的「替换对象」会重建卡片并重跑挂载查询；`SubscriptionsPage` 改用 `createStore` + `reconcile({ key: "id" })` 原地合并，行为等价且无循环查询。
+- **monthly 月末漂移**：按 ADR-0016 接受（`dayOfMonth` 由 API 实例反推，29/30/31 号向月末 clamp 漂移不特殊处理）。
