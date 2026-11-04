@@ -729,6 +729,7 @@ opencode 的 `rate-limited` 强制 100（保留 >100 的超额）、缺失 `perc
 | 统计卡金额与计数（含空列表）      |    2 | `web/src/components/StatsCards.test.tsx`            |
 | 根路径重定向到 /subscriptions     |    1 | `web/src/routes.test.tsx`                           |
 | 列表页筛选恢复/持久化 + 统计/壳   |    2 | `web/src/pages/SubscriptionsPage.test.tsx`（#40 段） |
+| 暗色 ghost/danger 按钮级联特异度  |    3 | `web/src/styles.test.ts`                            |
 
 全站走查清单（问题与修复）见 [walkthrough.md](walkthrough.md)。
 

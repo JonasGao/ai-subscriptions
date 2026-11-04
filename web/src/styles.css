@@ -1682,6 +1682,9 @@ body {
   color: #18181b;
 }
 
+:root.dark .subscriptions-toolbar button.ghost,
+:root.dark .form-actions button.ghost,
+:root.dark .auth-form button.ghost,
 :root.dark .tools-header button.ghost,
 :root.dark .scene-create button.ghost,
 :root.dark .scene-actions button.ghost,
@@ -1690,6 +1693,9 @@ body {
   color: var(--fg);
 }
 
+:root.dark .subscriptions-toolbar button.danger,
+:root.dark .form-actions button.danger,
+:root.dark .auth-form button.danger,
 :root.dark .tools-header button.danger,
 :root.dark .scene-create button.danger,
 :root.dark .scene-actions button.danger,
