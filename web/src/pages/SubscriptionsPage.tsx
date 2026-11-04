@@ -1,6 +1,8 @@
 import { createSignal, For, onMount, Show, type Component } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { useAuth } from "../auth/AuthProvider";
+import { MainPageShell } from "../components/MainPageShell";
+import { StatsCards } from "../components/StatsCards";
 import { SubscriptionCard } from "../components/SubscriptionCard";
 import { SubscriptionForm } from "../components/SubscriptionForm";
 import { priorityScenes } from "../priorities/api";
@@ -20,8 +22,41 @@ import type {
   Provider,
   Subscription,
   SubscriptionFormData,
+  SubscriptionStatus,
   Tag,
 } from "../subscriptions/types";
+
+const SELECTED_CATEGORY_KEY = "selectedCategory";
+const SELECTED_STATUSES_KEY = "selectedStatuses";
+
+const STATUS_OPTIONS: Array<{ value: SubscriptionStatus; label: string }> = [
+  { value: "active", label: "活跃" },
+  { value: "paused", label: "暂停" },
+  { value: "cancelled", label: "已取消" },
+];
+
+/** readStoredFilter restores a filter exactly like the old list page did. */
+function readStoredCategory(): string {
+  try {
+    return window.localStorage?.getItem(SELECTED_CATEGORY_KEY) || "all";
+  } catch {
+    return "all";
+  }
+}
+
+function readStoredStatuses(): SubscriptionStatus[] {
+  try {
+    const raw = window.localStorage?.getItem(SELECTED_STATUSES_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((value): value is SubscriptionStatus =>
+      STATUS_OPTIONS.some((option) => option.value === value)
+    );
+  } catch {
+    return [];
+  }
+}
 
 /**
  * SubscriptionsPage is the real list page: it renders the API's subscriptions
@@ -40,7 +75,12 @@ export const SubscriptionsPage: Component = () => {
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null);
   const [formOpen, setFormOpen] = createSignal(false);
   const [editing, setEditing] = createSignal<Subscription | null>(null);
-  const [selectedCategory, setSelectedCategory] = createSignal("all");
+  const [selectedCategory, setSelectedCategory] = createSignal(
+    readStoredCategory()
+  );
+  const [selectedStatuses, setSelectedStatuses] = createSignal<
+    SubscriptionStatus[]
+  >(readStoredStatuses());
 
   const loadData = async () => {
     try {
@@ -77,11 +117,36 @@ export const SubscriptionsPage: Component = () => {
   };
 
   const visibleSubscriptions = () =>
-    subscriptions().filter(
-      (subscription) =>
+    subscriptions().filter((subscription) => {
+      const categoryMatch =
         selectedCategory() === "all" ||
-        subscription.category === selectedCategory()
-    );
+        subscription.category === selectedCategory();
+      const statusMatch =
+        selectedStatuses().length === 0 ||
+        selectedStatuses().includes(subscription.status);
+      return categoryMatch && statusMatch;
+    });
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    try {
+      window.localStorage?.setItem(SELECTED_CATEGORY_KEY, category);
+    } catch {
+      // Private mode / storage disabled: filtering still works for this visit.
+    }
+  };
+
+  const toggleStatus = (status: SubscriptionStatus) => {
+    const next = selectedStatuses().includes(status)
+      ? selectedStatuses().filter((value) => value !== status)
+      : [...selectedStatuses(), status];
+    setSelectedStatuses(next);
+    try {
+      window.localStorage?.setItem(SELECTED_STATUSES_KEY, JSON.stringify(next));
+    } catch {
+      // See handleCategoryChange.
+    }
+  };
 
   const handleLogout = async () => {
     await auth.logout();
@@ -176,103 +241,127 @@ export const SubscriptionsPage: Component = () => {
   };
 
   return (
-    <main class="subscriptions-page">
-      <header class="subscriptions-header">
-        <div>
-          <h1>AI订阅管理</h1>
+    <MainPageShell activePage="subscriptions">
+      <main class="subscriptions-page">
+        <header class="subscriptions-header">
           <p class="tagline">已登录：{auth.session()?.user.name ?? ""}</p>
-        </div>
-        <div class="subscriptions-toolbar">
-          <label class="category-filter">
-            <span>分类</span>
-            <select
-              value={selectedCategory()}
-              onChange={(event) =>
-                setSelectedCategory(event.currentTarget.value)
-              }
+          <div class="subscriptions-toolbar">
+            <button type="button" onClick={openCreate}>
+              添加订阅
+            </button>
+            <button type="button" class="ghost" onClick={handleLogout}>
+              退出登录
+            </button>
+          </div>
+        </header>
+
+        <Show when={errorMessage()}>
+          <div class="error-banner" role="alert">
+            <span>{errorMessage()}</span>
+            <button
+              type="button"
+              class="ghost"
+              aria-label="关闭错误提示"
+              onClick={() => setErrorMessage(null)}
             >
-              <option value="all">全部</option>
-              <For each={categories()}>
-                {(category) => <option value={category}>{category}</option>}
-              </For>
-            </select>
-          </label>
-          <button type="button" onClick={openCreate}>
-            添加订阅
-          </button>
-          <nav class="shell-nav">
-            <a href="/proxy-subscriptions">代理订阅</a>
-            <a href="/tools">工具</a>
-          </nav>
-          <button type="button" class="ghost" onClick={handleLogout}>
-            退出登录
-          </button>
-        </div>
-      </header>
-
-      <Show when={errorMessage()}>
-        <p class="form-error" role="alert">
-          {errorMessage()}
-        </p>
-      </Show>
-
-      <Show when={!loading()} fallback={<p class="loading">加载中...</p>}>
-        <Show
-          when={visibleSubscriptions().length > 0}
-          fallback={
-            <p class="empty-state">还没有订阅，点击「添加订阅」开始记录。</p>
-          }
-        >
-          <section class="subscription-list">
-            <For each={visibleSubscriptions()}>
-              {(subscription) => (
-                <SubscriptionCard
-                  subscription={subscription}
-                  tags={tags()}
-                  providers={providers()}
-                  onEdit={openEdit}
-                  onDelete={handleDelete}
-                  onStatusChange={handleStatusChange}
-                  onScheduleToggle={handleScheduleToggle}
-                />
-              )}
-            </For>
-          </section>
+              ×
+            </button>
+          </div>
         </Show>
-      </Show>
 
-      <section class="priority-section">
-        <h2>优先级管理</h2>
-        <PriorityScenes
-          client={priorityScenes}
-          orderOf={(scene) => scene.subscriptionOrder}
-          items={subscriptions().map((subscription) => ({
-            id: subscription.id,
-            name: subscription.name,
-          }))}
-          addLabel="订阅"
-          emptyLabel="该场景暂无订阅，请从下方列表添加"
-          renderList={(order, onRemove) => (
-            <SortablePriorityList
-              subscriptionOrder={order}
-              subscriptions={subscriptions()}
-              onRemove={onRemove}
-            />
-          )}
-        />
-      </section>
+        <Show when={!loading()} fallback={<p class="loading">加载中...</p>}>
+          <StatsCards subscriptions={visibleSubscriptions()} />
 
-      <Show when={formOpen()}>
-        <SubscriptionForm
-          open={formOpen()}
-          onOpenChange={setFormOpen}
-          subscription={editing()}
-          categories={categories()}
-          tags={tags()}
-          providers={providers()}
-          onSubmit={handleSubmit}
-        />
-      </Show>
-    </main>
+          <section class="filter-bar" aria-label="筛选">
+            <label class="category-filter">
+              <span>分类</span>
+              <select
+                aria-label="分类筛选"
+                value={selectedCategory()}
+                onChange={(event) =>
+                  handleCategoryChange(event.currentTarget.value)
+                }
+              >
+                <option value="all">全部分类</option>
+                <For each={categories()}>
+                  {(category) => <option value={category}>{category}</option>}
+                </For>
+              </select>
+            </label>
+            <fieldset class="status-filter">
+              <legend>状态筛选</legend>
+              <For each={STATUS_OPTIONS}>
+                {(option) => (
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={selectedStatuses().includes(option.value)}
+                      onChange={() => toggleStatus(option.value)}
+                    />
+                    {option.label}
+                  </label>
+                )}
+              </For>
+            </fieldset>
+          </section>
+
+          <Show
+            when={visibleSubscriptions().length > 0}
+            fallback={
+              <p class="empty-state">还没有订阅，点击「添加订阅」开始记录。</p>
+            }
+          >
+            <section class="subscription-list">
+              <For each={visibleSubscriptions()}>
+                {(subscription) => (
+                  <SubscriptionCard
+                    subscription={subscription}
+                    tags={tags()}
+                    providers={providers()}
+                    onEdit={openEdit}
+                    onDelete={handleDelete}
+                    onStatusChange={handleStatusChange}
+                    onScheduleToggle={handleScheduleToggle}
+                  />
+                )}
+              </For>
+            </section>
+          </Show>
+        </Show>
+
+        <section class="priority-section">
+          <h2>优先级管理</h2>
+          <PriorityScenes
+            client={priorityScenes}
+            orderOf={(scene) => scene.subscriptionOrder}
+            items={subscriptions().map((subscription) => ({
+              id: subscription.id,
+              name: subscription.name,
+            }))}
+            addLabel="订阅"
+            emptyLabel="该场景暂无订阅，请从下方列表添加"
+            renderList={(order, onRemove) => (
+              <SortablePriorityList
+                subscriptionOrder={order}
+                subscriptions={subscriptions()}
+                onRemove={onRemove}
+              />
+            )}
+          />
+        </section>
+
+        <Show when={formOpen()}>
+          <SubscriptionForm
+            open={formOpen()}
+            onOpenChange={setFormOpen}
+            subscription={editing()}
+            categories={categories()}
+            tags={tags()}
+            providers={providers()}
+            onSubmit={handleSubmit}
+          />
+        </Show>
+      </main>
+    </MainPageShell>
   );
 };

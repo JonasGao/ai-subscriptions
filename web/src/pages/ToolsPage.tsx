@@ -2,6 +2,7 @@
 // ported from app/tools/page.tsx + components/ToolTab.tsx.
 
 import { Show, createSignal, onMount, type Component } from "solid-js";
+import { MainPageShell } from "../components/MainPageShell";
 import { fetchCategories, fetchProviders } from "../subscriptions/api";
 import type { Provider } from "../subscriptions/types";
 import {
@@ -123,19 +124,14 @@ export const ToolsPage: Component = () => {
   };
 
   return (
-    <main class="tools-page">
-      <nav class="shell-nav">
-        <a href="/subscriptions">AI 订阅</a>
-        <a href="/proxy-subscriptions">代理订阅</a>
-        <a href="/tools">工具</a>
-      </nav>
-
-      <header class="tools-header">
-        <h1>工具管理</h1>
-        <button type="button" onClick={openCreate}>
-          添加工具
-        </button>
-      </header>
+    <MainPageShell activePage="tools">
+      <main class="tools-page">
+        <header class="tools-header">
+          <h2>工具管理</h2>
+          <button type="button" onClick={openCreate}>
+            添加工具
+          </button>
+        </header>
 
       <Show when={error()}>
         <p class="form-error" role="alert">
@@ -171,14 +167,15 @@ export const ToolsPage: Component = () => {
         />
       </section>
 
-      <ToolForm
-        open={formOpen()}
-        onOpenChange={setFormOpen}
-        tool={editing()}
-        categories={categories()}
-        providers={providers()}
-        onSubmit={handleSubmit}
-      />
-    </main>
+        <ToolForm
+          open={formOpen()}
+          onOpenChange={setFormOpen}
+          tool={editing()}
+          categories={categories()}
+          providers={providers()}
+          onSubmit={handleSubmit}
+        />
+      </main>
+    </MainPageShell>
   );
 };

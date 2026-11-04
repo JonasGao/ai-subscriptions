@@ -5,7 +5,6 @@ import { cleanup, fireEvent, screen, waitFor } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderAt, stubFetch } from "../test-utils";
 import type { Subscription } from "../subscriptions/types";
-
 const activeSession = {
   body: {
     user: {
@@ -162,5 +161,77 @@ describe("订阅列表页", () => {
     await waitFor(() =>
       expect(screen.queryByRole("heading", { name: "Kimi Code" })).toBeNull()
     );
+  });
+});
+
+describe("订阅列表页收尾（#40）", () => {
+  afterEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("restores and persists the category and status filters", async () => {
+    window.localStorage.setItem("selectedCategory", "中转站");
+    window.localStorage.setItem("selectedStatuses", JSON.stringify(["paused"]));
+    stubFetch(
+      baseStubs([
+        subscription({ id: "hidden-cat", name: "分类不符", category: "官方订阅" }),
+        subscription({ id: "hidden-status", name: "状态不符", category: "中转站" }),
+        subscription({
+          id: "shown",
+          name: "命中筛选",
+          category: "中转站",
+          status: "paused",
+        }),
+      ])
+    );
+
+    renderAt("/subscriptions");
+
+    expect(await screen.findByRole("heading", { name: "命中筛选" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "分类不符" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "状态不符" })).toBeNull();
+    expect(
+      (screen.getByLabelText("分类筛选") as HTMLSelectElement).value
+    ).toBe("中转站");
+    expect(
+      (screen.getByRole("checkbox", { name: "暂停" }) as HTMLInputElement).checked
+    ).toBe(true);
+
+    fireEvent.change(screen.getByLabelText("分类筛选"), {
+      target: { value: "all" },
+    });
+    expect(window.localStorage.getItem("selectedCategory")).toBe("all");
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "暂停" }));
+    expect(
+      JSON.parse(window.localStorage.getItem("selectedStatuses") ?? "null")
+    ).toEqual([]);
+  });
+
+  it("shows stats for the filtered set and the shared page shell", async () => {
+    stubFetch(
+      baseStubs([
+        subscription({ id: "m", name: "月度订阅", price: 20 }),
+        subscription({
+          id: "t",
+          name: "一次性订阅",
+          subscriptionType: "one-time",
+          price: 50,
+        }),
+      ])
+    );
+
+    renderAt("/subscriptions");
+
+    expect(await screen.findByRole("heading", { name: "月度订阅" })).toBeTruthy();
+    expect(screen.getByText("¥20.00/月")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "订阅" }).getAttribute("aria-current")).toBe(
+      "page"
+    );
+    expect(screen.getByText("月度总支出")).toBeTruthy();
+    expect(screen.getByText("¥20.00")).toBeTruthy();
+    expect(
+      screen.getByText("一次性充值").closest("article")?.textContent
+    ).toContain("¥50.00");
   });
 });

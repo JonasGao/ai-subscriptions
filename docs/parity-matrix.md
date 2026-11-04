@@ -261,15 +261,10 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 大小写不敏感搜索并复用精确名、Enter 创建与中英文逗号批量、待提交文本回调、表单保存未确认文本、
 超长标签跳过并提示）。React 的合成 `onChange` 对应 Solid 的 `onInput`，断言不变。
 
-`SubscriptionCard.test.tsx` 拆分（行内子表，本票只闭合渲染基线，余下随查询/调度/收尾票）：
-
-| 旧 describe           | 例数 | 去向                                                                    |
-| --------------------- | ---: | ----------------------------------------------------------------------- |
-| deletion confirmation |    2 | **#26** 闭合（`web/src/components/SubscriptionCard.test.tsx`）          |
-| tags                  |    1 | **#26** 闭合（标签按关联顺序渲染）                                      |
-| auto-query on mount   |    9 | **#28** 闭合（`SubscriptionCard.query.test.tsx`；自动用尽联动仍归 #29） |
-| quota query cooldown  |    5 | **#28** 闭合（`SubscriptionCard.query.test.tsx`）                       |
-| balance display       |    4 | **#28** 闭合（`SubscriptionCard.query.test.tsx`）                       |
+`SubscriptionCard.test.tsx` 行内子表已注销（#40）：旧文件按 `it.each` 展开 21 例，全部闭合——
+deletion confirmation（2）与 tags（1）在 `web/src/components/SubscriptionCard.test.tsx`（#26），
+auto-query on mount（9）、quota query cooldown（5）、balance display（4）在
+`web/src/components/SubscriptionCard.query.test.tsx`（#28，另含 5 条新栈守卫）。
 
 #26 另新增 4 条渲染基线断言（标识/方案/类型/价格、一次性充值金额、用尽标记、状态徽标切换），
 属新栈自有用例，不占旧行。注：按 `it.each` 展开后该文件实际 21 例（矩阵原记 18 例）。
@@ -577,7 +572,7 @@ opencode 的 `rate-limited` 强制 100（保留 >100 的超额）、缺失 `perc
 | useNow.test.ts                      |    5 | 时间信号原语           | ☑    |
 | query-calibration-callback.test.tsx |    2 | 校准回调局部更新       | ☐    |
 | ProxySubscriptionTab.test.tsx       |    1 | 代理订阅页签           | ☑    |
-| MainPageShell.test.tsx              |    1 | 主页骨架               | ☐    |
+| MainPageShell.test.tsx              |    1 | 主页骨架               | ☑    |
 
 ### 已闭合文件的用例级对账（#36）
 
@@ -636,6 +631,29 @@ opencode 的 `rate-limited` 强制 100（保留 >100 的超额）、缺失 `perc
 - 新栈 `@thisbeyond/solid-dnd` 替代旧栈的 `@dnd-kit/sortable`；`./dnd` 提供可 mock 的 `useSortableRow` 接缝，parity 测试保持与旧栈相同的 mock 结构。
 - 场景名在 `create` 时 trim 后存储；`rename`（PUT）也 trim 后比较重名与存储（旧栈 `create` trim、`update` 存原值，前端两处都先 trim，故观察行为一致）。
 - 工具 PUT 仅更新已声明字段（`name`/`category`/`provider`/`providerCustom`/`forms`/`isOpenSource`/`repoUrl`/`status`/`notes`）；旧栈通过 spread 接受任意字段（含 `order`），新栈通过 PATCH `/api/tools` 的 `toolIds` 进行排序。
+
+### 已闭合文件的用例级对账（#40）
+
+`MainPageShell.test.tsx`（1 例）→ `web/src/components/MainPageShell.test.tsx`（原用例名逐字沿用）：
+
+| 旧用例（逐字）                                                   | 例数 | 新用例                       |
+| ---------------------------------------------------------------- | ---: | ---------------------------- |
+| links every main page to its own path and marks the active page |    1 | 同名用例（`MainPageShell`） |
+
+`SubscriptionCard.test.tsx` 余下子行本票注销：全部 21 例（`it.each` 展开）已在 #26/#28 闭合，见上文
+子表注销说明，本票不新增 `SubscriptionCard` 用例。
+
+#40 新栈自有用例（旧栈无对应行，不占矩阵行）：
+
+| 行为                              | 例数 | 测试                                                |
+| --------------------------------- | ---: | --------------------------------------------------- |
+| 主题解析/持久化/class 切换/循环   |    4 | `web/src/theme.test.tsx`                            |
+| 主题按钮展示当前值并轮换          |    1 | `web/src/theme.test.tsx`                            |
+| 统计卡金额与计数（含空列表）      |    2 | `web/src/components/StatsCards.test.tsx`            |
+| 根路径重定向到 /subscriptions     |    1 | `web/src/routes.test.tsx`                           |
+| 列表页筛选恢复/持久化 + 统计/壳   |    2 | `web/src/pages/SubscriptionsPage.test.tsx`（#40 段） |
+
+全站走查清单（问题与修复）见 [walkthrough.md](walkthrough.md)。
 
 ## 不适用
 

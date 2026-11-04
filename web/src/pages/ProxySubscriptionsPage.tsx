@@ -1,4 +1,5 @@
 import { createSignal, onMount, type Component } from "solid-js";
+import { MainPageShell } from "../components/MainPageShell";
 import {
   createProxySubscription,
   deleteProxySubscription,
@@ -114,24 +115,22 @@ export const ProxySubscriptionsPage: Component = () => {
   };
 
   return (
-    <main class="proxy-page">
-      <nav class="shell-nav">
-        <a href="/subscriptions">AI 订阅</a>
-        <a href="/proxy-subscriptions">代理订阅</a>
-      </nav>
-      <ProxySubscriptionTab
-        subscriptions={subscriptions()}
-        tags={tags()}
-        loading={loading()}
-        error={error()}
-        selectedStatus={selectedStatus()}
-        onSelectedStatusChange={selectStatus}
-        onCreate={create}
-        onUpdate={update}
-        onDelete={(id) => void remove(id)}
-        onRenameTag={renameTag}
-        onDeleteTag={removeTag}
-      />
-    </main>
+    <MainPageShell activePage="proxy-subscriptions">
+      <main class="proxy-page">
+        <ProxySubscriptionTab
+          subscriptions={subscriptions()}
+          tags={tags()}
+          loading={loading()}
+          error={error()}
+          selectedStatus={selectedStatus()}
+          onSelectedStatusChange={selectStatus}
+          onCreate={create}
+          onUpdate={update}
+          onDelete={(id) => void remove(id)}
+          onRenameTag={renameTag}
+          onDeleteTag={removeTag}
+        />
+      </main>
+    </MainPageShell>
   );
 };
