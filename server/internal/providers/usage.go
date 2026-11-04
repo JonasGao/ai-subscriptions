@@ -530,9 +530,14 @@ func FetchCodingPlanUsage(ctx context.Context, client HTTPDoer, credentials map[
 		return UsageResult{}, fmt.Errorf("CodingPlan usage API returned %d", response.StatusCode)
 	}
 
+	// QuotaUsage is decoded as raw JSON first: the old stack guards with
+	// !Array.isArray(...) and throws "Account not subscribed to CodingPlan"
+	// for a missing, non-array, or empty value. Decoding straight into a
+	// slice would surface a JSON type error instead and leak it to users
+	// through the usage route's 502.
 	var payload struct {
 		Result *struct {
-			QuotaUsage []codingPlanQuota `json:"QuotaUsage"`
+			QuotaUsage json.RawMessage `json:"QuotaUsage"`
 		} `json:"Result"`
 	}
 	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
@@ -541,11 +546,15 @@ func FetchCodingPlanUsage(ctx context.Context, client HTTPDoer, credentials map[
 	if payload.Result == nil || len(payload.Result.QuotaUsage) == 0 {
 		return UsageResult{}, fmt.Errorf("Account not subscribed to CodingPlan")
 	}
+	var quotas []codingPlanQuota
+	if err := json.Unmarshal(payload.Result.QuotaUsage, &quotas); err != nil || len(quotas) == 0 {
+		return UsageResult{}, fmt.Errorf("Account not subscribed to CodingPlan")
+	}
 
 	var sessionRow, weeklyRow, monthlyRow *codingPlanQuota
 	var warnings []string
-	for i := range payload.Result.QuotaUsage {
-		row := &payload.Result.QuotaUsage[i]
+	for i := range quotas {
+		row := &quotas[i]
 		switch row.Level {
 		case "session":
 			sessionRow = row
