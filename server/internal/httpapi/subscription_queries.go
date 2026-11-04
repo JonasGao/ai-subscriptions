@@ -80,7 +80,7 @@ func handleSubscriptionUsage(opts Options) http.HandlerFunc {
 		}
 		handler := providers.UsageHandlers(opts.providerHTTP())[handlerKey]
 		if handler == nil {
-			// Registered in the old stack but its body lands with #31/#32/#33.
+			// Defensive: every registered key has a handler body as of #33.
 			// Report the handler-failure family rather than "unsupported".
 			writeError(w, http.StatusBadGateway, "Usage query failed")
 			return
