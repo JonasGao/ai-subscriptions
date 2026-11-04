@@ -100,8 +100,8 @@ func ResolveUsageHandlerKey(provider, planID string) string {
 // usageHandlerKeys is the static registration key set of
 // lib/providers/index.ts usageHandlers. Capability flags derive from this set
 // (ADR-0006). Handler bodies for providers owned by later parity tickets
-// (#30-#33) are not implemented yet; those tickets add them to UsageHandlers
-// without changing this key set.
+// (#31/#33) are not implemented yet; those tickets add them to UsageHandlers
+// without changing this key set. #32 (github) landed its body.
 func usageHandlerKeys() []string {
 	return []string{
 		"moonshot:kimi-code",
@@ -116,7 +116,7 @@ func usageHandlerKeys() []string {
 
 // HasUsageHandler reports whether key is registered in the old stack's usage
 // handler registry. The route guards key off registration (not implementation)
-// so providers whose bodies land with #30-#33 still take the query branch
+// so providers whose bodies land with #31/#33 still take the query branch
 // rather than being reported as unsupported.
 func HasUsageHandler(key string) bool {
 	for _, registered := range usageHandlerKeys() {
@@ -138,6 +138,7 @@ func UsageHandlers(clients ...HTTPDoer) map[string]UsageHandler {
 		"fangzhou:agentplan":  &agentPlanUsageHandler{client: client},
 		"fangzhou:codingplan": &codingPlanUsageHandler{client: client},
 		"moonshot:kimi-code":  &moonshotUsageHandler{client: client},
+		"github":              &githubUsageHandler{client: client},
 	}
 }
 

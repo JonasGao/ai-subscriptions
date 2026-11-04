@@ -18,15 +18,18 @@ type ModelsHandler interface {
 }
 
 // ModelsHandlers returns the exception handlers for providers whose model list
-// is not OpenAI-shaped: github (`data[].id` behind a token exchange) and
-// fangzhou (Volcengine `Result.Items[].Name`). Their bodies land with #30/#32;
-// the registry keys are already absent here, so those providers resolve to the
-// generic fallback until then — visible to users as the OpenAI-shaped attempt the
-// old stack would also make against a bespoke endpoint.
+// is not OpenAI-shaped: github (`data[].id` behind a token exchange). Fangzhou
+// (Volcengine `Result.Items[].Name`) lands with #30; its registry key is absent
+// here, so it resolves to the generic fallback until then — visible to users as
+// the OpenAI-shaped attempt the old stack would also make against a bespoke
+// endpoint.
 //
 // Everything else resolves through the generic fallback in ResolveModelsHandler.
 func ModelsHandlers(clients ...HTTPDoer) map[string]ModelsHandler {
-	return map[string]ModelsHandler{}
+	client := resolveClient(clients)
+	return map[string]ModelsHandler{
+		"github": githubModelsHandler{client: client},
+	}
 }
 
 // ResolveModelsHandlerKey ports resolveModelsHandlerKey: "<provider>:<planId>"

@@ -19,7 +19,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | payload.test.ts                   |   27 | 飞书消息构造                   | ☐    |
 | models-resolver.test.ts           |   26 | 模型查询解析                   | ☑    |
 | alibaba-tokenplan.test.ts         |   26 | provider: alibaba（ACS3 签名） | ☐    |
-| github.test.ts                    |   25 | provider: github（token 交换） | ☐    |
+| github.test.ts                    |   25 | provider: github（token 交换） | ☑    |
 | fangzhou-codingplan.test.ts       |   24 | provider: fangzhou             | ☐    |
 | opencode.test.ts                  |   23 | provider: opencode             | ☐    |
 | enrichment.test.ts                |   23 | providers 能力标记             | ☑    |
@@ -34,7 +34,7 @@ Go + SolidJS 重写（ADR-0018）的行为规范对账表：旧栈 **582 个用�
 | notifications-storage.test.ts     |   10 | 通知存储                       | ☑    |
 | providers.test.ts                 |    9 | providers 注册表               | ☑    |
 | models-generic-fetch.test.ts      |    8 | 通用模型获取回退               | ☑    |
-| github-models.test.ts             |    8 | provider: github 模型列表      | ☐    |
+| github-models.test.ts             |    8 | provider: github 模型列表      | ☑    |
 | feishu-credentials.test.ts        |    8 | 飞书凭据                       | ☑    |
 | proxy-subscriptions.test.ts       |    7 | 代理订阅                       | ☑    |
 | volcengine-signer.test.ts         |    6 | 火山 HMAC 签名器               | ☐    |
@@ -383,8 +383,8 @@ distroless 镜像的 healthcheck 走二进制子命令（#41），它不带会�
 
 #28 偏差与说明：
 
-- **异常模型处理器**：旧栈的 github / fangzhou 专属模型列表实现随 #32/#30 落地；`ModelsHandlers()`
-  当前为空，fangzhou/github 走通用回退。`models-resolver` 中「plan 级异常处理器优先于 provider 级」
+- **异常模型处理器**：旧栈的 github 专属模型列表（PAT 换 Copilot token 后查 `/models`）已随 #32 落地，
+  fangzhou 专属实现随 #30 落地。`models-resolver` 中「plan 级异常处理器优先于 provider 级」
   的规则用 `ResolveModelsHandlerWith`（显式注入注册表）钉住，处理器落地时只往 `ModelsHandlers()`
   加条目，不改解析规则。
 - **HTTP seam**：旧用例 stub 全局 `fetch`；Go 侧 handler 接受注入的 `HTTPDoer`（`Options.ProviderHTTP`
