@@ -45,3 +45,6 @@ pnpm-workspace.yaml
 /server/internal/webui/dist/*
 !/server/internal/webui/dist/.gitkeep
 /server/.data/
+
+# Impeccable live 运行时状态（PRODUCT.md / DESIGN.md / config.json / design.json 仍入库）
+/.impeccable/live/
