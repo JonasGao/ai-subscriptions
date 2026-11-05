@@ -10,7 +10,7 @@ EMBED_DIST := $(SERVER_DIR)/internal/webui/dist
 BIN := $(SERVER_DIR)/bin/$(PROJECT_NAME)
 
 .PHONY: deploy image smoke up down restart status logs uninstall build test run \
-        server-build web-build web-install legacy-build clean help
+        server-build web-build web-install clean help
 
 deploy: ## Build image and (re)start the deployment (see deploy/docker)
 	@$(MAKE) -C deploy/docker $@
@@ -63,9 +63,6 @@ test: web-build ## Run both test suites (Go + vitest)
 
 run: build ## Build and run the new stack on :3000
 	@./$(BIN)
-
-legacy-build: ## Old stack production build (npm run build); retired at cutover
-	npm run build
 
 clean: ## Remove build artifacts (keeps the go:embed placeholder)
 	@rm -rf $(SERVER_DIR)/bin $(WEB_DIST)

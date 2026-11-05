@@ -4,9 +4,9 @@
 
 ## 过渡期纪律
 
-- 旧栈（`app/` + `lib/` + `__tests__/`）冻结：仅收紧急 bugfix；新需求排队到 cutover 后在新栈实现。
+- 过渡期（已完成）：旧栈（`app/` + `lib/` + `__tests__/`）冻结，仅收紧急 bugfix；新需求排队到 cutover 后在新栈实现。
 - 两栈不共享写：旧栈继续用 JSON，新栈只在 cutover 部署后接管 `DATA_DIR`。
-- `server/` 与 `web/` 并行开发；部署管线（#41）落地后 `make deploy` 已构建新栈镜像（多阶段：node 构建 SPA → go 编译 → distroless），旧栈 `Dockerfile`/`next` 目标仅留 `legacy-build` 备用至 cutover。
+- `server/` 与 `web/` 并行开发；部署管线（#41）落地后 `make deploy` 已构建新栈镜像（多阶段：node 构建 SPA → go 编译 → distroless）。#42 cutover 已删除旧栈与 `legacy-build` 目标。
 
 ## 阶段
 
@@ -39,4 +39,4 @@ priorities / tool-priorities / tools / tags（含 API 缓存）/ proxy-subscript
 
 多阶段 Dockerfile（node 构建 web → go 编译 → distroless）；`deploy/docker` 与 `deploy/systemd`（单二进制安装）适配，make 命令族与对外契约不变。
 **cutover gate**（ADR-0018）：parity 矩阵全闭合 + 冒烟清单（登录/改密/首登强制改密、订阅 CRUD + 优先级拖拽、火山/阿里/DeepSeek 实时查询、重置计划与校准触发、飞书通知测试发送 + WS 启停、生产副本迁移演练、备份快照可恢复、镜像 <50MB 且 RSS <150MB）。
-**通过后**：单提交删除旧栈（`app/`、`lib/`、`__tests__/`、旧 Dockerfile/config），AGENTS.md 与 CONTEXT.md 同步改写。
+**已通过（#42）**（冒烟清单逐项留痕见 [smoke-checklist.md](smoke-checklist.md)）：单提交删除旧栈（`app/`、`lib/`、`__tests__/`、旧构建配置），AGENTS.md、README.md 与 CONTEXT.md 同步改写。

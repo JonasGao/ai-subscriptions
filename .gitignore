@@ -7,13 +7,6 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
 # misc
 .DS_Store
 *.pem
@@ -27,12 +20,8 @@ yarn-error.log*
 .env
 .env*.local
 
-# vercel
-.vercel
-
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
 # data files
 /data/
@@ -41,7 +30,7 @@ next-env.d.ts
 .pi/
 .playwright-mcp/
 
-# pnpm 本地产物（仓库以 package-lock.json 为准，见 README）
+# pnpm 本地产物
 pnpm-lock.yaml
 pnpm-workspace.yaml
 .env.volcengine

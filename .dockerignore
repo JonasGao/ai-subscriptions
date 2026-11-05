@@ -23,31 +23,12 @@ server/bin
 server/internal/webui/dist
 .server
 coverage
-.next
 
 # --- secrets and runtime data ---
 .env
 .env*
 data
 /server/.data
-
-# --- legacy stack (Next.js), retired at cutover (ADR-0018) ---
-app
-components
-lib
-types
-hooks
-__tests__
-instrumentation.ts
-middleware.ts
-next-env.d.ts
-next.config.js
-postcss.config.js
-tailwind.config.ts
-tsconfig.tsbuildinfo
-vitest.config.mts
-pnpm-lock.yaml
-pnpm-workspace.yaml
 
 # --- docs and deploy definitions (not needed in the build) ---
 docs

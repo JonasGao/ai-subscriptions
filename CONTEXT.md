@@ -2,6 +2,13 @@
 
 A subscription management system for AI services with quota tracking and automatic reset scheduling.
 
+## Stack
+
+Go 1.27 single binary (`server/`, chi) with an embedded SolidJS SPA (`web/`, Vite + `go:embed`) and SQLite
+storage under `DATA_DIR` (ADR-0017). UI uses native `dialog`/`select`/`radio` elements, inline SVG icons,
+and inline error bars (ADR-0018 revision record). Deployment is Docker-first (`deploy/docker/`) with a
+systemd user-service alternative (`deploy/systemd/`).
+
 ## Language
 
 **Subscription**:
