@@ -69,3 +69,35 @@ describe("服务商注册表路由", () => {
     ).toBe("/providers");
   });
 });
+
+describe("通知路由", () => {
+  it("renders /notifications for a signed-in user and marks the nav entry", async () => {
+    stubFetch({
+      "GET /api/auth/session": activeSession,
+      "GET /api/notifications": {
+        body: { channels: [], defaultLowBalanceThreshold: 10 },
+      },
+    });
+
+    const { history } = renderAt("/notifications");
+
+    expect(await screen.findByText("通知设置")).toBeTruthy();
+    expect(history.get()).toBe("/notifications");
+    expect(
+      screen.getByRole("link", { name: "通知" }).getAttribute("aria-current")
+    ).toBe("page");
+  });
+
+  it("redirects anonymous visitors from /notifications to /login", async () => {
+    stubFetch({
+      "GET /api/auth/session": {
+        status: 401,
+        body: { error: "未登录" },
+      },
+    });
+
+    const { history } = renderAt("/notifications");
+
+    await waitFor(() => expect(history.get()).toBe("/login"));
+  });
+});

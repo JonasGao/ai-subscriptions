@@ -2086,3 +2086,573 @@ body {
   border-color: #1e40af;
   background: #172554;
 }
+
+/* ---------- notifications page (#44) ---------- */
+
+.notifications-page {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.notifications-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.notifications-header h1 {
+  margin: 0.35rem 0 0;
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+}
+
+.notifications-back {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.notifications-back:hover {
+  color: var(--accent);
+}
+
+.notifications-page button,
+.notifications-dialog button {
+  padding: 0.45rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 22%, transparent);
+  border-radius: 0.45rem;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.notifications-page button:hover:not(:disabled),
+.notifications-dialog button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+}
+
+.notifications-page button:disabled,
+.notifications-dialog button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.notifications-page button.primary,
+.notifications-dialog button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.notifications-page button.ghost,
+.notifications-dialog button.ghost {
+  border-color: color-mix(in srgb, var(--fg) 20%, transparent);
+  background: transparent;
+}
+
+.notifications-page button.danger,
+.notifications-dialog button.danger {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.notifications-page .error-banner button {
+  padding: 0 0.4rem;
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 1.1rem;
+}
+
+.notifications-threshold {
+  padding: 1rem 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 14%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--bg) 94%, var(--fg) 6%);
+}
+
+.notifications-threshold h2,
+.notifications-section-title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.notifications-threshold-hint {
+  margin: 0.3rem 0 0.85rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.notifications-threshold-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  max-width: 20rem;
+}
+
+.notifications-threshold-row label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.notifications-threshold-row input {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  border-radius: 0.4rem;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.notifications-section-title {
+  margin-bottom: 0.75rem;
+}
+
+.notifications-empty {
+  margin: 0;
+  padding: 2.5rem 1rem;
+  border: 1px dashed color-mix(in srgb, var(--fg) 20%, transparent);
+  border-radius: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.notification-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.notification-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 14%, transparent);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--bg) 94%, var(--fg) 6%);
+}
+
+.notification-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.notification-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.notification-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.notification-badge {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  border-radius: 999px;
+  font-size: 0.72rem;
+}
+
+.notification-badge-type {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.notification-badge-enabled {
+  color: #15803d;
+  border-color: #16a34a;
+}
+
+.notification-badge-disabled {
+  color: var(--muted);
+}
+
+.notification-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.83rem;
+  overflow-wrap: anywhere;
+}
+
+.notification-secret {
+  margin-left: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.notification-send-state {
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.notification-send-success {
+  color: #15803d;
+}
+
+.notification-send-error {
+  color: #dc2626;
+}
+
+.notification-send-muted {
+  color: var(--muted);
+}
+
+.notification-flash {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+}
+
+.notification-flash.success {
+  color: #15803d;
+}
+
+.notification-flash.error {
+  color: #dc2626;
+}
+
+.notification-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.notification-meta > * + * {
+  margin-left: 0.35rem;
+}
+
+.notifications-dialog .checkbox-chip {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.notifications-dialog .form-actions button[type="submit"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.notifications-dialog {
+  width: min(44rem, 100%);
+}
+
+.notifications-dialog-description {
+  margin: -0.35rem 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* Feishu permissions checklist */
+
+.feishu-permissions {
+  border: 1px solid color-mix(in srgb, #d97706 45%, transparent);
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, #f59e0b 10%, var(--bg));
+}
+
+.feishu-permissions-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.feishu-permissions-count {
+  margin-left: 0.45rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+
+.feishu-permissions-chevron {
+  transition: transform 0.15s ease;
+}
+
+.feishu-permissions-chevron.open {
+  transform: rotate(180deg);
+}
+
+.feishu-permissions-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.6rem 0.75rem 0.75rem;
+  border-top: 1px solid color-mix(in srgb, #d97706 35%, transparent);
+}
+
+.feishu-permissions-hint,
+.feishu-permissions-event {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.feishu-permissions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.feishu-permissions-list li {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 14%, transparent);
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  font-size: 0.76rem;
+}
+
+.feishu-permission-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.feishu-permission-head code,
+.feishu-permissions-event code,
+.feishu-helper-empty code {
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: 0.72rem;
+}
+
+.feishu-permission-purpose {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.feishu-permission-used-by {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.feishu-permission-tag {
+  padding: 0.05rem 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 22%, transparent);
+  border-radius: 999px;
+}
+
+.feishu-permissions-hintbox {
+  padding: 0.5rem 0.6rem;
+  border: 1px dashed color-mix(in srgb, #d97706 50%, transparent);
+  border-radius: 0.45rem;
+  color: var(--fg);
+  font-size: 0.75rem;
+}
+
+.feishu-permissions-hintbox p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.feishu-permissions-event {
+  margin-top: 0.3rem !important;
+}
+
+.feishu-permissions-link {
+  color: var(--accent);
+  font-size: 0.78rem;
+}
+
+/* Feishu helper panel */
+
+.feishu-helper {
+  padding: 0.7rem 0.75rem;
+  border: 1px dashed color-mix(in srgb, var(--fg) 28%, transparent);
+  border-radius: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.feishu-helper-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.83rem;
+  font-weight: 600;
+}
+
+.feishu-helper-warning {
+  color: #b45309;
+  font-size: 0.72rem;
+  font-weight: 400;
+}
+
+.feishu-helper-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.feishu-helper-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.feishu-helper-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: 0.78rem;
+}
+
+.feishu-helper-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.feishu-helper-listening {
+  margin: 0;
+  color: #15803d;
+  font-size: 0.78rem;
+}
+
+.feishu-picker {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 12rem;
+  overflow-y: auto;
+  border: 1px solid color-mix(in srgb, var(--fg) 15%, transparent);
+  border-radius: 0.45rem;
+}
+
+.feishu-picker li + li {
+  border-top: 1px solid color-mix(in srgb, var(--fg) 10%, transparent);
+}
+
+.feishu-picker-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.feishu-picker-name {
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.feishu-picker-id {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+}
+
+.feishu-lookup-row {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.feishu-lookup-row input {
+  flex: 1;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  border-radius: 0.4rem;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+/* Dark-theme contrast for the notification surfaces */
+
+:root.dark .notifications-page button.primary,
+:root.dark .notifications-dialog button.primary {
+  color: #18181b;
+}
+
+:root.dark .notifications-page button.ghost,
+:root.dark .notifications-dialog button.ghost {
+  color: var(--fg);
+}
+
+:root.dark .notifications-page button.danger,
+:root.dark .notifications-dialog button.danger {
+  color: #f87171;
+  border-color: #f87171;
+}
+
+:root.dark .notifications-dialog .form-actions button {
+  color: var(--fg);
+}
+
+:root.dark .notifications-dialog .form-actions button[type="submit"] {
+  color: #18181b;
+}
+
+:root.dark .notification-badge-enabled,
+:root.dark .notification-send-success,
+:root.dark .notification-flash.success,
+:root.dark .feishu-helper-listening {
+  color: #4ade80;
+}
+
+:root.dark .notification-send-error,
+:root.dark .notification-flash.error,
+:root.dark .feishu-helper-error {
+  color: #f87171;
+}
+
+:root.dark .feishu-helper-warning {
+  color: #fbbf24;
+}
+
+:root.dark .feishu-permissions {
+  background: color-mix(in srgb, #f59e0b 16%, var(--bg));
+}

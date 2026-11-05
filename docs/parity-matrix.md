@@ -796,6 +796,24 @@ spec #21 的「31 条 API 除 auth 外全部字节对齐」在终审前缺两条
 `GET /api/providers/unregistered`，本票未改 `server/`；视觉沿用现有 tokens，并补了暗色下
 能力徽章的对比度覆盖。
 
+cutover 后逐页走查发现「旧栈有界面、但旧测试套件里没有对应文件」的页面。这些页面不在
+582 例矩阵内，本章单独登记补账，不改变上方各文件的去向。
+
+| 页面             | 旧栈实现                                                                                       | 新栈实现                                                                                                                                                                                                                      | 新增测试                                                                                                                                                                                          | 状态 |
+| ---------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| `/notifications` | `app/notifications/page.tsx`（1527 行，最大单页）+ `components/FeishuPermissionsChecklist.tsx` | `web/src/pages/NotificationsPage.tsx` + `web/src/notifications/{ChannelList,ChannelFormDialog,FeishuHelperPanel,FeishuPermissionsChecklist,api,types,permissions}.ts(x)`（拆分为列表 / 表单对话框 / 飞书辅助面板 / 权限清单） | `ChannelList.test.tsx`（4）、`ChannelFormDialog.test.tsx`（4）、`FeishuHelperPanel.test.tsx`（4）、`NotificationsPage.test.tsx`（4）合计 16 例；另有 `routes.test.tsx` 2 例覆盖路由门禁与导航高亮 | ☑    |
+
+补账范围：渠道列表（webhook 签名渠道 + 飞书应用渠道两类）、创建/编辑/删除/启停、测试发送
+（`POST /api/notifications/{id}`，body `{"action":"test"}`，成功/失败反馈）、全局默认低余额
+阈值；飞书配置表单（appId/appSecret、receiveId 类型与值）、群选择器（`POST /feishu-app/chats`，
+含分页加载）、手机号解析（`POST /feishu-app/lookup-user`）、权限清单、WS 监听启停与状态
+（`POST/GET/DELETE /feishu-app/listen`，2 秒轮询、停止/404/墓碑态收尾）。样式沿用现有 tokens，
+成功/错误/警告文案补齐暗色对比。
+
+偏差：`lookup-user` 的旧栈与新栈 handler 都要求 `mobiles` 至少一个元素，`emails` 只是可选附加；
+因此页面保留旧栈的「手机号查询」，票面提到的邮箱解析无法在不改 `server/` 的前提下单独调用。
+演示只需假凭据失败态，不做真实飞书外发。
+
 ## 不适用
 
 | 测试文件 | 用例 | 理由                                                      | 状态 |
