@@ -14,7 +14,7 @@
 - 所有命令只连接本机 `3999` 上的临时二进制；外发请求仅限应用日常的 provider 只读查询与飞书 WS 被动连接。
 - 文档不记录任何密钥/token/密码/会话 cookie 明文；响应中的 `appSecret`、`Set-Cookie` 已省略或打码。
 - 数字额度、HTTP 状态、耗时与行数原样保留。
-- 飞书**测试发送未执行**（会外发真实消息），见第 6 节。
+- 飞书测试发送已于 2026-11-05 补执行（HTTP 200 success），见第 6 节。
 
 ## 0. 构建与启动
 
@@ -149,11 +149,11 @@ POST /api/subscriptions/beeb83da-.../schedules/smoke-sched-1/toggle {"exhausted"
 调度 tick 是 5 分钟 `time.Ticker`，无法在冒烟窗口内实时等待；按评审要求引用服务端 Go 测试作为佐证
 （本次复跑 `PASS`，由测试覆盖，而非实时服务等待）：
 
-| 行为 | 测试 |
-| --- | --- |
-| tick 周期执行 / 取消即停 / 不立即 tick | `internal/scheduler`: `TestRunTicksOnEveryIntervalAndStopsOnCancel`、`TestRunDoesNotTickImmediately`、`TestRunReportsErrorsAndKeepsTicking` |
+| 行为                                                                     | 测试                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| tick 周期执行 / 取消即停 / 不立即 tick                                   | `internal/scheduler`: `TestRunTicksOnEveryIntervalAndStopsOnCancel`、`TestRunDoesNotTickImmediately`、`TestRunReportsErrorsAndKeepsTicking`                                                                           |
 | 校准改写 nextResetTime / 单次抓取对齐全部 schedule / weekly+monthly 推导 | `internal/calibration`: `TestAlignResetTimesOverwritesNextResetTime`、`TestAlignResetTimesAlignsAllEnabledSchedulesWithOneFetch`、`TestAlignResetTimesDerivesWeeklyConfig`、`TestAlignResetTimesDerivesMonthlyConfig` |
-| 重置 tick 触发并清除 exhausted / 未用尽只推进 / 跳过 cancelled | `internal/store`: `TestResetTickTriggersAndClearsExhaustion`、`TestResetTickAdvancesWithoutTriggeringWhenNotExhausted`、`TestResetTickSkipsCancelledSubscriptions` |
+| 重置 tick 触发并清除 exhausted / 未用尽只推进 / 跳过 cancelled           | `internal/store`: `TestResetTickTriggersAndClearsExhaustion`、`TestResetTickAdvancesWithoutTriggeringWhenNotExhausted`、`TestResetTickSkipsCancelledSubscriptions`                                                    |
 
 ```text
 go test ./internal/scheduler ./internal/calibration ./internal/store -run '<上述测试名>' -v
@@ -173,11 +173,11 @@ ok  	ai-subscriptions/internal/store	0.024s
 
 从迁移数据中选取真实存在、带凭据的订阅，调用只读查询端点：
 
-| 厂商 | 订阅 | 端点 | HTTP | 返回摘要 |
-| --- | --- | --- | ---: | --- |
-| 火山（`fangzhou` / 火山方舟） | 方舟 Agent Plan `259a29ea-65d4-43db-b74c-3a34c444f2f8`（Agent Plan，active，有凭据） | `GET /api/subscriptions/{id}/usage` | 200 | `fiveHour` limit 10000 / used 0 / remaining 10000；`weekly` limit 35000 / used 31674.8439 / remaining 3325.1561；`monthly` limit 100000 / used 69252.7792 / remaining 30747.2208 |
-| 阿里（`alibaba`） | 阿里云 Token Plan `3017a6f6-38ce-412e-8b32-76088916036f`（token-plan，active，有凭据） | `GET /api/subscriptions/{id}/usage` | 200 | `monthly` limit 250000 / used 153124.5287 / remaining 96875.4713；`fiveHour`、`weekly` 为 null |
-| DeepSeek（`deepseek`） | DeepSeek `18acdf8f-c161-4f2c-a680-0383c34e3232`（one-time，cancelled，有凭据） | `GET /api/subscriptions/{id}/balance` | 200 | `provider:"deepseek"`，`isAvailable:false`，1 条 `CNY` 余额：available `-1.21` |
+| 厂商                          | 订阅                                                                                   | 端点                                  | HTTP | 返回摘要                                                                                                                                                                         |
+| ----------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------- | ---: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 火山（`fangzhou` / 火山方舟） | 方舟 Agent Plan `259a29ea-65d4-43db-b74c-3a34c444f2f8`（Agent Plan，active，有凭据）   | `GET /api/subscriptions/{id}/usage`   |  200 | `fiveHour` limit 10000 / used 0 / remaining 10000；`weekly` limit 35000 / used 31674.8439 / remaining 3325.1561；`monthly` limit 100000 / used 69252.7792 / remaining 30747.2208 |
+| 阿里（`alibaba`）             | 阿里云 Token Plan `3017a6f6-38ce-412e-8b32-76088916036f`（token-plan，active，有凭据） | `GET /api/subscriptions/{id}/usage`   |  200 | `monthly` limit 250000 / used 153124.5287 / remaining 96875.4713；`fiveHour`、`weekly` 为 null                                                                                   |
+| DeepSeek（`deepseek`）        | DeepSeek `18acdf8f-c161-4f2c-a680-0383c34e3232`（one-time，cancelled，有凭据）         | `GET /api/subscriptions/{id}/balance` |  200 | `provider:"deepseek"`，`isAvailable:false`，1 条 `CNY` 余额：available `-1.21`                                                                                                   |
 
 命令示例：
 
@@ -220,11 +220,9 @@ DELETE /api/notifications/feishu-app/listen?listenId=4f36b72f-...
   -> HTTP 200 {"success":true}
 ```
 
-测试发送：**未执行**。该操作会向真实飞书会话外发消息：
+测试发送：**已于 2026-11-05 执行**（用户发起）。生产数据副本（含 feishu-app 渠道「飞书测试1」，appId `cli_a951d09af5b8…`，接收者 open_id `ou_83426058d…`）+ 生产 NEXTAUTH_SECRET 在 3999 端口起临时实例，`POST /api/notifications/d35656e7-…`（body `{"action":"test"}`）→ HTTP 200 `{"success":true}`，`lastSendResult` 刷新为 `2026-11-05T00:11:30.567Z`，真实消息经应用机器人送达该 open_id 用户。实例与含密副本已清理。
 
-> 留待用户 main 合并前人工冒烟（外发真实消息，需用户执行）。
-
-结论：**部分通过（按约定）**。配置读取与 WS 监听启停已实时留痕；测试发送按评审要求不代执行，交由用户人工确认。
+结论：**通过**。配置读取、WS 监听启停、测试发送三项全部实时留痕。
 
 ## 7. 备份快照可恢复
 
@@ -258,15 +256,15 @@ auth_user 1/1   app_state 3/3
 
 ## 汇总
 
-| 冒烟项 | 结论 |
-| --- | --- |
-| 登录 / 改密 / 首登强制改密 | 通过 |
-| 订阅 CRUD + 标签重名合并 | 通过 |
-| 优先级 PATCH reorder 与读回 | 通过 |
-| 重置计划 toggle；tick/校准由 Go 测试覆盖 | 通过（tick/校准为测试佐证） |
-| 火山 / 阿里 / DeepSeek 实时查询 | 通过（3×HTTP 200） |
-| 飞书通知 + WS 启停 | 通过；测试发送留待用户人工执行 |
-| 备份快照可恢复 | 通过 |
+| 冒烟项                                   | 结论                           |
+| ---------------------------------------- | ------------------------------ |
+| 登录 / 改密 / 首登强制改密               | 通过                           |
+| 订阅 CRUD + 标签重名合并                 | 通过                           |
+| 优先级 PATCH reorder 与读回              | 通过                           |
+| 重置计划 toggle；tick/校准由 Go 测试覆盖 | 通过（tick/校准为测试佐证）    |
+| 火山 / 阿里 / DeepSeek 实时查询          | 通过（3×HTTP 200）             |
+| 飞书通知 + WS 启停                       | 通过；测试发送留待用户人工执行 |
+| 备份快照可恢复                           | 通过                           |
 
 ## 偏差与备注
 
