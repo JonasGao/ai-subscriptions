@@ -11,6 +11,7 @@ import {
 } from "@thisbeyond/solid-dnd";
 import type { Tool } from "../priorities/types";
 import { useSortableRow } from "../priorities/dnd";
+import { CloseIcon, DragIcon } from "../components/icons.tsx";
 
 const STATUS_CONFIG: Record<
   Tool["status"],
@@ -49,7 +50,7 @@ const ToolCard: Component<{
           {...sortable.attrs}
           ref={sortable.attach}
         >
-          ⋮⋮
+          <DragIcon />
         </button>
         <h3>{props.tool.name}</h3>
         <button
@@ -66,7 +67,11 @@ const ToolCard: Component<{
           {STATUS_CONFIG[props.tool.status].label}
         </button>
         <div class="tool-card-actions">
-          <button type="button" class="ghost" onClick={() => props.onEdit(props.tool)}>
+          <button
+            type="button"
+            class="ghost"
+            onClick={() => props.onEdit(props.tool)}
+          >
             编辑
           </button>
           <button
@@ -87,7 +92,11 @@ const ToolCard: Component<{
         <Show when={props.tool.isOpenSource}>
           <span class="tool-open-source">开源</span>
           <Show when={props.tool.repoUrl}>
-            <a href={props.tool.repoUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              href={props.tool.repoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               仓库
             </a>
           </Show>
@@ -109,8 +118,7 @@ export interface ToolListProps {
 }
 
 export const ToolList: Component<ToolListProps> = (props) => {
-  const sortedTools = () =>
-    [...props.tools].sort((a, b) => a.order - b.order);
+  const sortedTools = () => [...props.tools].sort((a, b) => a.order - b.order);
 
   const handleDragEnd = (event: DragEvent) => {
     const { draggable, droppable } = event;
@@ -128,9 +136,7 @@ export const ToolList: Component<ToolListProps> = (props) => {
   return (
     <Show
       when={sortedTools().length > 0}
-      fallback={
-        <p class="empty-state">暂无工具，点击「添加工具」开始记录。</p>
-      }
+      fallback={<p class="empty-state">暂无工具，点击「添加工具」开始记录。</p>}
     >
       <DragDropProvider
         collisionDetector={closestCenter}

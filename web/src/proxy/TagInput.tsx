@@ -1,4 +1,5 @@
 import { createMemo, createSignal, For, Show, type Component } from "solid-js";
+import { CloseIcon, DragIcon } from "../components/icons.tsx";
 
 // TagInput is the SolidJS port of components/TagInput.tsx, trimmed to what the
 // proxy subscription form needs: pick existing tags, type a new one, comma
@@ -109,7 +110,7 @@ export const TagInput: Component<TagInputProps> = (props) => {
                 disabled={props.disabled}
                 onClick={() => removeName(name)}
               >
-                ×
+                <CloseIcon />
               </button>
             </span>
           )}
@@ -123,7 +124,9 @@ export const TagInput: Component<TagInputProps> = (props) => {
           class="tag-input-field"
           value={input()}
           placeholder={props.value.length ? "继续添加" : "输入或选择标签"}
-          disabled={props.disabled || props.value.length >= MAX_TAGS_PER_SUBSCRIPTION}
+          disabled={
+            props.disabled || props.value.length >= MAX_TAGS_PER_SUBSCRIPTION
+          }
           autocomplete="off"
           onFocus={() => setOpen(true)}
           onBlur={() => window.setTimeout(() => setOpen(false), 100)}
@@ -142,7 +145,11 @@ export const TagInput: Component<TagInputProps> = (props) => {
               event.preventDefault();
               const active = candidates()[activeIndex()];
               addNames([active ? active.name : input()]);
-            } else if (event.key === "Backspace" && !input() && props.value.length) {
+            } else if (
+              event.key === "Backspace" &&
+              !input() &&
+              props.value.length
+            ) {
               removeName(props.value[props.value.length - 1]);
             } else if (event.key === "Escape") {
               setOpen(false);
@@ -172,7 +179,8 @@ export const TagInput: Component<TagInputProps> = (props) => {
 
       <Show
         when={
-          input().trim() && !props.tags.some((tag) => tag.name === input().trim())
+          input().trim() &&
+          !props.tags.some((tag) => tag.name === input().trim())
         }
       >
         <p class="tag-hint">按 Enter 或逗号创建“{input().trim()}”</p>

@@ -15,7 +15,11 @@ import {
 import { BalanceInfoRows, oneTimeBalance, UsageWindows } from "./query-display";
 import { ModelListDialog } from "./ModelListDialog";
 import { ResetScheduleGrid } from "./ResetScheduleGrid";
+import { TimetableAxis } from "./TimetableAxis";
+import { createNow } from "../lib/useNow";
+import { TimetableHeader } from "./TimetableHeader";
 import { useSortableRow } from "../priorities/dnd";
+import { CloseIcon, DragIcon } from "../components/icons.tsx";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
@@ -91,6 +95,7 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
   const [deleteStep, setDeleteStep] = createSignal<1 | 2>(1);
   const [modelsOpen, setModelsOpen] = createSignal(false);
   const sortable = useSortableRow(props.subscription.id);
+  const now = createNow();
 
   const subscriptionTags = () =>
     (props.subscription.tagIds ?? [])
@@ -186,7 +191,7 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
           {...sortable.attrs}
           ref={sortable.attach}
         >
-          ⋮⋮
+          <DragIcon />
         </button>
         <h3>{props.subscription.name}</h3>
         <div class="subscription-card-badges">
@@ -276,6 +281,13 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
           {(usage) => <UsageWindows usage={usage()} />}
         </Show>
       </dl>
+
+      <TimetableAxis
+        renewalDate={props.subscription.renewalDate}
+        resetSchedules={props.subscription.resetSchedules ?? []}
+        oneTime={props.subscription.subscriptionType === "one-time"}
+        now={now()}
+      />
 
       <Show when={query.error()}>
         <p class="subscription-card-query-error" role="alert">

@@ -1,4 +1,5 @@
 import { createSignal, For, onMount, Show, type Component } from "solid-js";
+import { CloseIcon, DragIcon } from "../components/icons.tsx";
 import { createStore, reconcile } from "solid-js/store";
 import { useNavigate } from "@solidjs/router";
 import { useAuth } from "../auth/AuthProvider";
@@ -6,6 +7,8 @@ import { MainPageShell } from "../components/MainPageShell";
 import { StatsCards } from "../components/StatsCards";
 import { SubscriptionCard } from "../components/SubscriptionCard";
 import { SubscriptionForm } from "../components/SubscriptionForm";
+import { TimetableHeader } from "../components/TimetableHeader";
+import { createNow } from "../lib/useNow";
 import { priorityScenes } from "../priorities/api";
 import { PriorityScenes } from "../priorities/PriorityScenes";
 import { SortablePriorityList } from "../priorities/SortablePriorityList";
@@ -91,6 +94,7 @@ export const SubscriptionsPage: Component = () => {
     createSignal(readStoredCategory());
   const [selectedStatuses, setSelectedStatuses] =
     createSignal<SubscriptionStatus[]>(readStoredStatuses());
+  const now = createNow();
 
   const loadData = async () => {
     try {
@@ -326,7 +330,7 @@ export const SubscriptionsPage: Component = () => {
               aria-label="关闭错误提示"
               onClick={() => setErrorMessage(null)}
             >
-              ×
+              <CloseIcon />
             </button>
           </div>
         </Show>
@@ -381,6 +385,7 @@ export const SubscriptionsPage: Component = () => {
               <SortableProvider
                 ids={visibleSubscriptions().map((sub) => sub.id)}
               >
+                <TimetableHeader now={now()} />
                 <section class="subscription-list">
                   <For each={visibleSubscriptions()}>
                     {(subscription) => (

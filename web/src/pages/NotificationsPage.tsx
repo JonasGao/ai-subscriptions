@@ -1,4 +1,5 @@
 // Notifications settings page (#44), ported from app/notifications/page.tsx:
+import { CloseIcon, DragIcon } from "../components/icons.tsx";
 // channel CRUD/toggle/test-send, the global low-balance threshold, and the
 // feishu-app configuration dialog with its chat/user/listen helpers.
 
@@ -170,7 +171,7 @@ export const NotificationsPage: Component = () => {
                 aria-label="关闭错误提示"
                 onClick={() => setError(null)}
               >
-                ×
+                <CloseIcon />
               </button>
             </div>
           )}

@@ -1,4 +1,5 @@
 // ProvidersPage (#43): read-only browser of the provider registry, ported from
+import { CloseIcon, DragIcon } from "../components/icons.tsx";
 // app/providers/page.tsx. Identity, capability badges, plans and the
 // unregistered-provider section come from /api/providers and
 // /api/providers/unregistered; the page does not mutate anything.
@@ -164,7 +165,7 @@ export const ProvidersPage: Component = () => {
               aria-label="关闭错误提示"
               onClick={() => setError(null)}
             >
-              ×
+              <CloseIcon />
             </button>
           </div>
         </Show>

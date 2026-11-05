@@ -6,6 +6,7 @@
 import { For, Show, type Component } from "solid-js";
 import { useSortableRow } from "./dnd";
 import type { ResetSchedule, Subscription } from "../subscriptions/types";
+import { CloseIcon, DragIcon } from "../components/icons.tsx";
 
 const EXHAUSTED_SCOPE_PRIORITY: Record<ResetSchedule["type"], number> = {
   fiveHour: 0,
@@ -140,10 +141,7 @@ const PriorityRow: Component<PriorityRowProps> = (props) => {
         <GripIcon />
       </button>
 
-      <span
-        aria-label={`优先级 ${props.rank}`}
-        class="priority-rank"
-      >
+      <span aria-label={`优先级 ${props.rank}`} class="priority-rank">
         {props.rank}
       </span>
 
@@ -172,7 +170,7 @@ const PriorityRow: Component<PriorityRowProps> = (props) => {
         aria-label={`移除 ${props.subscription.name}`}
         onClick={() => props.onRemove(props.subscription.id)}
       >
-        ×
+        <CloseIcon />
       </button>
     </div>
   );
@@ -189,16 +187,18 @@ export const SortablePriorityList: Component<SortablePriorityListProps> = (
 ) => {
   const orderedSubscriptions = () =>
     props.subscriptionOrder
-      .map((id) => props.subscriptions.find((subscription) => subscription.id === id))
-      .filter((subscription): subscription is Subscription => Boolean(subscription));
+      .map((id) =>
+        props.subscriptions.find((subscription) => subscription.id === id)
+      )
+      .filter((subscription): subscription is Subscription =>
+        Boolean(subscription)
+      );
 
   return (
     <Show
       when={orderedSubscriptions().length > 0}
       fallback={
-        <div class="priority-empty">
-          该场景暂无订阅，请从下方列表添加
-        </div>
+        <div class="priority-empty">该场景暂无订阅，请从下方列表添加</div>
       }
     >
       <div class="priority-list">

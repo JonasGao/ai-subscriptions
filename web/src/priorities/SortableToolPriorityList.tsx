@@ -4,6 +4,7 @@
 import { For, Show, type Component } from "solid-js";
 import { useSortableRow } from "./dnd";
 import type { Tool } from "./types";
+import { CloseIcon, DragIcon } from "../components/icons.tsx";
 
 const GripIcon: Component = () => (
   <svg
@@ -62,7 +63,7 @@ const ToolRow: Component<{
         aria-label={`移除 ${props.tool.name}`}
         onClick={() => props.onRemove(props.tool.id)}
       >
-        ×
+        <CloseIcon />
       </button>
     </div>
   );

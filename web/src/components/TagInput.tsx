@@ -1,4 +1,5 @@
 import { createMemo, createSignal, For, Show, type Component } from "solid-js";
+import { CloseIcon, DragIcon } from "./icons.tsx";
 import type { Tag } from "../subscriptions/types";
 import {
   getTagNameError,
@@ -105,7 +106,7 @@ export const TagInput: Component<TagInputProps> = (props) => {
                 title={`移除 ${name}`}
                 disabled={props.disabled}
               >
-                ×
+                <CloseIcon />
               </button>
             </span>
           )}
@@ -146,7 +147,11 @@ export const TagInput: Component<TagInputProps> = (props) => {
               } else {
                 addNames([input()]);
               }
-            } else if (event.key === "Backspace" && !input() && props.value.length) {
+            } else if (
+              event.key === "Backspace" &&
+              !input() &&
+              props.value.length
+            ) {
               removeName(props.value[props.value.length - 1]);
             } else if (event.key === "Escape") {
               setOpen(false);
@@ -160,7 +165,11 @@ export const TagInput: Component<TagInputProps> = (props) => {
         />
 
         <Show when={open() && !props.disabled && candidates().length > 0}>
-          <div id="subscription-tag-options" role="listbox" class="tag-input-options">
+          <div
+            id="subscription-tag-options"
+            role="listbox"
+            class="tag-input-options"
+          >
             <For each={candidates()}>
               {(tag, index) => (
                 <button
