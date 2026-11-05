@@ -39,4 +39,4 @@ priorities / tool-priorities / tools / tags（含 API 缓存）/ proxy-subscript
 
 多阶段 Dockerfile（node 构建 web → go 编译 → distroless）；`deploy/docker` 与 `deploy/systemd`（单二进制安装）适配，make 命令族与对外契约不变。
 **cutover gate**（ADR-0018）：parity 矩阵全闭合 + 冒烟清单（登录/改密/首登强制改密、订阅 CRUD + 优先级拖拽、火山/阿里/DeepSeek 实时查询、重置计划与校准触发、飞书通知测试发送 + WS 启停、生产副本迁移演练、备份快照可恢复、镜像 <50MB 且 RSS <150MB）。
-**已通过（#42）**：单提交删除旧栈（`app/`、`lib/`、`__tests__/`、旧构建配置），AGENTS.md、README.md 与 CONTEXT.md 同步改写。
+**已通过（#42）**（冒烟清单逐项留痕见 [smoke-checklist.md](smoke-checklist.md)）：单提交删除旧栈（`app/`、`lib/`、`__tests__/`、旧构建配置），AGENTS.md、README.md 与 CONTEXT.md 同步改写。
