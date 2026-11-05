@@ -61,9 +61,9 @@ export function calculateYearlyTotal(subscriptions: Subscription[]): number {
     );
 }
 
-/** calculateOneTimeTotal sums every one-time top-up. */
+/** calculateOneTimeTotal sums the balance of every one-time top-up. */
 export function calculateOneTimeTotal(subscriptions: Subscription[]): number {
   return subscriptions
     .filter((subscription) => subscription.subscriptionType === "one-time")
-    .reduce((total, subscription) => total + subscription.price, 0);
+    .reduce((total, subscription) => total + (subscription.balance ?? 0), 0);
 }
