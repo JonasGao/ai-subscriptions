@@ -1,5 +1,7 @@
-node_modules
-.next
+# Build context: repository root, but only server/ and web/ feed the image.
+# Everything below is pruned to keep the context small and deterministic.
+
+# --- version control / tooling ---
 .git
 .github
 .husky
@@ -9,12 +11,29 @@ node_modules
 .pi
 .remember
 .mcp.json
-__tests__
+.vscode
+.serena
+
+# --- dependencies and build output (rebuilt inside the image) ---
+node_modules
+web/node_modules
+web/dist
+server/bin
+# staged SPA tree: always copied from the web stage, never from the workspace
+server/internal/webui/dist
+.server
 coverage
-data
+
+# --- secrets and runtime data ---
+.env
 .env*
+data
+/server/.data
+
+# --- docs and deploy definitions (not needed in the build) ---
 docs
 *.md
+deploy
+Makefile
 Dockerfile
 .dockerignore
-Makefile

@@ -1,0 +1,17 @@
+[Unit]
+Description=AI Subscriptions Management Tool
+After=network.target
+StartLimitBurst=3
+StartLimitIntervalSec=60
+
+[Service]
+Type=simple
+WorkingDirectory=@PROJECT_DIR@
+EnvironmentFile=-@ENV_FILE@
+Environment="PORT=@PORT@"
+ExecStart=@BIN@
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

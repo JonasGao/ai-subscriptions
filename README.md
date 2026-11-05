@@ -4,227 +4,119 @@
 
 ## 功能特性
 
-- **订阅管理**: 添加、编辑、删除AI订阅服务
-- **支出统计**: 实时显示月度和年度总支出
-- **分类分析**: 饼图展示各分类支出分布
+- **订阅管理**: 添加、编辑、删除AI订阅服务（周期性/一次性），支持凭据保存与连通性测试
+- **支出统计**: 实时显示月度和年度总支出（图表功能按 ADR-0018 范围修订不移植）
+- **分类与标签**: 按分类和状态筛选订阅，标签可复用
 - **状态跟踪**: 支持活跃、暂停、已取消三种状态
 - **续费提醒**: 自动标记即将续费的订阅（7天内）
-- **筛选功能**: 按分类和状态筛选订阅
 - **优先级管理**: 多场景优先级配置，支持拖拽排序
-- **数据持久化**: 本地JSON文件存储数据
+- **工具与代理订阅**: 独立的工具清单、代理订阅记录与标签
+- **用量查询**: 火山、阿里、DeepSeek 等提供商的实时用量/余额/模型查询
+- **重置计划**: fiveHour/weekly/monthly 重置跟踪、对齐与校准
+- **通知**: 飞书应用机器人通知与 WS 监听
+- **数据持久化**: SQLite 本地存储，自动快照备份
 
 ## 技术栈
 
-- **前端框架**: Next.js 14 (App Router)
-- **UI组件**: shadcn/ui + Radix UI
-- **样式方案**: Tailwind CSS
-- **图表展示**: Recharts
-- **开发语言**: TypeScript
-- **图标库**: Lucide React
+- **后端**: Go 1.27 + chi，编译为单二进制
+- **前端**: Vite + SolidJS，SPA 经 `go:embed` 嵌入二进制
+- **存储**: SQLite（`modernc.org/sqlite`，WAL）
+- **认证**: 无状态 HMAC 签名 cookie
+- **部署**: Docker（默认，distroless 运行）或 systemd 用户服务
 
-## 安装指南
+架构决策见 `docs/adr/0017-storage-engine-sqlite-migration.md` 与
+`docs/adr/0018-go-solidjs-single-binary-rewrite.md`。
 
-### 前置要求
+## 快速开始
 
-- Node.js 18.0 或更高版本
-- npm 或 pnpm
+### 从源码构建
 
-### 安装步骤
-
-1. 克隆项目仓库:
+前置要求：Go 1.27+、Node.js 24+、npm。
 
 ```bash
-git clone <repository-url>
-cd ai-subscriptions
+make build     # 构建 web/ SPA 并编译 Go 单二进制
+make run       # 运行，默认监听 :3000
 ```
 
-2. 安装依赖:
+访问 `http://localhost:3000`。默认账号 `admin/admin123`，首次登录会要求修改密码。
+
+### 开发模式
 
 ```bash
-npm install
+cd server && go run ./cmd/server     # 后端 :3000
+npm --prefix web run dev             # Vite 开发服务器，/api 代理到 :3000
 ```
 
-3. 启动开发服务器:
+### Docker（默认）
 
 ```bash
-npm run dev
+make deploy    # 构建镜像并启动容器
+make status
+make logs
 ```
 
-4. 打开浏览器访问 `http://localhost:3000`
+详见 `deploy/docker/README.md`。
 
-## 使用说明
+## 配置
 
-### 添加订阅
+| 变量              | 说明                                                                 |
+| ----------------- | -------------------------------------------------------------------- |
+| `DATA_DIR`        | 数据目录（SQLite 库与 `backups/`）。容器内固定 `/data`；未设时回退 `XDG_DATA_HOME/ai-subscriptions`、`~/.local/share/ai-subscriptions` |
+| `NEXTAUTH_SECRET` | 凭据加密密钥与会话签名密钥；未设时使用随机值，重启后会话失效         |
+| `PORT`            | 监听端口，默认 3000                                                  |
 
-1. 点击页面右上角的"添加订阅"按钮
-2. 在弹出的对话框中填写订阅信息:
-   - 名称: 订阅服务名称
-   - 分类: 选择或输入分类（如官方订阅、图像生成等）
-   - 价格: 月度订阅价格
-   - 开始日期: 订阅开始日期
-   - 续费日期: 下次续费日期
-   - 状态: 活跃/暂停/已取消
-   - 备注: 可选的备注信息
-3. 点击"添加"按钮保存
+## 数据与迁移
 
-### 编辑订阅
+- 数据存于 `DATA_DIR/ai-subscriptions.db`（SQLite，WAL）；快照在 `DATA_DIR/backups/`，保留 10 份。
+- 首次启动若发现旧版 JSON 数据（`subscriptions.json` 等），会先做 JSON 快照，再单向导入 SQLite；
+  加密凭据密文原样搬运、不解密重加密（ADR-0017）。
+- 迁移演练（只读源目录，校验行数与密文逐字节一致）：
 
-1. 在订阅卡片上点击"编辑"按钮
-2. 在弹出的对话框中修改信息
-3. 点击"保存"按钮更新
-
-### 删除订阅
-
-1. 在订阅卡片上点击"删除"按钮
-2. 订阅将被永久删除
-
-### 篮选订阅
-
-- 使用"分类筛选"下拉框选择特定分类
-- 使用"状态筛选"下拉框选择特定状态
-- 选择"全部"可显示所有订阅
-
-### 查看统计
-
-- 页面顶部显示月度总支出、年度总支出和活跃订阅数
-- 右侧饼图展示各分类支出占比
-
-### 优先级管理
-
-1. **创建场景**: 点击"+"按钮，输入场景名称（如"工作日"、"周末"）
-2. **添加订阅**: 从可用订阅列表中点击订阅添加到场景
-3. **调整优先级**: 拖拽订阅项调整使用优先级顺序
-4. **移除订阅**: 点击订阅项的"X"按钮从场景中移除
-5. **重命名场景**: 点击编辑按钮修改场景名称
-6. **删除场景**: 点击删除按钮移除场景
-7. **切换场景**: 使用下拉框切换不同使用场景
+```bash
+cd server && go run ./cmd/migration-drill --source <旧 data 目录>
+```
 
 ## 项目结构
 
 ```
 ai-subscriptions/
-├── app/
-│   ├── api/
-│   │   ├── subscriptions/
-│   │   │   ├── route.ts      # 订阅CRUD API
-│   │   │   └── [id]/route.ts # 单个订阅操作API
-│   │   └── categories/
-│   │   │   └── route.ts      # 分类API
-│   ├── globals.css            # 全局样式
-│   ├── layout.tsx             # 根布局
-│   └── page.tsx               # 主页面
-├── components/
-│   ├── ui/                    # shadcn/ui组件
-│   ├── StatsCards.tsx         # 统计卡片
-│   ├── CategoryPieChart.tsx   # 分类饼图
-│   ├── SubscriptionCard.tsx   # 订阅卡片
-│   ├── SubscriptionForm.tsx   # 订阅表单
-│   ├── SubscriptionList.tsx   # 订阅列表
-│   ├── CategoryFilter.tsx     # 分类筛选
-│   ├── PriorityManager.tsx    # 优先级管理主组件
-│   └── SortablePriorityList.tsx # 可拖拽优先级列表
-├── lib/
-│   ├── db.ts                  # 订阅数据存储逻辑
-│   ├── priorities.ts          # 优先级数据存储逻辑
-│   ├── types.ts               # 类型定义
-│   └── utils.ts               # 工具函数
-├── data/
-│   ├── subscriptions.json     # 订阅数据文件（自动生成）
-│   └── priorities.json        # 优先级数据文件（自动生成）
-├── Dockerfile                 # Docker 镜像构建（构建上下文为仓库根）
-├── Makefile                   # 瘦代理，转发到 deploy/docker
+├── server/                 # Go 后端 + go:embed 的 SPA
+│   ├── cmd/server/         # 进程入口
+│   ├── cmd/migration-drill/# JSON→SQLite 迁移演练
+│   └── internal/           # auth、store、providers、scheduler、notify、httpapi...
+├── web/                    # Vite + SolidJS 前端
+│   └── src/                # pages、components、各领域模块
 ├── deploy/
-│   ├── docker/                # Docker 部署（默认）：Makefile + docker-compose.yml
-│   └── systemd/               # systemd 部署
-└── package.json
+│   ├── docker/             # Docker 部署（默认）
+│   └── systemd/            # systemd 用户服务（备选）
+├── docs/                   # ADR、parity 矩阵、计划与演练记录
+├── Dockerfile              # 多阶段镜像（node → go → distroless）
+└── Makefile                # 构建/测试/部署命令族
 ```
-
-## 默认分类
-
-- 官方订阅
-- 图像生成
-- 代码工具
-- 写作工具
-- 数据分析
-- 其他
 
 ## 构建与部署
 
-### 构建生产版本
-
 ```bash
-npm run build
+make build     # 单二进制（含嵌入 SPA）
+make test      # Go + vitest 全量
+make deploy    # Docker 部署（默认）
+make -C deploy/systemd install   # systemd 用户服务（备选）
 ```
 
-### 启动生产服务器
-
-```bash
-npm start
-```
-
-### 部署方式
-
-项目提供两种部署方式：**Docker（默认）** 与 systemd 用户服务。二者同占 3000 端口，任选其一，不可同时启用。
-
-#### Docker（默认）
-
-部署配置在仓库的 `deploy/docker/`（`Makefile` 与 `docker-compose.yml`），根目录 `Makefile` 只是转发代理，命令用法不变。运行时目录 `~/docker/ai-subscriptions/` 只放 `data/`、`.env`（含 `NEXTAUTH_SECRET`）与可选的 `build.env`。容器以非 root 用户（1000:1000）运行，CPU 限制 1.0 核、内存限制 512M，数据卷 `~/docker/ai-subscriptions/data` 挂载为 `/data`。基础镜像默认 `node:24-alpine`，可通过 `NODE_IMAGE` 覆盖（见 `deploy/docker/README.md`）。
-
-**日常更新（构建镜像并重启容器）：**
-
-```bash
-make deploy
-```
-
-**启动/停止/重启容器：**
-
-```bash
-make up
-make down
-make restart
-```
-
-**查看状态：**
-
-```bash
-make status
-```
-
-**查看日志：**
-
-```bash
-make logs
-```
-
-**卸载容器（镜像与 ~/docker 数据保留）：**
-
-```bash
-make uninstall
-```
-
-**查看所有命令：**
-
-```bash
-make help
-```
-
-**部署细节：** 见 `deploy/docker/README.md`（compose 关键字段、路径解析与基础镜像覆盖说明）。
-
-#### systemd 用户服务
-
-另一种部署方式，安装为用户级 systemd 服务，实现后台运行和开机自启：
-
-```bash
-make -C deploy/systemd install
-```
-
-其余目标（start/stop/status/logs 等）见 `deploy/systemd/README.md`。与 Docker 部署不可同时启用（同占 3000 端口）。
+Docker 与 systemd 同占 3000 端口，任选其一，不可同时启用。详见 `deploy/docker/README.md` 与
+`deploy/systemd/README.md`。
 
 ## 开发命令
 
-- `npm run dev` - 启动开发服务器
-- `npm run build` - 构建生产版本
-- `npm run lint` - 运行代码检查
+| 命令                          | 说明                                  |
+| ----------------------------- | ------------------------------------- |
+| `make build`                  | 构建单二进制                          |
+| `make test`                   | Go + 前端全量测试                     |
+| `make web-build`              | 只构建 SPA 并暂存给 `go:embed`        |
+| `make server-build`           | 只编译 Go 二进制                      |
+| `cd server && go test ./...`  | Go 测试                               |
+| `npm --prefix web test`       | 前端 vitest                           |
+| `npm --prefix web run dev`    | 前端开发服务器                        |
 
 ## 许可证
 
