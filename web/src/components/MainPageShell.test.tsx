@@ -18,15 +18,18 @@ describe("MainPageShell", () => {
       </MainPageShell>
     ));
 
-    expect(screen.getByRole("link", { name: "订阅" }).getAttribute("href")).toBe(
-      "/subscriptions"
-    );
-    expect(screen.getByRole("link", { name: "工具" }).getAttribute("href")).toBe(
-      "/tools"
-    );
+    expect(
+      screen.getByRole("link", { name: "订阅" }).getAttribute("href")
+    ).toBe("/subscriptions");
+    expect(
+      screen.getByRole("link", { name: "工具" }).getAttribute("href")
+    ).toBe("/tools");
     expect(
       screen.getByRole("link", { name: "代理订阅" }).getAttribute("href")
     ).toBe("/proxy-subscriptions");
+    expect(
+      screen.getByRole("link", { name: "通知" }).getAttribute("href")
+    ).toBe("/notifications");
     expect(
       screen.getByRole("link", { name: "工具" }).getAttribute("aria-current")
     ).toBe("page");

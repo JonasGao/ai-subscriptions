@@ -1,7 +1,8 @@
 import { For, type Component, type JSX } from "solid-js";
 import { ThemeToggle } from "./ThemeToggle";
 
-export type MainPage = "subscriptions" | "tools" | "proxy-subscriptions";
+export type MainPage =
+  "subscriptions" | "tools" | "proxy-subscriptions" | "notifications";
 
 export interface MainPageShellProps {
   activePage: MainPage;
@@ -16,6 +17,7 @@ const mainPages: Array<{ id: MainPage; href: string; label: string }> = [
     href: "/proxy-subscriptions",
     label: "代理订阅",
   },
+  { id: "notifications", href: "/notifications", label: "通知" },
 ];
 
 /**
