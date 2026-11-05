@@ -1,0 +1,469 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-05T15:14:10+08:00",
+  "title": "Design System: AI订阅管理工具",
+  "extensions": {
+    "colorMeta": {
+      "ledger-indigo": {
+        "role": "primary",
+        "displayName": "账本靛 / Ledger Indigo",
+        "canonical": "#4f46e5",
+        "tonalRamp": [
+          "#181636",
+          "#161074",
+          "#2018AA",
+          "#2A1FE0",
+          "#625AE8",
+          "#958FEF",
+          "#C3C0F6",
+          "#EEEDF8"
+        ]
+      },
+      "ledger-indigo-dark": {
+        "role": "primary",
+        "displayName": "账本靛（深色）",
+        "canonical": "#818cf8",
+        "tonalRamp": [
+          "#131739",
+          "#07127E",
+          "#0A1AB8",
+          "#0D23F2",
+          "#4C5CF5",
+          "#8691F8",
+          "#BBC1FB",
+          "#ECEDF9"
+        ]
+      },
+      "paper-white": {
+        "role": "neutral",
+        "displayName": "纸白 / Paper White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#262626",
+          "#424242",
+          "#616161",
+          "#808080",
+          "#A1A1A1",
+          "#BFBFBF",
+          "#DBDBDB",
+          "#F2F2F2"
+        ]
+      },
+      "snow-white": {
+        "role": "neutral",
+        "displayName": "雪白 / Snow White",
+        "canonical": "#fafafa",
+        "tonalRamp": [
+          "#262626",
+          "#424242",
+          "#616161",
+          "#808080",
+          "#A1A1A1",
+          "#BFBFBF",
+          "#DBDBDB",
+          "#F2F2F2"
+        ]
+      },
+      "ink-black": {
+        "role": "neutral",
+        "displayName": "炭黑 / Charcoal",
+        "canonical": "#18181b",
+        "tonalRamp": [
+          "#252527",
+          "#3E3E46",
+          "#5B5B67",
+          "#787887",
+          "#9B9BA6",
+          "#BCBCC3",
+          "#D9D9DD",
+          "#F2F2F3"
+        ]
+      },
+      "muted-slate": {
+        "role": "neutral",
+        "displayName": "静默灰 / Muted Slate",
+        "canonical": "#71717a",
+        "tonalRamp": [
+          "#252527",
+          "#404045",
+          "#5D5D65",
+          "#7B7B84",
+          "#9D9DA4",
+          "#BDBDC2",
+          "#DADADD",
+          "#F2F2F3"
+        ]
+      },
+      "muted-slate-dark": {
+        "role": "neutral",
+        "displayName": "静默灰（深色）",
+        "canonical": "#a1a1aa",
+        "tonalRamp": [
+          "#252527",
+          "#3F3F46",
+          "#5C5C66",
+          "#797986",
+          "#9C9CA5",
+          "#BCBCC2",
+          "#DADADD",
+          "#F2F2F3"
+        ]
+      },
+      "card-surface": {
+        "role": "neutral",
+        "displayName": "卡片面 / Card Surface",
+        "canonical": "color-mix(in srgb, var(--bg) 94%, var(--fg) 6%)",
+        "tonalRamp": [
+          "#252527",
+          "#3E3E46",
+          "#5B5B67",
+          "#787887",
+          "#9B9BA6",
+          "#BCBCC3",
+          "#D9D9DD",
+          "#F2F2F3"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "发丝线 / Hairline",
+        "canonical": "color-mix(in srgb, var(--fg) 14%, transparent)",
+        "tonalRamp": [
+          "#252527",
+          "#3E3E46",
+          "#5B5B67",
+          "#787887",
+          "#9B9BA6",
+          "#BCBCC2",
+          "#D9D9DD",
+          "#F2F2F3"
+        ]
+      },
+      "available-green": {
+        "role": "status",
+        "displayName": "可用绿 / Available Green",
+        "canonical": "#16a34a",
+        "tonalRamp": [
+          "#163622",
+          "#107535",
+          "#17AB4E",
+          "#1EE166",
+          "#59E98E",
+          "#8FF0B3",
+          "#C0F7D4",
+          "#EDF8F1"
+        ]
+      },
+      "available-green-dark": {
+        "role": "status",
+        "displayName": "可用绿（深色）",
+        "canonical": "#4ade80",
+        "tonalRamp": [
+          "#183522",
+          "#147036",
+          "#1EA44F",
+          "#27D868",
+          "#5FE28F",
+          "#93EBB3",
+          "#C3F4D5",
+          "#EDF7F1"
+        ]
+      },
+      "pending-amber": {
+        "role": "status",
+        "displayName": "待办琥珀 / Pending Amber",
+        "canonical": "#d97706",
+        "tonalRamp": [
+          "#3A2812",
+          "#814704",
+          "#BD6705",
+          "#F88807",
+          "#FAA747",
+          "#FCC483",
+          "#FDDEBA",
+          "#F9F3EC"
+        ]
+      },
+      "pending-amber-dark": {
+        "role": "status",
+        "displayName": "待办琥珀（深色）",
+        "canonical": "#fbbf24",
+        "tonalRamp": [
+          "#3B2F12",
+          "#825F02",
+          "#BE8A03",
+          "#FAB605",
+          "#FCC946",
+          "#FDDA82",
+          "#FEEBB9",
+          "#F9F5EB"
+        ]
+      },
+      "alert-red": {
+        "role": "status",
+        "displayName": "警示红 / Alert Red",
+        "canonical": "#dc2626",
+        "tonalRamp": [
+          "#351717",
+          "#721212",
+          "#A71B1B",
+          "#DC2323",
+          "#E55D5D",
+          "#ED9191",
+          "#F5C2C2",
+          "#F7EDED"
+        ]
+      },
+      "alert-red-dark": {
+        "role": "status",
+        "displayName": "警示红（深色）",
+        "canonical": "#f87171",
+        "tonalRamp": [
+          "#391313",
+          "#7E0606",
+          "#B90909",
+          "#F30C0C",
+          "#F64B4B",
+          "#F98585",
+          "#FCBBBB",
+          "#F9ECEC"
+        ]
+      },
+      "warning-amber": {
+        "role": "status",
+        "displayName": "进度琥珀 / Warning Amber",
+        "canonical": "#f59e0b",
+        "tonalRamp": [
+          "#3A2B13",
+          "#7F5205",
+          "#BA7808",
+          "#F59E0A",
+          "#F8B74A",
+          "#FACE85",
+          "#FCE4BA",
+          "#F9F4EC"
+        ]
+      },
+      "success-green": {
+        "role": "status",
+        "displayName": "确认绿 / Success Green",
+        "canonical": "#15803d",
+        "tonalRamp": [
+          "#173522",
+          "#137236",
+          "#1BA64F",
+          "#24DB68",
+          "#5DE490",
+          "#91EDB4",
+          "#C2F5D5",
+          "#EDF7F1"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "页面主标题",
+        "purpose": "页面级标题，1.75rem、-0.02em 字距；登录页使用 clamp。"
+      },
+      "headline": {
+        "displayName": "区块标题与统计值",
+        "purpose": "1.5rem 粗体；统计数字加 tabular-nums。"
+      },
+      "title": {
+        "displayName": "卡片与小节标题",
+        "purpose": "1.05–1.2rem，用于卡片名、对话框标题、小节。"
+      },
+      "body": {
+        "displayName": "正文与按钮",
+        "purpose": "0.875rem；卡片字段可用 0.85rem 紧排变体。"
+      },
+      "label": {
+        "displayName": "标签与提示",
+        "purpose": "0.7–0.85rem，字段名、徽章、倒计时、副文本。"
+      },
+      "mono": {
+        "displayName": "机器标识符",
+        "purpose": "仅用于模型 ID、权限 code、飞书 ID 等机器可读字符串。"
+      }
+    },
+    "shadows": [
+      {
+        "name": "dialog-lift",
+        "value": "0 20px 50px rgba(0, 0, 0, 0.25)",
+        "purpose": "唯一允许的模态浮层阴影，配合 rgba(0,0,0,0.45) 遮罩。"
+      },
+      {
+        "name": "drag-lift",
+        "value": "0 4px 12px rgba(0, 0, 0, 0.15)",
+        "purpose": "仅用于拖拽中的优先级行。"
+      }
+    ],
+    "motion": [
+      {
+        "name": "progress-width",
+        "value": "width 0.2s ease",
+        "purpose": "用量进度条填充宽度变化。"
+      },
+      {
+        "name": "drag-transform",
+        "value": "transform 0.15s ease",
+        "purpose": "拖拽状态与飞书权限面板箭头翻转。"
+      },
+      {
+        "name": "hover-brightness",
+        "value": "filter: brightness(1.05)",
+        "purpose": "主按钮悬停的唯一反馈。"
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "靛蓝实底主操作；文字取 var(--bg)，使浅色为白字、深色自动反转为墨色字。",
+      "html": "<button class=\"ds-btn-primary\">添加订阅</button>",
+      "css": ".ds-btn-primary { padding: 0.5rem 0.9rem; border: 1px solid var(--accent); border-radius: 0.45rem; background: var(--accent); color: var(--bg); font: inherit; font-size: 0.875rem; cursor: pointer; transition: filter 0.15s ease; } .ds-btn-primary:hover { filter: brightness(1.05); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-btn-primary:active { filter: brightness(0.96); } .ds-btn-primary:disabled { opacity: 0.6; cursor: default; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "次要操作，透明底加发丝线描边。",
+      "html": "<button class=\"ds-btn-ghost\">取消</button>",
+      "css": ".ds-btn-ghost { padding: 0.5rem 0.9rem; border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent); border-radius: 0.45rem; background: transparent; color: var(--fg); font: inherit; font-size: 0.875rem; cursor: pointer; } .ds-btn-ghost:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-btn-ghost:disabled { opacity: 0.6; cursor: default; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "删除等破坏性操作；通知页另有描边式危险按钮。",
+      "html": "<button class=\"ds-btn-danger\">删除</button>",
+      "css": ".ds-btn-danger { padding: 0.5rem 0.9rem; border: 1px solid #dc2626; border-radius: 0.45rem; background: #dc2626; color: #fff; font: inherit; font-size: 0.875rem; cursor: pointer; } .ds-btn-danger:hover { filter: brightness(1.05); } .ds-btn-danger:focus-visible { outline: 2px solid #dc2626; outline-offset: 2px; } .ds-btn-danger:disabled { opacity: 0.6; cursor: default; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "原生输入框外观；聚焦用 2px 靛蓝 outline 而非阴影。",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"订阅名称\" />",
+      "css": ".ds-input { padding: 0.5rem 0.6rem; border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent); border-radius: 0.4rem; background: var(--bg); color: var(--fg); font: inherit; font-size: 0.875rem; } .ds-input::placeholder { color: var(--muted); } .ds-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; } .ds-input:disabled { opacity: 0.6; }"
+    },
+    {
+      "name": "Subscription Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "订阅/代理订阅/通知卡共用：极淡叠加面 + 发丝线，无阴影。",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-head\"><h3 class=\"ds-card-title\">Volcengine Ark</h3><span class=\"ds-status ds-status-active\">活跃</span></div><dl class=\"ds-card-fields\"><dt>月费</dt><dd>¥ 199.00</dd></dl></div>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; border: 1px solid color-mix(in srgb, var(--fg) 14%, transparent); border-radius: 0.75rem; background: color-mix(in srgb, var(--bg) 94%, var(--fg) 6%); color: var(--fg); } .ds-card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; } .ds-card-title { margin: 0; font-size: 1.05rem; font-weight: 600; } .ds-card-fields { display: flex; justify-content: space-between; gap: 0.75rem; margin: 0; font-size: 0.85rem; } .ds-card-fields dt { color: var(--muted); } .ds-card-fields dd { margin: 0; font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; } .ds-status { padding: 0.15rem 0.55rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.75rem; white-space: nowrap; } .ds-status-active { color: #16a34a; }"
+    },
+    {
+      "name": "Tag Chip",
+      "kind": "chip",
+      "refersTo": "tag-chip",
+      "description": "可移除的订阅标签，靛蓝 14% 叠加底；× 为手写内联 SVG。",
+      "html": "<span class=\"ds-tag-chip\"><span>编程</span><button class=\"ds-tag-remove\" type=\"button\" aria-label=\"移除标签\"><svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"><path d=\"M2 2l6 6M8 2l-6 6\"/></svg></button></span>",
+      "css": ".ds-tag-chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.15rem 0.5rem; border-radius: 0.3rem; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--fg); font-size: 0.8rem; } .ds-tag-remove { padding: 0 0.15rem; border: none; background: none; color: var(--muted); cursor: pointer; line-height: 1; } .ds-tag-remove:hover { color: var(--fg); } .ds-tag-remove:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }"
+    },
+    {
+      "name": "Segmented Navigation",
+      "kind": "nav",
+      "refersTo": "nav-active",
+      "description": "页头分段导航：整组发丝线、项间竖线，激活项靛蓝实底。",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item\" href=\"#\">订阅</a><a class=\"ds-nav-item ds-nav-active\" href=\"#\">工具</a><a class=\"ds-nav-item\" href=\"#\">代理订阅</a></nav>",
+      "css": ".ds-nav { display: inline-flex; overflow: hidden; border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent); border-radius: 0.45rem; } .ds-nav-item { padding: 0.45rem 0.9rem; color: var(--fg); font-size: 0.9rem; text-decoration: none; } .ds-nav-item + .ds-nav-item { border-left: 1px solid color-mix(in srgb, var(--fg) 20%, transparent); } .ds-nav-item:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); } .ds-nav-item.ds-nav-active { background: var(--accent); color: var(--bg); } .ds-nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }"
+    },
+    {
+      "name": "Usage Progress",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "签名组件：0.35rem 全圆角轨道，≥70% 琥珀、>90% 红；只编码消耗比例。",
+      "html": "<div class=\"ds-usage\"><div class=\"ds-usage-track\"><div class=\"ds-usage-fill ds-usage-warning\" style=\"width:78%\"></div></div><span class=\"ds-usage-pct\">78%</span></div>",
+      "css": ".ds-usage { display: flex; align-items: center; gap: 0.5rem; } .ds-usage-track { flex: 1; height: 0.35rem; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--fg) 12%, transparent); } .ds-usage-fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.2s ease; } .ds-usage-fill.ds-usage-warning { background: #f59e0b; } .ds-usage-fill.ds-usage-danger { background: #dc2626; } .ds-usage-pct { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Priority Drag Row",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "签名组件：优先级场景中的可拖拽行；拖拽时才有阴影。",
+      "html": "<div class=\"ds-drag-row\"><button class=\"ds-drag-handle\" type=\"button\" aria-label=\"拖动排序\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 14 14\" fill=\"currentColor\"><circle cx=\"4\" cy=\"3\" r=\"1.2\"/><circle cx=\"10\" cy=\"3\" r=\"1.2\"/><circle cx=\"4\" cy=\"7\" r=\"1.2\"/><circle cx=\"10\" cy=\"7\" r=\"1.2\"/><circle cx=\"4\" cy=\"11\" r=\"1.2\"/><circle cx=\"10\" cy=\"11\" r=\"1.2\"/></svg></button><span class=\"ds-drag-rank\">1</span><span class=\"ds-drag-name\">Kimi Code</span></div>",
+      "css": ".ds-drag-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; border: 1px solid rgba(79, 70, 229, 0.2); border-radius: 0.375rem; background: rgba(79, 70, 229, 0.1); color: var(--fg); } .ds-drag-row:hover { border-color: color-mix(in srgb, var(--accent) 35%, transparent); } .ds-drag-row.ds-drag-active { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); } .ds-drag-handle { padding: 0.15rem; border: none; background: none; color: var(--muted); cursor: grab; } .ds-drag-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; } .ds-drag-rank { width: 1.5rem; flex-shrink: 0; text-align: center; color: var(--accent); font-size: 0.75rem; font-variant-numeric: tabular-nums; } .ds-drag-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }"
+    },
+    {
+      "name": "Dialog",
+      "kind": "custom",
+      "refersTo": "dialog",
+      "description": "唯一带阴影的浮层；div role=\"dialog\"，两列表单，操作区右对齐。",
+      "html": "<div class=\"ds-dialog\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"ds-dialog-title\"><h2 id=\"ds-dialog-title\" class=\"ds-dialog-title\">添加订阅</h2><div class=\"ds-dialog-actions\"><button class=\"ds-dialog-cancel\">取消</button><button class=\"ds-dialog-submit\">保存</button></div></div>",
+      "css": ".ds-dialog { width: min(38rem, 100%); max-height: 90vh; overflow-y: auto; padding: 1.25rem 1.5rem; border-radius: 0.75rem; background: var(--bg); color: var(--fg); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25); } .ds-dialog-title { margin: 0 0 0.75rem; font-size: 1.2rem; } .ds-dialog-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; } .ds-dialog-actions button { padding: 0.5rem 0.9rem; border-radius: 0.45rem; font: inherit; font-size: 0.875rem; cursor: pointer; } .ds-dialog-cancel { border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent); background: transparent; color: var(--fg); } .ds-dialog-cancel:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); } .ds-dialog-submit { border: 1px solid var(--accent); background: var(--accent); color: var(--bg); } .ds-dialog-submit:hover { filter: brightness(1.05); } .ds-dialog-actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "素页账本 / The Plain Ledger",
+    "overview": "这是一本收拾干净的账本，不是仪表盘。白纸或炭黑纸面上只有细到几乎看不见的分隔线，一点靛蓝用来标记「这里可以点、这里被选中、这里正在变化」。所有视觉决定服务于一个动作：把订阅、金额、状态和到期时间记下来，然后一眼查到。PRODUCT.md 确认的定位是个人订阅记账本，因此界面不制造戏剧性、不争夺注意力，也不假装自己是一个控制平台。\n\n气质是克制、清楚、可信。信息密度不低——卡片里挤着字段、徽章、进度条和操作按钮——但密度靠对齐、留白节奏和字重差异来消化，而不是靠装饰。系统字体、四枚主题变量、几乎为零的阴影、没有宽度断点：整套实现刻意把「设计感」压到最低，让数据成为唯一的主角。\n\n明确排除的方向：仪表盘大屏、渐变与玻璃拟态、装饰性插画、拟物化。这是用户确认的视觉反例，不是临时偏好；任何新界面都不应借「更现代」之名把它们带回来。",
+    "keyCharacteristics": [
+      "单一靛蓝强调色 + 中性纸面，语义色只描述状态。",
+      "静止状态完全平铺；层级靠 color-mix() 的极淡叠加与 1px 发丝线，不靠投影。",
+      "系统字体、原生表单控件、手写内联 SVG 图标，零外部字体与图标依赖。",
+      "响应式由 auto-fill/auto-fit minmax() 与 flex 换行完成，没有断点。",
+      "浅色 / 深色是同一套结构换四枚变量，深色模式另配语义色的高对比版本。"
+    ],
+    "rules": [
+      {
+        "name": "The One Accent Rule",
+        "body": "靛蓝是唯一的非中性色。一屏之内它只出现在可交互与已选中的地方；若某个元素不响应用户动作，它就不该是靛蓝色。",
+        "section": "colors"
+      },
+      {
+        "name": "The Semantic Color Rule",
+        "body": "绿、琥珀、红只表达状态与告警，永不作为装饰配色。它们各自有独立的深色值（#4ade80 / #fbbf24 / #f87171），不能靠降低透明度在深色模式里凑合——对比度修正已经是既有实现的一部分。",
+        "section": "colors"
+      },
+      {
+        "name": "The Reset Time Rule",
+        "body": "重置倒计时文字是唯一允许连续插值的颜色：从淡黄经橙到深红由 getResetUrgencyColor() 按剩余时间算出 hsl()，仅用于 weekly / monthly 窗口。用量进度条另有 70% / 90% 两档离散阈值，两套编码互不混用。",
+        "section": "colors"
+      },
+      {
+        "name": "The System Stack Rule",
+        "body": "不加载任何网页字体。中文与拉丁文字共用系统 sans-serif，等宽栈只服务机器可读的标识符。",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Numbers Rule",
+        "body": "金额、统计值、用量百分比、优先级序号、倒计时一律 font-variant-numeric: tabular-nums，避免数字跳动破坏账本的可信感。",
+        "section": "typography"
+      },
+      {
+        "name": "The Grid Wraps, It Doesn't Break Rule",
+        "body": "不要为某个屏宽引入断点或另写一套布局；调整 minmax() 的最小列宽或让工具栏换行即可。",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "阴影只出现在「浮层」与「拖拽中」这两种临时状态。任何常规卡片、统计块、导航或列表项都不加阴影；需要强调时提高描边浓度或叠加底色。",
+        "section": "elevation"
+      },
+      {
+        "name": "The Pill Is For Status Rule",
+        "body": "999px 只给徽章、标签与进度条；按钮与卡片一律保持可感知的直角感（0.45rem / 0.75rem），避免整页变成一堆胶囊。",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do 用 color-mix(in srgb, var(--fg) N%, transparent) 生成描边与叠加面，而不是新增硬编码中性色；N 落在 10%–22% 之间。",
+      "Do 让浅色 / 深色共用同一套结构，只切换 --bg / --fg / --muted / --accent 四枚变量。",
+      "Do 为语义色使用深色模式的独立高对比值（#4ade80 / #fbbf24 / #f87171）。",
+      "Do 用 auto-fill/auto-fit minmax() 与 flex-wrap 解决窄屏，并给金额与读数加 tabular-nums。",
+      "Do 保留原生 select / radio 与 div role=\"dialog\"，图标继续使用手写内联 SVG。"
+    ],
+    "donts": [
+      "Don't 引入仪表盘大屏、渐变、玻璃拟态、装饰性插画或拟物化——这是已确认的视觉反例。",
+      "Don't 给常规卡片、统计块或导航加阴影；只有对话框与拖拽行可以抬起。",
+      "Don't 用绿 / 琥珀 / 红做装饰配色，也别在深色模式里靠透明度复用浅色语义值。",
+      "Don't 引入第二枚品牌强调色、网页字体、图标库或宽度断点。",
+      "Don't 把 999px 全圆角用在按钮与卡片上，也不要把重置紧迫度色与用量进度条阈值混为一谈。"
+    ]
+  }
+}
