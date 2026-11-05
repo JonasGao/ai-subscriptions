@@ -40,6 +40,7 @@ export interface Subscription {
   resetSchedules?: ResetSchedule[];
   planId?: string;
   tagIds?: string[];
+  sortOrder?: number;
   createdAt: string;
   updatedAt: string;
 }

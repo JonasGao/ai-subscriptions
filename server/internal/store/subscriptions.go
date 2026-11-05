@@ -105,6 +105,26 @@ func (s *Store) Categories() ([]string, error) {
 	return s.categories(context.Background(), s.db)
 }
 
+// ReorderSubscriptions assigns sort_order = index for each supplied id
+// (unknown ids are ignored) and returns the full list sorted by order.
+func (s *Store) ReorderSubscriptions(ids []string) ([]model.Subscription, error) {
+	ctx := context.Background()
+	err := s.withTx(ctx, func(tx *sql.Tx) error {
+		for index, id := range ids {
+			if _, err := tx.ExecContext(ctx,
+				"UPDATE subscriptions SET sort_order = ?, updated_at = ? WHERE id = ?",
+				index, s.nowISO(), id); err != nil {
+				return fmt.Errorf("reorder subscription: %w", err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return s.Subscriptions()
+}
+
 // ---------- row <-> model mapping ----------
 
 func (s *Store) readSubscriptionDataTx(ctx context.Context, tx *sql.Tx) (*model.SubscriptionData, error) {
@@ -172,9 +192,9 @@ func (s *Store) subscriptions(ctx context.Context, q querier) ([]model.Subscript
 		SELECT id, name, category, provider, provider_custom, subscription_type,
 		       billing_cycle, price, start_date, renewal_date, status, notes,
 		       credentials, balance, balance_currency, low_balance_threshold,
-		       plan_id, created_at, updated_at
+		       plan_id, sort_order, created_at, updated_at
 		FROM subscriptions
-		ORDER BY rowid`)
+		ORDER BY sort_order, rowid`)
 	if err != nil {
 		return nil, fmt.Errorf("query subscriptions: %w", err)
 	}
@@ -189,7 +209,7 @@ func (s *Store) subscriptions(ctx context.Context, q querier) ([]model.Subscript
 			&sub.SubscriptionType, &sub.BillingCycle, &sub.Price, &sub.StartDate,
 			&sub.RenewalDate, &sub.Status, &sub.Notes, &sub.Credentials,
 			&balance, &sub.BalanceCurrency, &lowBalance, &sub.PlanID,
-			&sub.CreatedAt, &sub.UpdatedAt,
+			&sub.SortOrder, &sub.CreatedAt, &sub.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -347,13 +367,13 @@ func (s *Store) insertSubscription(ctx context.Context, tx *sql.Tx, sub model.Su
 			id, name, category, provider, provider_custom, subscription_type,
 			billing_cycle, price, start_date, renewal_date, status, notes,
 			credentials, balance, balance_currency, low_balance_threshold,
-			plan_id, created_at, updated_at
-		) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			plan_id, sort_order, created_at, updated_at
+		) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sub.ID, sub.Name, sub.Category, sub.Provider, sub.ProviderCustom,
 		sub.SubscriptionType, sub.BillingCycle, sub.Price, sub.StartDate,
 		sub.RenewalDate, sub.Status, sub.Notes, sub.Credentials,
 		nullableFloat(sub.Balance), sub.BalanceCurrency, nullableFloat(sub.LowBalanceThreshold),
-		sub.PlanID, sub.CreatedAt, sub.UpdatedAt,
+		sub.PlanID, sub.SortOrder, sub.CreatedAt, sub.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("insert subscription %q: %w", sub.Name, err)

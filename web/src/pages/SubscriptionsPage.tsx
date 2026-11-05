@@ -10,12 +10,20 @@ import { priorityScenes } from "../priorities/api";
 import { PriorityScenes } from "../priorities/PriorityScenes";
 import { SortablePriorityList } from "../priorities/SortablePriorityList";
 import {
+  DragDropProvider,
+  DragDropSensors,
+  SortableProvider,
+  closestCenter,
+  type DragEvent,
+} from "@thisbeyond/solid-dnd";
+import {
   createSubscription,
   deleteSubscription,
   fetchCategories,
   fetchProviders,
   fetchSubscriptions,
   fetchTags,
+  reorderSubscriptions,
   toggleScheduleExhausted,
   updateSubscription,
 } from "../subscriptions/api";
@@ -79,12 +87,10 @@ export const SubscriptionsPage: Component = () => {
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null);
   const [formOpen, setFormOpen] = createSignal(false);
   const [editing, setEditing] = createSignal<Subscription | null>(null);
-  const [selectedCategory, setSelectedCategory] = createSignal(
-    readStoredCategory()
-  );
-  const [selectedStatuses, setSelectedStatuses] = createSignal<
-    SubscriptionStatus[]
-  >(readStoredStatuses());
+  const [selectedCategory, setSelectedCategory] =
+    createSignal(readStoredCategory());
+  const [selectedStatuses, setSelectedStatuses] =
+    createSignal<SubscriptionStatus[]>(readStoredStatuses());
 
   const loadData = async () => {
     try {
@@ -121,15 +127,17 @@ export const SubscriptionsPage: Component = () => {
   };
 
   const visibleSubscriptions = () =>
-    subscriptions.filter((subscription) => {
-      const categoryMatch =
-        selectedCategory() === "all" ||
-        subscription.category === selectedCategory();
-      const statusMatch =
-        selectedStatuses().length === 0 ||
-        selectedStatuses().includes(subscription.status);
-      return categoryMatch && statusMatch;
-    });
+    subscriptions
+      .filter((subscription) => {
+        const categoryMatch =
+          selectedCategory() === "all" ||
+          subscription.category === selectedCategory();
+        const statusMatch =
+          selectedStatuses().length === 0 ||
+          selectedStatuses().includes(subscription.status);
+        return categoryMatch && statusMatch;
+      })
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
@@ -174,7 +182,9 @@ export const SubscriptionsPage: Component = () => {
         const updated = await updateSubscription(editing()!.id, data);
         setSubscriptions(
           reconcile(
-            subscriptions.map((item) => (item.id === updated.id ? updated : item)),
+            subscriptions.map((item) =>
+              item.id === updated.id ? updated : item
+            ),
             { key: "id" }
           )
         );
@@ -204,7 +214,9 @@ export const SubscriptionsPage: Component = () => {
 
     setSubscriptions(
       reconcile(
-        subscriptions.map((item) => (item.id === id ? { ...item, status } : item)),
+        subscriptions.map((item) =>
+          item.id === id ? { ...item, status } : item
+        ),
         { key: "id" }
       )
     );
@@ -243,7 +255,9 @@ export const SubscriptionsPage: Component = () => {
       const updated = await toggleScheduleExhausted(id, scheduleId, exhausted);
       setSubscriptions(
         reconcile(
-          subscriptions.map((item) => (item.id === updated.id ? updated : item)),
+          subscriptions.map((item) =>
+            item.id === updated.id ? updated : item
+          ),
           { key: "id" }
         )
       );
@@ -263,6 +277,28 @@ export const SubscriptionsPage: Component = () => {
       );
     } catch {
       setErrorMessage("删除订阅失败，请重试");
+    }
+  };
+
+  const handleReorder = async (event: DragEvent) => {
+    const { draggable, droppable } = event;
+    if (!droppable || draggable.id === droppable.id) return;
+
+    const sorted = visibleSubscriptions();
+    const from = sorted.findIndex((sub) => sub.id === String(draggable.id));
+    const to = sorted.findIndex((sub) => sub.id === String(droppable.id));
+    if (from === -1 || to === -1) return;
+
+    const reordered = [...sorted];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    const newOrder = reordered.map((sub) => sub.id);
+
+    try {
+      const updated = await reorderSubscriptions(newOrder);
+      setSubscriptions(reconcile(updated, { key: "id" }));
+    } catch {
+      setErrorMessage("拖拽排序失败，请重试");
     }
   };
 
@@ -337,22 +373,32 @@ export const SubscriptionsPage: Component = () => {
               <p class="empty-state">还没有订阅，点击「添加订阅」开始记录。</p>
             }
           >
-            <section class="subscription-list">
-              <For each={visibleSubscriptions()}>
-                {(subscription) => (
-                  <SubscriptionCard
-                    subscription={subscription}
-                    tags={tags()}
-                    providers={providers()}
-                    onEdit={openEdit}
-                    onDelete={handleDelete}
-                    onStatusChange={handleStatusChange}
-                    onSubscriptionUpdate={handleSubscriptionUpdate}
-                    onScheduleToggle={handleScheduleToggle}
-                  />
-                )}
-              </For>
-            </section>
+            <DragDropProvider
+              collisionDetector={closestCenter}
+              onDragEnd={handleReorder}
+            >
+              <DragDropSensors />
+              <SortableProvider
+                ids={visibleSubscriptions().map((sub) => sub.id)}
+              >
+                <section class="subscription-list">
+                  <For each={visibleSubscriptions()}>
+                    {(subscription) => (
+                      <SubscriptionCard
+                        subscription={subscription}
+                        tags={tags()}
+                        providers={providers()}
+                        onEdit={openEdit}
+                        onDelete={handleDelete}
+                        onStatusChange={handleStatusChange}
+                        onSubscriptionUpdate={handleSubscriptionUpdate}
+                        onScheduleToggle={handleScheduleToggle}
+                      />
+                    )}
+                  </For>
+                </section>
+              </SortableProvider>
+            </DragDropProvider>
           </Show>
         </Show>
 

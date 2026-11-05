@@ -15,6 +15,7 @@ import {
 import { BalanceInfoRows, oneTimeBalance, UsageWindows } from "./query-display";
 import { ModelListDialog } from "./ModelListDialog";
 import { ResetScheduleGrid } from "./ResetScheduleGrid";
+import { useSortableRow } from "../priorities/dnd";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
@@ -89,6 +90,7 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
   const [deleteOpen, setDeleteOpen] = createSignal(false);
   const [deleteStep, setDeleteStep] = createSignal<1 | 2>(1);
   const [modelsOpen, setModelsOpen] = createSignal(false);
+  const sortable = useSortableRow(props.subscription.id);
 
   const subscriptionTags = () =>
     (props.subscription.tagIds ?? [])
@@ -171,8 +173,21 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
   };
 
   return (
-    <article class="subscription-card">
+    <article
+      ref={sortable.ref}
+      class="subscription-card"
+      style={{ ...sortable.style(), opacity: sortable.isActive() ? 0.5 : 1 }}
+    >
       <header class="subscription-card-header">
+        <button
+          type="button"
+          class="priority-drag-handle"
+          aria-label="拖拽排序"
+          {...sortable.attrs}
+          ref={sortable.attach}
+        >
+          ⋮⋮
+        </button>
         <h3>{props.subscription.name}</h3>
         <div class="subscription-card-badges">
           <Show

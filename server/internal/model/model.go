@@ -41,6 +41,7 @@ type Subscription struct {
 	LowBalanceThreshold *float64        `json:"lowBalanceThreshold,omitempty"`
 	ResetSchedules      []ResetSchedule `json:"resetSchedules,omitempty"`
 	PlanID              string          `json:"planId,omitempty"`
+	SortOrder           int             `json:"sortOrder"`
 	TagIDs              []string        `json:"tagIds,omitempty"`
 	CreatedAt           string          `json:"createdAt"`
 	UpdatedAt           string          `json:"updatedAt"`

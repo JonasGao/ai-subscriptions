@@ -86,6 +86,7 @@ func New(opts Options) http.Handler {
 			api.Get("/subscriptions/{id}", handleGetSubscription(opts))
 			api.Put("/subscriptions/{id}", handleUpdateSubscription(opts))
 			api.Delete("/subscriptions/{id}", handleDeleteSubscription(opts))
+			api.Patch("/subscriptions", handleReorderSubscriptions(opts))
 			api.Get("/subscriptions/{id}/usage", handleSubscriptionUsage(opts))
 			api.Get("/subscriptions/{id}/balance", handleSubscriptionBalance(opts))
 			api.Get("/subscriptions/{id}/models", handleSubscriptionModels(opts))

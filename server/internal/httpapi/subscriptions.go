@@ -32,6 +32,7 @@ type DataService interface {
 	Tags() ([]model.Tag, error)
 	RenameTag(id, name string) (*model.Tag, error)
 	DeleteTag(id string) (*store.DeleteTagResult, error)
+	ReorderSubscriptions(ids []string) ([]model.Subscription, error)
 	// Reset-schedule surface (#27). AddResetSchedule/UpdateResetSchedule/
 	// DeleteResetSchedule back the schedule CRUD; ToggleScheduleExhausted is
 	// the manual "已用尽" switch (ADR-0007).
@@ -552,6 +553,30 @@ func handleToggleScheduleExhausted(opts Options) http.HandlerFunc {
 			return
 		}
 		writeJSONAligned(w, http.StatusOK, newSubscriptionPayload(*updated))
+	}
+}
+
+// handleReorderSubscriptions serves PATCH /api/subscriptions.
+// Body: { subscriptionIds: string[] }
+func handleReorderSubscriptions(opts Options) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, err := decodeObjectBody(r)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "Invalid JSON in request body")
+			return
+		}
+		raw, present := body["subscriptionIds"]
+		arr, ok := raw.([]any)
+		if !present || !ok {
+			writeError(w, http.StatusBadRequest, "subscriptionIds array is required")
+			return
+		}
+		subs, err := opts.Data.ReorderSubscriptions(stringSlice(arr))
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "Failed to reorder subscriptions")
+			return
+		}
+		writeJSONAligned(w, http.StatusOK, subs)
 	}
 }
 

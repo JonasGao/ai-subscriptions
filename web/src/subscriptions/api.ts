@@ -93,6 +93,16 @@ export function deleteSubscription(id: string): Promise<{ success: boolean }> {
   });
 }
 
+export function reorderSubscriptions(
+  subscriptionIds: string[]
+): Promise<Subscription[]> {
+  return requestJSON<Subscription[]>("/api/subscriptions", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ subscriptionIds }),
+  });
+}
+
 /**
  * toggleScheduleExhausted marks one schedule available or exhausted
  * (POST /api/subscriptions/{id}/schedules/{scheduleId}/toggle). The route
