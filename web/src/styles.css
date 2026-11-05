@@ -644,6 +644,7 @@ body {
 .form-actions button.danger {
   border-color: #dc2626;
   background: #dc2626;
+  color: #fff;
 }
 
 .category-filter {
@@ -1525,6 +1526,7 @@ body {
 .priority-scenes > button.danger {
   border-color: #dc2626;
   background: #dc2626;
+  color: #fff;
 }
 
 .tools-header button:hover,
