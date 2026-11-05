@@ -103,6 +103,24 @@ export interface Provider {
   supportsModelsQuery?: boolean;
 }
 
+/**
+ * EnrichedProvider is one /api/providers row: the static registry entry plus
+ * capability flags and subscription/tool reference counts (ADR-0006).
+ */
+export interface EnrichedProvider extends Provider {
+  supportsBalanceQuery: boolean;
+  supportsUsageQuery: boolean;
+  supportsModelsQuery: boolean;
+  subscriptionCount: number;
+  toolCount: number;
+}
+
+/** UnregisteredProviderName is an in-use custom provider name with its count. */
+export interface UnregisteredProviderName {
+  name: string;
+  count: number;
+}
+
 /** BalanceInfo is one currency line of a balance query result. */
 export interface BalanceInfo {
   currency: string;

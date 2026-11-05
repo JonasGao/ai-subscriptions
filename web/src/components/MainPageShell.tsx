@@ -1,7 +1,8 @@
 import { For, type Component, type JSX } from "solid-js";
 import { ThemeToggle } from "./ThemeToggle";
 
-export type MainPage = "subscriptions" | "tools" | "proxy-subscriptions";
+export type MainPage =
+  "subscriptions" | "tools" | "proxy-subscriptions" | "providers";
 
 export interface MainPageShellProps {
   activePage: MainPage;
@@ -42,6 +43,14 @@ export const MainPageShell: Component<MainPageShellProps> = (props) => (
           </For>
         </nav>
         <ThemeToggle />
+        <a
+          href="/providers"
+          class="main-shell-icon-link"
+          title="服务商管理"
+          aria-label="服务商管理"
+        >
+          服务商
+        </a>
         <a
           href="/change-password"
           class="main-shell-icon-link"

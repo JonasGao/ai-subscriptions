@@ -6,6 +6,8 @@ import type {
   SubscriptionFormData,
   Tag,
   Provider,
+  EnrichedProvider,
+  UnregisteredProviderName,
 } from "./types";
 
 /** ApiError carries the server's error message verbatim. */
@@ -50,6 +52,18 @@ export function fetchTags(): Promise<Tag[]> {
 
 export function fetchProviders(): Promise<Provider[]> {
   return requestJSON<Provider[]>("/api/providers");
+}
+
+/** fetchProviderRegistry reads /api/providers with its enriched counts/flags. */
+export function fetchProviderRegistry(): Promise<EnrichedProvider[]> {
+  return requestJSON<EnrichedProvider[]>("/api/providers");
+}
+
+/** fetchUnregisteredProviders reads custom provider names in use. */
+export function fetchUnregisteredProviders(): Promise<
+  UnregisteredProviderName[]
+> {
+  return requestJSON<UnregisteredProviderName[]>("/api/providers/unregistered");
 }
 
 export function createSubscription(
