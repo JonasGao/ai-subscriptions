@@ -1,123 +1,108 @@
 ---
 name: AI订阅管理工具
-description: 单人自托管的 AI 订阅账本，克制、清楚、可信
+description: 时刻表栏律 —— 单人自托管的 AI 订阅台账，把账单与三种额度重置读到同一条时间轴上
 colors:
-  ledger-indigo: "#4f46e5"
-  ledger-indigo-dark: "#818cf8"
-  paper-white: "#ffffff"
-  snow-white: "#fafafa"
-  ink-black: "#18181b"
-  muted-slate: "#71717a"
-  muted-slate-dark: "#a1a1aa"
-  card-surface: "color-mix(in srgb, var(--bg) 94%, var(--fg) 6%)"
-  hairline: "color-mix(in srgb, var(--fg) 14%, transparent)"
-  available-green: "#16a34a"
-  available-green-dark: "#4ade80"
-  pending-amber: "#d97706"
-  pending-amber-dark: "#fbbf24"
-  alert-red: "#dc2626"
-  alert-red-dark: "#f87171"
-  warning-amber: "#f59e0b"
-  success-green: "#15803d"
+  ink: "#1B2A33"
+  ink-dark: "#0E1416"
+  paper: "#EFEDE4"
+  paper-dark: "#141A1D"
+  sheet: "#FBFAF4"
+  sheet-dark: "#1E2529"
+  rule: "#C9C7BC"
+  rule-dark: "#465156"
+  signal: "#B23A24"
+  signal-dark: "#E4654B"
+  mark: "#C2452D"
+  teal: "#2E6E73"
+  teal-dark: "#6FB8A8"
+  amber: "#D9A441"
+  muted: "#5D6A70"
+  muted-dark: "#9AA6A9"
+  on-ink: "#F2EFE6"
 typography:
   display:
-    fontFamily: "sans-serif"
-    fontSize: "1.75rem"
+    fontFamily: "system-ui, -apple-system, Segoe UI, Noto Sans CJK SC, Microsoft YaHei, sans-serif"
+    fontSize: "1.55rem"
     fontWeight: 700
-    lineHeight: 1.2
-    letterSpacing: "-0.02em"
-  headline:
-    fontFamily: "sans-serif"
-    fontSize: "1.5rem"
-    fontWeight: 700
-    lineHeight: 1.2
+    lineHeight: 1.25
+    letterSpacing: "-0.015em"
   title:
-    fontFamily: "sans-serif"
-    fontSize: "1.05rem"
-    fontWeight: 600
+    fontFamily: "system-ui, -apple-system, Segoe UI, Noto Sans CJK SC, Microsoft YaHei, sans-serif"
+    fontSize: "0.95rem"
+    fontWeight: 700
     lineHeight: 1.3
   body:
-    fontFamily: "sans-serif"
-    fontSize: "0.875rem"
-    fontWeight: 400
-    lineHeight: 1.5
-  label:
-    fontFamily: "sans-serif"
-    fontSize: "0.75rem"
-    fontWeight: 500
-    lineHeight: 1.4
-  mono:
-    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace"
+    fontFamily: "system-ui, -apple-system, Segoe UI, Noto Sans CJK SC, Microsoft YaHei, sans-serif"
     fontSize: "0.85rem"
     fontWeight: 400
+    lineHeight: 1.35
+  label:
+    fontFamily: "system-ui, -apple-system, Segoe UI, Noto Sans CJK SC, Microsoft YaHei, sans-serif"
+    fontSize: "0.68rem"
+    fontWeight: 600
+    lineHeight: 1.3
+  mono:
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+    fontSize: "0.68rem"
+    fontWeight: 400
+    lineHeight: 1.3
+    fontFeature: "tabular-nums"
 rounded:
-  chip: "0.3rem"
-  control: "0.4rem"
-  button: "0.45rem"
-  tile: "0.5rem"
-  panel: "0.6rem"
-  card: "0.75rem"
-  pill: "999px"
+  square: "0"
 spacing:
   xs: "0.35rem"
   sm: "0.5rem"
   md: "0.75rem"
   lg: "1rem"
   xl: "1.25rem"
-  page: "2rem"
+  page: "1.625rem"
 components:
   button-primary:
-    backgroundColor: "{colors.ledger-indigo}"
-    textColor: "{colors.paper-white}"
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.on-ink}"
     typography: "{typography.body}"
-    rounded: "{rounded.button}"
-    padding: "0.5rem 0.9rem"
+    rounded: "{rounded.square}"
+    padding: "7px 13px"
   button-ghost:
     backgroundColor: "transparent"
-    textColor: "{colors.ink-black}"
+    textColor: "{colors.ink}"
     typography: "{typography.body}"
-    rounded: "{rounded.button}"
-    padding: "0.5rem 0.9rem"
+    rounded: "{rounded.square}"
+    padding: "7px 13px"
   button-danger:
-    backgroundColor: "{colors.alert-red}"
-    textColor: "{colors.paper-white}"
+    backgroundColor: "{colors.signal}"
+    textColor: "{colors.sheet}"
     typography: "{typography.body}"
-    rounded: "{rounded.button}"
-    padding: "0.5rem 0.9rem"
+    rounded: "{rounded.square}"
+    padding: "7px 13px"
+  header-rail:
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.on-ink}"
+    rounded: "{rounded.square}"
+    height: "73px"
+  table-header:
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.on-ink}"
+    typography: "{typography.label}"
+    rounded: "{rounded.square}"
+    padding: "6px 10px"
+  sheet-row:
+    backgroundColor: "{colors.sheet}"
+    textColor: "{colors.ink}"
+    typography: "{typography.body}"
+    rounded: "{rounded.square}"
+    padding: "0"
   input-field:
-    backgroundColor: "{colors.paper-white}"
-    textColor: "{colors.ink-black}"
+    backgroundColor: "{colors.sheet}"
+    textColor: "{colors.ink}"
     typography: "{typography.body}"
-    rounded: "{rounded.control}"
+    rounded: "{rounded.square}"
     padding: "0.5rem 0.6rem"
-  card:
-    backgroundColor: "{colors.card-surface}"
-    textColor: "{colors.ink-black}"
-    typography: "{typography.body}"
-    rounded: "{rounded.card}"
-    padding: "1rem"
-  tag-chip:
-    backgroundColor: "color-mix(in srgb, var(--accent) 14%, transparent)"
-    textColor: "{colors.ink-black}"
-    typography: "{typography.label}"
-    rounded: "{rounded.chip}"
-    padding: "0.15rem 0.5rem"
-  status-pill:
-    backgroundColor: "transparent"
-    textColor: "{colors.ink-black}"
-    typography: "{typography.label}"
-    rounded: "{rounded.pill}"
-    padding: "0.15rem 0.55rem"
-  nav-active:
-    backgroundColor: "{colors.ledger-indigo}"
-    textColor: "{colors.paper-white}"
-    typography: "{typography.body}"
-    padding: "0.45rem 0.9rem"
   dialog:
-    backgroundColor: "{colors.paper-white}"
-    textColor: "{colors.ink-black}"
+    backgroundColor: "{colors.sheet}"
+    textColor: "{colors.ink}"
     typography: "{typography.body}"
-    rounded: "{rounded.card}"
+    rounded: "{rounded.square}"
     padding: "1.25rem 1.5rem"
     width: "min(38rem, 100%)"
 ---
@@ -126,106 +111,106 @@ components:
 
 ## Overview
 
-**Creative North Star: "素页账本 / The Plain Ledger"**
+**Creative North Star: "时刻表栏律 / Timetable Column Rhythm"**
 
-这是一本收拾干净的账本，不是仪表盘。白纸或炭黑纸面上只有细到几乎看不见的分隔线，一点靛蓝用来标记「这里可以点、这里被选中、这里正在变化」。所有视觉决定服务于一个动作：把订阅、金额、状态和到期时间记下来，然后一眼查到。PRODUCT.md 确认的定位是个人订阅记账本，因此界面不制造戏剧性、不争夺注意力，也不假装自己是一个控制平台。
+这是一张被认真排过的班次表，不是一个后台。整宽深墨蓝页头压住纸白地面，1px 实线把屏切成栏与行；账单周期与 5 小时 / 周 / 月三种额度重置被压到同一条 30 天时间轴上，四条轨道对齐，朱红刻口标出即将发生的那一次。世界只贡献四件事——字、色、密度和一个签名动作；布局、导航与控件全部是标准 web 组件。
 
-气质是**克制、清楚、可信**。信息密度不低——卡片里挤着字段、徽章、进度条和操作按钮——但密度靠对齐、留白节奏和字重差异来消化，而不是靠装饰。系统字体、四枚主题变量、几乎为零的阴影、没有宽度断点：整套实现刻意把「设计感」压到最低，让数据成为唯一的主角。
+气质是**清楚、密、可信**。信息密度高：小字号、紧行距、等宽数字、交替行底，但每条信息都在它该在的栏里。没有圆角、没有渐变、没有玻璃、没有装饰插画；层级靠栏线、字重与色轨，不靠阴影。签名动作是一条**真实数据**驱动的四轨共轴（账单 / 5h / 周 / 月），填充长度是各周期已过比例，刻口是周期终点落在 30 天轴上的位置，末尾给出等宽 `YYYY-MM-DD HH:mm · 剩余 X`。
 
-明确排除的方向：**仪表盘大屏、渐变与玻璃拟态、装饰性插画、拟物化**。这是用户确认的视觉反例，不是临时偏好；任何新界面都不应借「更现代」之名把它们带回来。
+明确排除且已写进实现禁令：仪表盘大屏、渐变与玻璃拟态、装饰性插画、拟物化、踢眉/eyebrow、字距撑开的大写小标签、Unicode 字形充当图标、卡片网格 + 统计数字 + 筛选条这一类别默认，以及它可预测的反面——白底细线单强调色的「克制工具」。
 
 **Key Characteristics:**
 
-- 单一靛蓝强调色 + 中性纸面，语义色只描述状态。
-- 静止状态完全平铺；层级靠 `color-mix()` 的极淡叠加与 1px 发丝线，不靠投影。
-- 系统字体、原生表单控件、手写内联 SVG 图标，零外部字体与图标依赖。
-- 响应式由 `auto-fill/auto-fit minmax()` 与 flex 换行完成，没有断点。
-- 浅色 / 深色是同一套结构换四枚变量，深色模式另配语义色的高对比版本。
+- 整宽墨蓝页头与墨蓝按钮；纸白地、表格白面、1px 实线栏线、全直角。
+- 朱红只标 imminent 与告警；青、琥珀是数据轨色；语义色在深色模式有独立高对比值。
+- 系统 sans-serif 承担全部中文与拉丁文字，等宽栈只服务时刻、金额与测量值；`tabular-nums` 全站开启。
+- 密度来自 0.68–0.85rem 的标签与正文、紧行距、无间隙的连续行；响应式靠 `auto-fill/auto-fit minmax()`、flex 换行与一处 720px 收窄。
+- 浅色 / 深色共用同一套结构，只切换四枚主题变量与世界层变量；主题切换是功能，不是外观。
 
 ## Colors
 
-四个 CSS 自定义变量撑起整套界面，其余表面与描边都由 `color-mix(in srgb, var(--fg) N%, transparent)` 派生——项目没有中性色阶，也不需要。
+四枚旧主题变量被换成一套有承诺的配色：墨蓝是壳与控件，纸白是地，表格白是面，朱红只做 imminent/告警，青与琥珀做数据轨。**不是灰屏加一枚强调色。**
 
 ### Primary
 
-- **账本靛 / Ledger Indigo** (#4f46e5，深色模式 #818cf8)：唯一的品牌色。落在主按钮、激活的导航项、链接、聚焦轮廓、进度条填充、优先级序号与标签底纹上。它是标记笔，不是刷墙漆：从不铺满大面积背景。
+- **墨蓝 / Timetable Ink** (#1B2A33，深色 #0E1416)：整宽页头、主按钮、表头、可排序表头底色、进度填充与实线主分隔。它是壳与墨，不是点缀。
+
+### Secondary
+
+- **朱红 / Imminent Vermilion** (#B23A24，深色 #E4654B)：只用于告警文字、错误条、用尽状态、5h 轨与到期刻口。非文字的大面积标记用较亮的 #C2452D（`--tt-mark`）。文字对比：浅色纸上 5.08:1、表格白上 5.70:1；深色纸上 5.24:1。
+- **青 / Cycle Teal** (#2E6E73，深色 #6FB8A8)：周轨、活跃/在册状态、成功提示。纸上 4.98:1。
+- **琥珀 / Data Amber** (#D9A441)：月轨、激活导航块、暂停状态底色；是非文字数据带与实色块，不作为正文文字色。
 
 ### Neutral
 
-- **纸白 / Paper White** (#ffffff)：浅色模式页面底色；同时是浅色模式下主按钮的文字色。
-- **炭黑 / Charcoal** (#18181b)：深色模式页面底色，也是深色模式下主按钮的文字色；同时是浅色模式的正文墨色。一枚值承担三种角色，是这套系统「不新增令牌」习惯的典型例子。
-- **雪白 / Snow White** (#fafafa)：深色模式正文色。
-- **静默灰 / Muted Slate** (#71717a，深色模式 #a1a1aa)：字段名、提示、副文本、倒计时、未选中状态。只用于「次要但必须读得到」的信息。
-- **卡片面 / Card Surface** (`color-mix(in srgb, var(--bg) 94%, var(--fg) 6%)`)：卡片、统计块、通知卡、阈值面板的极淡叠加，比纯底色只深一点点。
-- **发丝线 / Hairline** (`color-mix(in srgb, var(--fg) 14%, transparent)`)：卡片与控件描边。实际按位置在 10%–22% 间浮动，14% 是卡片默认值。
-
-### Functional Status Colors
-
-- **可用绿 / Available Green** (#16a34a，深色 #4ade80)：活跃订阅、成功、正在使用。
-- **待办琥珀 / Pending Amber** (#d97706，深色 #fbbf24)：暂停状态、警告、飞书权限提示。
-- **警示红 / Alert Red** (#dc2626，深色 #f87171)：错误条、配额用尽、删除、逾期、过期。
-- **进度琥珀 / Warning Amber** (#f59e0b) 与 **确认绿 / Success Green** (#15803d)：用量进度条的 70% 阈值色，以及徽章/开源标记/通知成功态的深色文字色。
+- **纸白 / Rail Paper** (#EFEDE4)：页面地。
+- **表格白 / Sheet** (#FBFAF4)：表格行、输入、对话框、卡片面。
+- **栏线 / Rule** (#C9C7BC，深色 #465156)：1px 实线分隔、输入与控件描边。
+- **静默灰 / Muted** (#5D6A70，深色 #9AA6A9)：字段名、提示、刻度、副文本。纸上 4.76:1。
+- **墨上白 / On Ink** (#F2EFE6)：墨蓝壳上的文字，12.81:1。
+- 深色地 (#141A1D)、深表面 (#1E2529) 与深墨 (#0E1416) 构成同一结构的夜间版。
 
 ### Named Rules
 
-**The One Accent Rule.** 靛蓝是唯一的非中性色。一屏之内它只出现在可交互与已选中的地方；若某个元素不响应用户动作，它就不该是靛蓝色。
+**The One Axis Rule.** 账单与三种额度重置必须画在同一条 30 天轴上；任何把某个周期拆成独立卡片的做法都破坏了这个产品唯一要证明的事。
 
-**The Semantic Color Rule.** 绿、琥珀、红只表达状态与告警，永不作为装饰配色。它们各自有独立的深色值（#4ade80 / #fbbf24 / #f87171），不能靠降低透明度在深色模式里凑合——对比度修正已经是既有实现的一部分。
+**The Signal Rarity Rule.** 朱红只标 imminent 与告警。它出现得越少越有力；把它当品牌色铺开就退回通用后台。
 
-**The Reset Time Rule.** 重置倒计时文字是唯一允许连续插值的颜色：从淡黄经橙到深红由 `getResetUrgencyColor()` 按剩余时间算出 `hsl()`，仅用于 weekly / monthly 窗口。用量进度条另有 70% / 90% 两档离散阈值，两套编码互不混用。
+**The Ink Is The Shell Rule.** 墨蓝承担整宽页头与主控件，不是只描一条边。承诺的配色必须占据整块区域，而不是散在中性地面上的几处点缀。
 
 ## Typography
 
-**Display / Body Font:** 系统 `sans-serif`（无 `@font-face`、无 Google Fonts、无内置字体文件）
-**Label/Mono Font:** `ui-monospace, SFMono-Regular, Menlo, monospace`，仅用于模型 ID、权限 code、飞书 ID
+**Display / Body Font:** `system-ui, -apple-system, "Segoe UI", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif`（无 `@font-face`、无外部字体请求）
+**Label/Mono Font:** `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`，仅用于时刻、金额、编号与测量值
 
-**Character:** 一套字体走到底。层级靠字号、字重与颜色分工，不靠字体对比。页面标题用轻微负字距收紧，金额和读数用等宽数字对齐——这是「可信」在排版上的落点。
+**Character:** 一套系统字体走到底，靠字号、字重与栏位建立层级；等宽栈只服务「读数」。全站 `tabular-nums`，数字不跳动。没有大写撑字距的小标签——那是被明确禁止的踢眉。
 
 ### Hierarchy
 
-- **Display** (700, 1.75rem, `-0.02em`, line-height 1.2)：页面主标题，如「订阅」「通知」。登录页用 `clamp(1.75rem, 4vw, 2.5rem)`。
-- **Headline** (700, 1.5rem, line-height 1.2)：区块标题与统计大数字；统计值额外使用 `tabular-nums`。
-- **Title** (600, 1.05rem, line-height 1.3)：卡片标题、对话框 h2 (1.2rem)、小节标题 (1.1–1.15rem)。
-- **Body** (400, 0.875rem, line-height 1.5)：正文与按钮文字；卡片字段常用 0.85rem 的紧排变体。
-- **Label** (500, 0.75rem, line-height 1.4)：字段名、徽章、提示、倒计时；范围 0.7–0.85rem。
-- **Mono** (400, 0.85rem)：模型列表项与代码片段。
+- **Display** (700, 1.55rem, `-0.015em`)：页面标题「订阅台账」。登录页 1.5rem。
+- **Title** (700, 0.95rem)：卡片/行内的服务名、对话框标题 (1.2rem)。
+- **Body** (400, 0.85rem，紧排变体 0.875rem)：正文、按钮、表单值。
+- **Label** (600, 0.68–0.75rem)：表头、字段名、刻度、徽章、状态。
+- **Mono** (400, 0.68–0.92rem)：`YYYY-MM-DD HH:mm · 剩余 X`、金额、序号、统计值。`tabular-nums`。
 
 ### Named Rules
 
-**The System Stack Rule.** 不加载任何网页字体。中文与拉丁文字共用系统 sans-serif，等宽栈只服务机器可读的标识符。
+**The System Stack Rule.** 不加载任何网页字体；中文与拉丁共用系统栈，等宽只服务测量。
 
-**The Tabular Numbers Rule.** 金额、统计值、用量百分比、优先级序号、倒计时一律 `font-variant-numeric: tabular-nums`，避免数字跳动破坏账本的可信感。
+**The No-Kicker Rule.** 标题上方或下方不放字距撑开的大写标签、编号或标语。标题自己承担重量。
+
+**The Tabular Numbers Rule.** 所有金额、时刻、序号、统计值与倒计时一律等宽数字，避免账本读数跳动。
 
 ## Layout
 
-页面是单列纵向流：外层 `min-height: 100vh`，页头最大宽度 72rem 居中，内容区 `padding: 2rem 1.5rem 4rem`，纵向 `gap: 1.25rem`。没有侧边栏，没有宽度媒体查询——全站只有一个 `@media (prefers-color-scheme: dark)`。
+单列纵向流：整宽墨蓝页头（产品名 + 标准标签导航，73px 高，4px 朱红下沿）→ 内容区 `padding: 22px 26px 48px`、纵向 `gap: 14px` → 标题行（搜索/分类/状态筛选 + 添加按钮在右端）→ 内联错误条 → 统计条 → 筛选条 → 七列表头 → 连续行。
 
-响应式完全交给网格：`repeat(auto-fill, minmax(18rem, 1fr))`（订阅卡）、`minmax(16rem, 1fr)`（代理订阅卡）、`minmax(22rem, 1fr)`（工具卡）、`repeat(auto-fit, minmax(11rem, 1fr))`（统计卡）、`minmax(20rem, 1fr)`（通知卡）。窄屏时列数自然下降，配合 `flex-wrap` 的工具栏与筛选条，不需要断点。表单是两列 `repeat(2, minmax(0, 1fr))`，跨列字段用 `.form-field-wide { grid-column: 1 / -1 }`。
+七列固定语义：`52px / minmax(180px,1.6fr) / 96px / 90px / 88px / minmax(240px,34%) / 150px`，对应序号 / 服务 / 金额 / 账单周期 / 状态 / 下次重置四轨 / 操作。表头下方是 7 个真实日历刻度（每 5 天一个，覆盖 30 天），由当前日期计算，不是静态图。
 
-间距节奏以 rem 阶梯递进：控件内 0.35–0.5rem，卡片内 0.75–1rem，卡片之间 1rem，区块之间 1.25rem，页面四周 2rem。密度偏高但对齐严格：字段行统一 `display: flex; justify-content: space-between`，值右对齐。
+响应式主要靠 `repeat(auto-fill/auto-fit, minmax())` 与 `flex-wrap`；仅有一处 `@media (max-width: 720px)` 把七列表头与四轨轴收起、统计条改两列、页头内边距收窄。没有其它宽度断点。窄屏无横向溢出（390px 实测 `scrollWidth === 390`）。
 
-**The Grid Wraps, It Doesn't Break Rule.** 不要为某个屏宽引入断点或另写一套布局；调整 `minmax()` 的最小列宽或让工具栏换行即可。
+间距节奏：控件内 0.35–0.5rem，行内 0.75rem，区块之间 1rem–1.25rem，页面四周 1.625rem。密度高但对齐严格：字段行 `justify-content: space-between`，值右对齐，连续行之间无间隙。
+
+**The Grid Wraps, It Doesn't Break Rule.** 不要为某个屏宽另写一套布局；调整 `minmax()` 最小列宽或让工具栏换行即可。
 
 ## Elevation & Depth
 
-静止状态**完全没有阴影**。层级来自极淡的 tonal layering：卡片面是 6% 的墨色叠加，描边是 10%–22% 的发丝线，激活态是 12% 的靛蓝叠加。这是一个平铺的系统，不是抬起的卡片墙。
+静止状态**没有阴影**。层级来自实线栏线、交替行底与墨蓝壳；这是平铺的印刷系统，不是抬起的卡片墙。
 
 ### Shadow Vocabulary
 
-- **Dialog Lift** (`box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25)`)：仅对话框使用，配合 `rgba(0,0,0,0.45)` 遮罩表明模态层级。
-- **Drag Lift** (`box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15)`)：仅 `.priority-row-dragging` 使用，表示正在被拖动的行。
+- **Dialog Lift** (`box-shadow: 0 20px 50px rgba(14, 20, 22, 0.28)`)：仅对话框，配合 `rgba(14,20,22,0.55)` 遮罩表明模态层级。带偏移与柔化。
+- **Drag Lift** (`box-shadow: 0 4px 12px rgba(14, 20, 22, 0.18)`)：仅拖拽中的行。
 
 ### Named Rules
 
-**The Flat-By-Default Rule.** 阴影只出现在「浮层」与「拖拽中」这两种临时状态。任何常规卡片、统计块、导航或列表项都不加阴影；需要强调时提高描边浓度或叠加底色。
+**The Flat-By-Default Rule.** 阴影只在「浮层」与「拖拽中」两种临时状态出现。常规行、统计条、导航、表头都不加阴影。
 
 ## Shapes
 
-圆角是克制的、功能分层的：小元素 0.3–0.4rem，按钮与输入 0.4–0.45rem，卡片与对话框 0.75rem，中间态 0.5–0.65rem。描边统一 1px 发丝线；表单中的临时区域（重置计划新增、空状态、飞书提示框）改用 1px 虚线，把「尚未落定」和「已保存记录」区分开。
+**全直角**。全站 77 处 `border-radius: 0`，没有例外——包括徽章、标签、输入、按钮、进度条、对话框与卡片。1px 实线是唯一的分隔语言；临时区域（重置计划新增、空状态、飞书提示框）改用 1px 虚线区分「尚未落定」与「已保存记录」。表单用原生 `select` / `radio`，对话框是 `div role="dialog"`。
 
-**100% 圆角（999px）**是这套系统最具辨识度的轮廓，专门保留给状态徽章、代理订阅标签、优先级徽章、用量进度条与筛选胶囊。它从不用于按钮与卡片。
-
-**The Pill Is For Status Rule.** 999px 只给徽章、标签与进度条；按钮与卡片一律保持可感知的直角感（0.45rem / 0.75rem），避免整页变成一堆胶囊。
+**The No-Pill Rule.** 999px 全圆角属于被替换的旧世界，不在这个系统里；所有控件与容器保持可感知的直角。
 
 ## Components
 
@@ -233,68 +218,70 @@ components:
 
 ### Buttons
 
-- **Shape:** 轻圆角（0.45rem），1px 同色描边，内边距 `0.5rem 0.9rem`（紧凑场景 0.35–0.45rem）。
-- **Primary:** 靛蓝实底 + 白字；深色模式改用亮靛底 + 墨色字（等于 `--bg`），保证对比度。
-- **Ghost:** 透明底 + 墨色字 + 发丝线描边。
-- **Danger:** 警示红实底白字；通知页用描边式危险按钮（红字红框，深色换 #f87171）。
-- **Hover / Focus:** 悬停仅 `filter: brightness(1.05)`；表单控件聚焦是 `outline: 2px solid var(--accent); outline-offset: 1px`。禁用态 `opacity: 0.55–0.6`。
+- **Shape:** 直角、1px 同色描边、内边距 `7px 13px`、0.8rem/600。
+- **Primary:** 墨蓝实底 + 墨上白字；悬停 `filter: brightness(1.14)`。
+- **Ghost:** 透明底 + 正文色 + 栏线描边；深色模式有高特异性 rescue 规则保证标签可见。
+- **Danger:** 朱红实底；深色模式文字保持白（由 `styles.test.ts` 固定的级联不变量）。
+- **Focus:** 全站 `outline: 2px solid var(--tt-signal); outline-offset: 1px`。
 
-### Chips
+### Table Header
 
-- **Style:** 靛蓝 14% 叠加底、0.3rem 圆角、0.8rem 文字；标签管理器内的可移除 chip 带一个无边框的 × 。
-- **State:** 选中/高亮为靛蓝 16% 叠加；代理订阅标签与状态徽章改用 999px 胶囊。
+- **Shape:** 墨蓝实底直角条，七列固定语义，列间 1px 半透明白线。
+- **Ticks:** 等宽 7 个真实日历刻度（如 11-05 → 12-05），由 `now` 计算；窄屏隐藏。
 
-### Cards / Containers
+### Timetable Axis（签名组件）
 
-- **Corner Style:** 0.75rem（统计块 0.6rem，工具/场景/通知卡 0.5–0.65rem）。
-- **Background:** 6% 墨色叠加的卡片面；代理订阅与订阅卡一致。
-- **Shadow Strategy:** 无阴影，遵循 Flat-By-Default。
-- **Border:** 12%–15% 发丝线。
-- **Internal Padding:** 1rem（统计块 0.9rem 1rem，工具卡 0.65rem 0.85rem）。
+- **Data:** 四轨 `账单 / 5h / 周 / 月`，填充长度 = 各周期已过比例（`elapsedShare`），刻口 = 周期终点在 30 天轴上的位置（`axisPosition`），均由真实 `renewalDate` 与 `resetSchedules[].nextResetTime` 计算；无数据则轨道为空，绝不编造数字。
+- **States:** 周/月倒计时复用 `getResetUrgencyColor()` 的黄→红连续插值；一次性订阅显示「无重置班次」。
+- **Encoding:** 墨蓝=账单、朱红=5h、青=周、琥珀=月。这是图表，不是导航：无点击、无链接、无控件。
+- **Placement:** 行内右列，`grid-row: 1`，不跨越多行，避免与可变内容重叠。
+
+### Cards / Rows
+
+- **Corner Style:** 直角。
+- **Background:** 表格白；偶数行 12% 墨色叠加，悬停 18% 琥珀叠加。
+- **Border:** 1px 栏线底边；无阴影。
+- **Internal Padding:** 0（行内子块各自带内边距），保持密集阅读。
 
 ### Inputs / Fields
 
-- **Style:** `var(--bg)` 底、20% 发丝线描边、0.4–0.45rem 圆角、0.5rem 0.6rem 内边距、`font: inherit`。原生 `select` / `radio` / `dialog`（`div role="dialog"`）不做自定义重绘。
-- **Focus:** 2px 靛蓝 outline + 1px offset；标签输入框容器用 `:focus-within` 得到同一轮廓。
-- **Error / Disabled:** 错误文字与错误条用警示红（#dc2626，深色 #f87171）；禁用用透明度。
+- **Style:** 表格白底、1px 栏线、直角、0.82rem、`font: inherit`。原生 `select` / `radio` 不重绘。
+- **Focus:** 2px 朱红 outline + 1px offset；标签输入框容器 `:focus-within`。
+- **Error / Disabled:** 错误条朱红描边透明底；禁用用 opacity。
 
 ### Navigation
 
-- **Style:** 分段控件——整组 1px 发丝线 + 0.45rem 圆角，项间 1px 竖线分隔，无下划线。
-- **States:** 默认墨色字；悬停靛蓝 12% 叠加；激活项靛蓝实底白字（深色反转为墨色字）。
-- **Mobile:** 页头 `flex-wrap`，导航组随工具区一起换行，不改为抽屉或底部标签栏。
+- **Style:** 整宽墨蓝页头内的标准标签组，项间 1px 半透明白线，无下划线。
+- **States:** 默认墨上白低透明字；悬停 10% 白叠加；激活项是**琥珀实底 + 墨蓝字**的实心块（不是彩色下划线）。
+- **Mobile:** 页头 `flex-wrap`，导航组随工具区换行，不改抽屉或底部标签栏。
 
-### Dialogs
+### Stats Strip
 
-- **Shape:** 0.75rem 圆角，`width: min(38rem, 100%)`（通知对话框 44rem），`max-height: 90vh` 内滚。
-- **Depth:** 唯一使用 Dialog Lift 阴影的组件，遮罩 `rgba(0,0,0,0.45)`。
-- **Content:** h2 1.2rem，表单两列网格，底部操作区右对齐。
+- **Style:** 一条被上下 1px 墨线夹住的连续统计条，四格等宽、栏线分隔、直角。
+- **Content:** 标签与数值同一基线、0.72rem / 0.92rem 等宽数字；没有大数字 + 小标签 + 辅助统计的 hero-metric 堆叠。
 
-### Usage Progress（签名组件）
+### Icons
 
-- **Shape:** 0.35rem 高的 999px 轨道，12% 墨色叠加底；填充同为全圆角。
-- **Tiers:** 常态靛蓝；≥70% 转 #f59e0b；>90% 转 #dc2626。`transition: width 0.2s ease`。
-- **Encoding:** 进度条只编码消耗比例；重置紧迫度由倒计时文字的黄→红色相插值单独编码（ADR-0013），两者不合并。
+- **Style:** 手写内联 SVG（`CloseIcon` / `DragIcon`），一套描边/填充语言，12px；替代旧的 `×` 与 `⋮⋮` Unicode 字形。
 
-### Drag Rows（签名组件）
+### Browser Surfaces
 
-- **Style:** 靛蓝 10% 叠加底 + 20% 靛蓝描边（深色用 #818cf8 对应值），0.375rem 圆角；序号用靛蓝 tabular-nums。
-- **State:** 拖拽中加 Drag Lift 阴影，行透明度降到 0.5；抓取手柄为 `cursor: grab` 的无边框按钮。
+`::selection` 琥珀底墨蓝字；caret 朱红；自定义滚动条用纸白轨 + 栏线拇指；全站 `tabular-nums`；焦点环统一。浏览器默认不再漏出系统外观。
 
 ## Do's and Don'ts
 
 ### Do:
 
-- **Do** 用 `color-mix(in srgb, var(--fg) N%, transparent)` 生成描边与叠加面，而不是新增硬编码中性色；N 落在 10%–22% 之间。
-- **Do** 让浅色 / 深色共用同一套结构，只切换 `--bg` / `--fg` / `--muted` / `--accent` 四枚变量。
-- **Do** 为语义色使用深色模式的独立高对比值（#4ade80 / #fbbf24 / #f87171）。
-- **Do** 用 `auto-fill/auto-fit minmax()` 与 `flex-wrap` 解决窄屏，并给金额与读数加 `tabular-nums`。
-- **Do** 保留原生 `select` / `radio` 与 `div role="dialog"`，图标继续使用手写内联 SVG。
+- **Do** 用 `var(--tt-*)` 世界层变量生成壳、栏线与数据轨色，并用 `--signal` 承担所有文字级告警（≥4.5:1）。
+- **Do** 让七列表头、真实日期刻度与四轨轴始终一起出现；四轨值必须来自真实订阅数据。
+- **Do** 保持全直角、1px 实线、交替行底与系统字体；金额与时刻一律等宽数字。
+- **Do** 保留原生 `select` / `radio` / `div role="dialog"` 与手写内联 SVG。
+- **Do** 让浅色 / 深色共用同一结构，只切主题变量；为语义色使用深色独立值。
 
 ### Don't:
 
-- **Don't** 引入仪表盘大屏、渐变、玻璃拟态、装饰性插画或拟物化——这是已确认的视觉反例。
-- **Don't** 给常规卡片、统计块或导航加阴影；只有对话框与拖拽行可以抬起。
-- **Don't** 用绿 / 琥珀 / 红做装饰配色，也别在深色模式里靠透明度复用浅色语义值。
-- **Don't** 引入第二枚品牌强调色、网页字体、图标库或宽度断点。
-- **Don't** 把 999px 全圆角用在按钮与卡片上，也不要把重置紧迫度色与用量进度条阈值混为一谈。
+- **Don't** 引入圆角胶囊、渐变、玻璃、装饰插画、拟物化或仪表盘大屏。
+- **Don't** 在标题上方/下方放字距撑开的大写踢眉、编号或标语；也别用 Unicode 字形当图标。
+- **Don't** 把朱红当品牌色铺开，或把四轨轴做成导航、链接、可点控件。
+- **Don't** 引入外部字体、图标库、组件库，或为某个屏宽另写一套布局。
+- **Don't** 给常规行、统计条、导航或表头加阴影；只有对话框与拖拽行可以抬起。

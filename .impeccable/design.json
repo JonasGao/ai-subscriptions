@@ -1,304 +1,305 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-05T15:14:10+08:00",
+  "generatedAt": "2026-11-05T19:08:26+08:00",
   "title": "Design System: AI订阅管理工具",
   "extensions": {
     "colorMeta": {
-      "ledger-indigo": {
+      "ink": {
         "role": "primary",
-        "displayName": "账本靛 / Ledger Indigo",
-        "canonical": "#4f46e5",
+        "displayName": "墨蓝 Timetable Ink",
+        "canonical": "#1B2A33",
         "tonalRamp": [
-          "#181636",
-          "#161074",
-          "#2018AA",
-          "#2A1FE0",
-          "#625AE8",
-          "#958FEF",
-          "#C3C0F6",
-          "#EEEDF8"
+          "#20282C",
+          "#2E4757",
+          "#43687F",
+          "#5889A7",
+          "#84A8BE",
+          "#ACC4D3",
+          "#D0DEE6",
+          "#F0F3F4"
         ]
       },
-      "ledger-indigo-dark": {
+      "ink-dark": {
         "role": "primary",
-        "displayName": "账本靛（深色）",
-        "canonical": "#818cf8",
+        "displayName": "ink-dark（深色）",
+        "canonical": "#0E1416",
         "tonalRamp": [
-          "#131739",
-          "#07127E",
-          "#0A1AB8",
-          "#0D23F2",
-          "#4C5CF5",
-          "#8691F8",
-          "#BBC1FB",
-          "#ECEDF9"
+          "#22282A",
+          "#344A51",
+          "#4B6C76",
+          "#638E9C",
+          "#8CABB6",
+          "#B1C6CD",
+          "#D3DFE3",
+          "#F1F3F4"
         ]
       },
-      "paper-white": {
+      "paper": {
         "role": "neutral",
-        "displayName": "纸白 / Paper White",
-        "canonical": "#ffffff",
+        "displayName": "纸白 Rail Paper",
+        "canonical": "#EFEDE4",
         "tonalRamp": [
-          "#262626",
-          "#424242",
-          "#616161",
-          "#808080",
-          "#A1A1A1",
-          "#BFBFBF",
-          "#DBDBDB",
-          "#F2F2F2"
+          "#2B2921",
+          "#534D31",
+          "#7A7148",
+          "#A0945F",
+          "#B9B089",
+          "#D0CAAF",
+          "#E4E1D2",
+          "#F4F3F1"
         ]
       },
-      "snow-white": {
+      "paper-dark": {
         "role": "neutral",
-        "displayName": "雪白 / Snow White",
-        "canonical": "#fafafa",
+        "displayName": "paper-dark（深色）",
+        "canonical": "#141A1D",
         "tonalRamp": [
-          "#262626",
-          "#424242",
-          "#616161",
-          "#808080",
-          "#A1A1A1",
-          "#BFBFBF",
-          "#DBDBDB",
-          "#F2F2F2"
+          "#23272A",
+          "#36464E",
+          "#4F6773",
+          "#688797",
+          "#8FA6B2",
+          "#B4C3CB",
+          "#D5DDE2",
+          "#F1F3F3"
         ]
       },
-      "ink-black": {
+      "sheet": {
         "role": "neutral",
-        "displayName": "炭黑 / Charcoal",
-        "canonical": "#18181b",
+        "displayName": "表格白 Sheet",
+        "canonical": "#FBFAF4",
         "tonalRamp": [
-          "#252527",
-          "#3E3E46",
-          "#5B5B67",
-          "#787887",
-          "#9B9BA6",
-          "#BCBCC3",
-          "#D9D9DD",
+          "#2F2D1D",
+          "#615823",
+          "#8E8134",
+          "#BBAA44",
+          "#CDC075",
+          "#DDD4A2",
+          "#ECE7CB",
+          "#F5F4EF"
+        ]
+      },
+      "sheet-dark": {
+        "role": "neutral",
+        "displayName": "sheet-dark（深色）",
+        "canonical": "#1E2529",
+        "tonalRamp": [
+          "#232729",
+          "#38454D",
+          "#526570",
+          "#6C8593",
+          "#92A5AF",
+          "#B5C2C9",
+          "#D6DDE1",
+          "#F1F3F3"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "栏线 Rule",
+        "canonical": "#C9C7BC",
+        "tonalRamp": [
+          "#282824",
+          "#49473B",
+          "#6B6856",
+          "#8D8972",
+          "#ABA897",
+          "#C6C4B8",
+          "#DFDED7",
+          "#F3F3F2"
+        ]
+      },
+      "rule-dark": {
+        "role": "neutral",
+        "displayName": "rule-dark（深色）",
+        "canonical": "#465156",
+        "tonalRamp": [
+          "#242728",
+          "#3C4549",
+          "#57656B",
+          "#72848D",
+          "#97A4AA",
+          "#B9C2C6",
+          "#D8DDDF",
           "#F2F2F3"
         ]
       },
-      "muted-slate": {
-        "role": "neutral",
-        "displayName": "静默灰 / Muted Slate",
-        "canonical": "#71717a",
+      "signal": {
+        "role": "status",
+        "displayName": "朱红 Imminent Vermilion",
+        "canonical": "#B23A24",
         "tonalRamp": [
-          "#252527",
-          "#404045",
-          "#5D5D65",
-          "#7B7B84",
-          "#9D9DA4",
-          "#BDBDC2",
-          "#DADADD",
+          "#331D1A",
+          "#6E2416",
+          "#A13521",
+          "#D4452B",
+          "#DF7562",
+          "#EAA295",
+          "#F3CBC4",
+          "#F6EFEE"
+        ]
+      },
+      "signal-dark": {
+        "role": "status",
+        "displayName": "signal-dark（深色）",
+        "canonical": "#E4654B",
+        "tonalRamp": [
+          "#341D18",
+          "#732211",
+          "#A93219",
+          "#DE4121",
+          "#E6735B",
+          "#EEA090",
+          "#F6CAC1",
+          "#F7EFEE"
+        ]
+      },
+      "mark": {
+        "role": "status",
+        "displayName": "标记朱红 Mark",
+        "canonical": "#C2452D",
+        "tonalRamp": [
+          "#321E1A",
+          "#6C2619",
+          "#9D3824",
+          "#CF4A30",
+          "#DB7966",
+          "#E7A498",
+          "#F2CCC5",
+          "#F6F0EE"
+        ]
+      },
+      "teal": {
+        "role": "status",
+        "displayName": "青 Cycle Teal",
+        "canonical": "#2E6E73",
+        "tonalRamp": [
+          "#1E2D2E",
+          "#265B5F",
+          "#37848A",
+          "#49AEB6",
+          "#78C3C9",
+          "#A4D7DB",
+          "#CCE8EB",
+          "#F0F5F5"
+        ]
+      },
+      "teal-dark": {
+        "role": "status",
+        "displayName": "teal-dark（深色）",
+        "canonical": "#6FB8A8",
+        "tonalRamp": [
+          "#202D2A",
+          "#2C594F",
+          "#408273",
+          "#54AB98",
+          "#81C1B3",
+          "#AAD5CB",
+          "#CFE7E2",
+          "#F0F4F3"
+        ]
+      },
+      "amber": {
+        "role": "status",
+        "displayName": "琥珀 Data Amber",
+        "canonical": "#D9A441",
+        "tonalRamp": [
+          "#332A19",
+          "#6E5016",
+          "#A27420",
+          "#D4992A",
+          "#E0B462",
+          "#EACC95",
+          "#F3E3C3",
+          "#F6F4EE"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "静默灰 Muted",
+        "canonical": "#5D6A70",
+        "tonalRamp": [
+          "#242728",
+          "#3C4548",
+          "#58646A",
+          "#74848B",
+          "#98A4A9",
+          "#B9C1C5",
+          "#D8DDDF",
           "#F2F2F3"
         ]
       },
-      "muted-slate-dark": {
+      "muted-dark": {
         "role": "neutral",
-        "displayName": "静默灰（深色）",
-        "canonical": "#a1a1aa",
+        "displayName": "muted-dark（深色）",
+        "canonical": "#9AA6A9",
         "tonalRamp": [
-          "#252527",
-          "#3F3F46",
-          "#5C5C66",
-          "#797986",
-          "#9C9CA5",
-          "#BCBCC2",
-          "#DADADD",
-          "#F2F2F3"
+          "#252728",
+          "#3D4548",
+          "#596669",
+          "#75868A",
+          "#99A5A8",
+          "#BAC2C4",
+          "#D8DDDE",
+          "#F2F3F3"
         ]
       },
-      "card-surface": {
+      "on-ink": {
         "role": "neutral",
-        "displayName": "卡片面 / Card Surface",
-        "canonical": "color-mix(in srgb, var(--bg) 94%, var(--fg) 6%)",
+        "displayName": "墨上白 On Ink",
+        "canonical": "#F2EFE6",
         "tonalRamp": [
-          "#252527",
-          "#3E3E46",
-          "#5B5B67",
-          "#787887",
-          "#9B9BA6",
-          "#BCBCC3",
-          "#D9D9DD",
-          "#F2F2F3"
-        ]
-      },
-      "hairline": {
-        "role": "neutral",
-        "displayName": "发丝线 / Hairline",
-        "canonical": "color-mix(in srgb, var(--fg) 14%, transparent)",
-        "tonalRamp": [
-          "#252527",
-          "#3E3E46",
-          "#5B5B67",
-          "#787887",
-          "#9B9BA6",
-          "#BCBCC2",
-          "#D9D9DD",
-          "#F2F2F3"
-        ]
-      },
-      "available-green": {
-        "role": "status",
-        "displayName": "可用绿 / Available Green",
-        "canonical": "#16a34a",
-        "tonalRamp": [
-          "#163622",
-          "#107535",
-          "#17AB4E",
-          "#1EE166",
-          "#59E98E",
-          "#8FF0B3",
-          "#C0F7D4",
-          "#EDF8F1"
-        ]
-      },
-      "available-green-dark": {
-        "role": "status",
-        "displayName": "可用绿（深色）",
-        "canonical": "#4ade80",
-        "tonalRamp": [
-          "#183522",
-          "#147036",
-          "#1EA44F",
-          "#27D868",
-          "#5FE28F",
-          "#93EBB3",
-          "#C3F4D5",
-          "#EDF7F1"
-        ]
-      },
-      "pending-amber": {
-        "role": "status",
-        "displayName": "待办琥珀 / Pending Amber",
-        "canonical": "#d97706",
-        "tonalRamp": [
-          "#3A2812",
-          "#814704",
-          "#BD6705",
-          "#F88807",
-          "#FAA747",
-          "#FCC483",
-          "#FDDEBA",
-          "#F9F3EC"
-        ]
-      },
-      "pending-amber-dark": {
-        "role": "status",
-        "displayName": "待办琥珀（深色）",
-        "canonical": "#fbbf24",
-        "tonalRamp": [
-          "#3B2F12",
-          "#825F02",
-          "#BE8A03",
-          "#FAB605",
-          "#FCC946",
-          "#FDDA82",
-          "#FEEBB9",
-          "#F9F5EB"
-        ]
-      },
-      "alert-red": {
-        "role": "status",
-        "displayName": "警示红 / Alert Red",
-        "canonical": "#dc2626",
-        "tonalRamp": [
-          "#351717",
-          "#721212",
-          "#A71B1B",
-          "#DC2323",
-          "#E55D5D",
-          "#ED9191",
-          "#F5C2C2",
-          "#F7EDED"
-        ]
-      },
-      "alert-red-dark": {
-        "role": "status",
-        "displayName": "警示红（深色）",
-        "canonical": "#f87171",
-        "tonalRamp": [
-          "#391313",
-          "#7E0606",
-          "#B90909",
-          "#F30C0C",
-          "#F64B4B",
-          "#F98585",
-          "#FCBBBB",
-          "#F9ECEC"
-        ]
-      },
-      "warning-amber": {
-        "role": "status",
-        "displayName": "进度琥珀 / Warning Amber",
-        "canonical": "#f59e0b",
-        "tonalRamp": [
-          "#3A2B13",
-          "#7F5205",
-          "#BA7808",
-          "#F59E0A",
-          "#F8B74A",
-          "#FACE85",
-          "#FCE4BA",
-          "#F9F4EC"
-        ]
-      },
-      "success-green": {
-        "role": "status",
-        "displayName": "确认绿 / Success Green",
-        "canonical": "#15803d",
-        "tonalRamp": [
-          "#173522",
-          "#137236",
-          "#1BA64F",
-          "#24DB68",
-          "#5DE490",
-          "#91EDB4",
-          "#C2F5D5",
-          "#EDF7F1"
+          "#2C2920",
+          "#574D2D",
+          "#7F7042",
+          "#A89457",
+          "#BEB083",
+          "#D3C9AB",
+          "#E7E1D0",
+          "#F4F3F0"
         ]
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "页面主标题",
-        "purpose": "页面级标题，1.75rem、-0.02em 字距；登录页使用 clamp。"
-      },
-      "headline": {
-        "displayName": "区块标题与统计值",
-        "purpose": "1.5rem 粗体；统计数字加 tabular-nums。"
+        "purpose": "1.55rem 粗体，页面级标题。"
       },
       "title": {
-        "displayName": "卡片与小节标题",
-        "purpose": "1.05–1.2rem，用于卡片名、对话框标题、小节。"
+        "displayName": "行/卡片标题",
+        "purpose": "0.95rem 粗体，服务名与对话框标题。"
       },
       "body": {
         "displayName": "正文与按钮",
-        "purpose": "0.875rem；卡片字段可用 0.85rem 紧排变体。"
+        "purpose": "0.85rem，卡片字段可用 0.875rem 紧排变体。"
       },
       "label": {
-        "displayName": "标签与提示",
-        "purpose": "0.7–0.85rem，字段名、徽章、倒计时、副文本。"
+        "displayName": "表头与字段名",
+        "purpose": "0.68–0.75rem，表头、徽章、刻度、状态。"
       },
       "mono": {
-        "displayName": "机器标识符",
-        "purpose": "仅用于模型 ID、权限 code、飞书 ID 等机器可读字符串。"
+        "displayName": "测量读数",
+        "purpose": "仅用于时刻、金额、序号、统计值与倒计时，tabular-nums。"
       }
     },
     "shadows": [
       {
         "name": "dialog-lift",
-        "value": "0 20px 50px rgba(0, 0, 0, 0.25)",
-        "purpose": "唯一允许的模态浮层阴影，配合 rgba(0,0,0,0.45) 遮罩。"
+        "value": "0 20px 50px rgba(14, 20, 22, 0.28)",
+        "purpose": "唯一允许的模态浮层阴影。"
       },
       {
         "name": "drag-lift",
-        "value": "0 4px 12px rgba(0, 0, 0, 0.15)",
-        "purpose": "仅用于拖拽中的优先级行。"
+        "value": "0 4px 12px rgba(14, 20, 22, 0.18)",
+        "purpose": "仅用于拖拽中的行。"
       }
     ],
     "motion": [
+      {
+        "name": "hover-brightness",
+        "value": "filter: brightness(1.14)",
+        "purpose": "主按钮悬停的唯一反馈。"
+      },
       {
         "name": "progress-width",
         "value": "width 0.2s ease",
@@ -308,162 +309,167 @@
         "name": "drag-transform",
         "value": "transform 0.15s ease",
         "purpose": "拖拽状态与飞书权限面板箭头翻转。"
-      },
-      {
-        "name": "hover-brightness",
-        "value": "filter: brightness(1.05)",
-        "purpose": "主按钮悬停的唯一反馈。"
       }
     ],
-    "breakpoints": []
+    "breakpoints": [
+      {
+        "name": "narrow",
+        "value": "720px"
+      }
+    ]
   },
   "components": [
     {
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "靛蓝实底主操作；文字取 var(--bg)，使浅色为白字、深色自动反转为墨色字。",
+      "description": "墨蓝实底主操作，直角、墨上白字。",
       "html": "<button class=\"ds-btn-primary\">添加订阅</button>",
-      "css": ".ds-btn-primary { padding: 0.5rem 0.9rem; border: 1px solid var(--accent); border-radius: 0.45rem; background: var(--accent); color: var(--bg); font: inherit; font-size: 0.875rem; cursor: pointer; transition: filter 0.15s ease; } .ds-btn-primary:hover { filter: brightness(1.05); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-btn-primary:active { filter: brightness(0.96); } .ds-btn-primary:disabled { opacity: 0.6; cursor: default; }"
+      "css": ".ds-btn-primary{padding:7px 13px;border:1px solid #1B2A33;border-radius:0;background:#1B2A33;color:#F2EFE6;font:600 .8rem system-ui,sans-serif;cursor:pointer;transition:filter .15s}.ds-btn-primary:hover{filter:brightness(1.14)}.ds-btn-primary:focus-visible{outline:2px solid #B23A24;outline-offset:1px}.ds-btn-primary:disabled{opacity:.6;cursor:default}"
     },
     {
       "name": "Ghost Button",
       "kind": "button",
       "refersTo": "button-ghost",
-      "description": "次要操作，透明底加发丝线描边。",
+      "description": "次要操作，透明底加 1px 栏线。",
       "html": "<button class=\"ds-btn-ghost\">取消</button>",
-      "css": ".ds-btn-ghost { padding: 0.5rem 0.9rem; border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent); border-radius: 0.45rem; background: transparent; color: var(--fg); font: inherit; font-size: 0.875rem; cursor: pointer; } .ds-btn-ghost:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .ds-btn-ghost:disabled { opacity: 0.6; cursor: default; }"
+      "css": ".ds-btn-ghost{padding:7px 13px;border:1px solid #C9C7BC;border-radius:0;background:transparent;color:#1B2A33;font:600 .8rem system-ui,sans-serif;cursor:pointer}.ds-btn-ghost:hover{background:rgba(27,42,51,.08)}.ds-btn-ghost:focus-visible{outline:2px solid #B23A24;outline-offset:1px}"
     },
     {
       "name": "Danger Button",
       "kind": "button",
       "refersTo": "button-danger",
-      "description": "删除等破坏性操作；通知页另有描边式危险按钮。",
+      "description": "破坏性操作，朱红实底。",
       "html": "<button class=\"ds-btn-danger\">删除</button>",
-      "css": ".ds-btn-danger { padding: 0.5rem 0.9rem; border: 1px solid #dc2626; border-radius: 0.45rem; background: #dc2626; color: #fff; font: inherit; font-size: 0.875rem; cursor: pointer; } .ds-btn-danger:hover { filter: brightness(1.05); } .ds-btn-danger:focus-visible { outline: 2px solid #dc2626; outline-offset: 2px; } .ds-btn-danger:disabled { opacity: 0.6; cursor: default; }"
+      "css": ".ds-btn-danger{padding:7px 13px;border:1px solid #B23A24;border-radius:0;background:#B23A24;color:#FBFAF4;font:600 .8rem system-ui,sans-serif;cursor:pointer}.ds-btn-danger:hover{filter:brightness(1.1)}.ds-btn-danger:focus-visible{outline:2px solid #B23A24;outline-offset:1px}"
+    },
+    {
+      "name": "Header Rail",
+      "kind": "nav",
+      "refersTo": "header-rail",
+      "description": "整宽墨蓝页头，标准标签导航，激活项为琥珀实底块。",
+      "html": "<header class=\"ds-rail\"><h1>AI订阅管理工具</h1><nav><a class=\"ds-nav-on\" href=\"#\">订阅</a><a href=\"#\">工具</a><a href=\"#\">代理订阅</a></nav></header>",
+      "css": ".ds-rail{display:flex;align-items:center;gap:0;background:#1B2A33;border-bottom:4px solid #C2452D;color:#F2EFE6}.ds-rail h1{font-size:1.05rem;font-weight:700;padding:14px 26px;margin:0}.ds-rail nav{display:flex;margin-left:auto;padding:10px 26px}.ds-rail a{padding:10px 14px;color:#D8E0E2;text-decoration:none;border-left:1px solid rgba(242,239,230,.18);font-size:.82rem}.ds-rail a:hover{background:rgba(242,239,230,.10);color:#F2EFE6}.ds-rail a.ds-nav-on{background:#D9A441;color:#1B2A33;font-weight:700}.ds-rail a:focus-visible{outline:2px solid #B23A24;outline-offset:-2px}"
+    },
+    {
+      "name": "Table Header",
+      "kind": "custom",
+      "refersTo": "table-header",
+      "description": "七列语义表头 + 7 个真实日历刻度。",
+      "html": "<div class=\"ds-thead\"><span>序号</span><span>服务</span><span>金额</span><span>账单周期</span><span>状态</span><span class=\"ds-axis\"><b>下次重置 / 周期视图</b><i>11-05</i><i>11-10</i><i>11-15</i><i>11-20</i><i>11-25</i><i>11-30</i><i>12-05</i></span><span>操作</span></div>",
+      "css": ".ds-thead{display:grid;grid-template-columns:52px minmax(180px,1.6fr) 96px 90px 88px minmax(240px,34%) 150px;background:#1B2A33;color:#F2EFE6;border-bottom:1px solid #1B2A33}.ds-thead>span{padding:6px 10px;font:700 .68rem system-ui,sans-serif;border-right:1px solid rgba(242,239,230,.2)}.ds-thead>span:last-child{border-right:0}.ds-thead .ds-axis{display:flex;flex-direction:column;gap:3px}.ds-thead .ds-axis i{display:flex;justify-content:space-between;font:400 .6rem ui-monospace,monospace;color:#C9D2D4;font-style:normal}"
+    },
+    {
+      "name": "Timetable Axis",
+      "kind": "custom",
+      "refersTo": "sheet-row",
+      "description": "签名组件：四轨共轴，填充=已过周期比例，刻口=周期终点。",
+      "html": "<div class=\"ds-axis-wrap\"><div class=\"ds-axis-title\">下次重置 / 周期视图</div><div class=\"ds-track\"><span>账单</span><i class=\"ds-rail-b\"><b style=\"width:62%\"></b></i></div><div class=\"ds-track\"><span>5h</span><i class=\"ds-rail-b\"><b style=\"width:84%;background:#C2452D\"></b><u style=\"left:84%\"></u></i></div><div class=\"ds-track\"><span>周</span><i class=\"ds-rail-b\"><b style=\"width:41%;background:#2E6E73\"></b></i></div><div class=\"ds-track\"><span>月</span><i class=\"ds-rail-b\"><b style=\"width:22%;background:#D9A441\"></b></i></div><p class=\"ds-when\">2026-11-08 09:00 · 剩余 2天17时</p></div>",
+      "css": ".ds-axis-wrap{padding:10px 12px;border-left:1px solid #C9C7BC;background:transparent}.ds-axis-title{font:700 .68rem system-ui,sans-serif;color:#5D6A70;margin-bottom:7px}.ds-track{display:flex;align-items:center;gap:6px;margin-bottom:4px}.ds-track>span{width:26px;flex-shrink:0;font-size:.64rem;color:#5D6A70}.ds-rail-b{position:relative;flex:1;height:6px;border:1px solid #C9C7BC;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(14.285% - 1px),#C9C7BC calc(14.285% - 1px),#C9C7BC 14.285%),#E4E2D9}.ds-rail-b>b{position:absolute;left:0;top:0;bottom:0;background:#1B2A33}.ds-rail-b>u{position:absolute;top:-3px;width:2px;height:12px;background:#B23A24}.ds-when{margin:8px 0 0;font:400 .68rem ui-monospace,monospace;font-variant-numeric:tabular-nums;color:#1B2A33}"
+    },
+    {
+      "name": "Sheet Row",
+      "kind": "card",
+      "refersTo": "sheet-row",
+      "description": "连续行，交替底、1px 栏线、直角、无阴影。",
+      "html": "<div class=\"ds-row\"><h3>Volcengine Ark · Coding Plan</h3><dl><dt>金额</dt><dd>¥199.00</dd></dl></div>",
+      "css": ".ds-row{display:grid;grid-template-columns:minmax(0,1fr) 34%;background:#FBFAF4;border:0;border-bottom:1px solid #C9C7BC;border-radius:0}.ds-row:nth-child(even){background:#E7E5DE}.ds-row:hover{background:#F0E5CC}.ds-row h3{font:700 .95rem system-ui,sans-serif;margin:0;padding:10px}.ds-row dl{display:flex;justify-content:space-between;gap:12px;padding:10px;margin:0}.ds-row dt{font-size:.72rem;color:#5D6A70}.ds-row dd{margin:0;font:.82rem ui-monospace,monospace;font-variant-numeric:tabular-nums;font-weight:700;text-align:right}"
+    },
+    {
+      "name": "Stats Strip",
+      "kind": "custom",
+      "refersTo": "table-header",
+      "description": "一条被上下墨线夹住的连续统计条，标签与数值同一基线。",
+      "html": "<div class=\"ds-stats\"><div><h2>月度总支出</h2><p>¥343.00</p></div><div><h2>年度预估</h2><p>¥4,116.00</p></div><div><h2>一次性充值</h2><p>¥312.40</p></div><div><h2>订阅总数</h2><p>3</p></div></div>",
+      "css": ".ds-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid #1B2A33;border-bottom:1px solid #1B2A33}.ds-stats>div{display:flex;align-items:baseline;gap:8px;padding:8px 14px;background:#FBFAF4;border-right:1px solid #C9C7BC}.ds-stats>div:last-child{border-right:0}.ds-stats h2{font:600 .72rem system-ui,sans-serif;color:#5D6A70;margin:0}.ds-stats p{margin:0;font:700 .92rem ui-monospace,monospace;font-variant-numeric:tabular-nums;color:#1B2A33}"
     },
     {
       "name": "Input Field",
       "kind": "input",
       "refersTo": "input-field",
-      "description": "原生输入框外观；聚焦用 2px 靛蓝 outline 而非阴影。",
-      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"订阅名称\" />",
-      "css": ".ds-input { padding: 0.5rem 0.6rem; border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent); border-radius: 0.4rem; background: var(--bg); color: var(--fg); font: inherit; font-size: 0.875rem; } .ds-input::placeholder { color: var(--muted); } .ds-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; } .ds-input:disabled { opacity: 0.6; }"
-    },
-    {
-      "name": "Subscription Card",
-      "kind": "card",
-      "refersTo": "card",
-      "description": "订阅/代理订阅/通知卡共用：极淡叠加面 + 发丝线，无阴影。",
-      "html": "<div class=\"ds-card\"><div class=\"ds-card-head\"><h3 class=\"ds-card-title\">Volcengine Ark</h3><span class=\"ds-status ds-status-active\">活跃</span></div><dl class=\"ds-card-fields\"><dt>月费</dt><dd>¥ 199.00</dd></dl></div>",
-      "css": ".ds-card { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; border: 1px solid color-mix(in srgb, var(--fg) 14%, transparent); border-radius: 0.75rem; background: color-mix(in srgb, var(--bg) 94%, var(--fg) 6%); color: var(--fg); } .ds-card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; } .ds-card-title { margin: 0; font-size: 1.05rem; font-weight: 600; } .ds-card-fields { display: flex; justify-content: space-between; gap: 0.75rem; margin: 0; font-size: 0.85rem; } .ds-card-fields dt { color: var(--muted); } .ds-card-fields dd { margin: 0; font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; } .ds-status { padding: 0.15rem 0.55rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.75rem; white-space: nowrap; } .ds-status-active { color: #16a34a; }"
-    },
-    {
-      "name": "Tag Chip",
-      "kind": "chip",
-      "refersTo": "tag-chip",
-      "description": "可移除的订阅标签，靛蓝 14% 叠加底；× 为手写内联 SVG。",
-      "html": "<span class=\"ds-tag-chip\"><span>编程</span><button class=\"ds-tag-remove\" type=\"button\" aria-label=\"移除标签\"><svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"><path d=\"M2 2l6 6M8 2l-6 6\"/></svg></button></span>",
-      "css": ".ds-tag-chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.15rem 0.5rem; border-radius: 0.3rem; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--fg); font-size: 0.8rem; } .ds-tag-remove { padding: 0 0.15rem; border: none; background: none; color: var(--muted); cursor: pointer; line-height: 1; } .ds-tag-remove:hover { color: var(--fg); } .ds-tag-remove:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }"
-    },
-    {
-      "name": "Segmented Navigation",
-      "kind": "nav",
-      "refersTo": "nav-active",
-      "description": "页头分段导航：整组发丝线、项间竖线，激活项靛蓝实底。",
-      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item\" href=\"#\">订阅</a><a class=\"ds-nav-item ds-nav-active\" href=\"#\">工具</a><a class=\"ds-nav-item\" href=\"#\">代理订阅</a></nav>",
-      "css": ".ds-nav { display: inline-flex; overflow: hidden; border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent); border-radius: 0.45rem; } .ds-nav-item { padding: 0.45rem 0.9rem; color: var(--fg); font-size: 0.9rem; text-decoration: none; } .ds-nav-item + .ds-nav-item { border-left: 1px solid color-mix(in srgb, var(--fg) 20%, transparent); } .ds-nav-item:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); } .ds-nav-item.ds-nav-active { background: var(--accent); color: var(--bg); } .ds-nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }"
-    },
-    {
-      "name": "Usage Progress",
-      "kind": "custom",
-      "refersTo": "card",
-      "description": "签名组件：0.35rem 全圆角轨道，≥70% 琥珀、>90% 红；只编码消耗比例。",
-      "html": "<div class=\"ds-usage\"><div class=\"ds-usage-track\"><div class=\"ds-usage-fill ds-usage-warning\" style=\"width:78%\"></div></div><span class=\"ds-usage-pct\">78%</span></div>",
-      "css": ".ds-usage { display: flex; align-items: center; gap: 0.5rem; } .ds-usage-track { flex: 1; height: 0.35rem; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--fg) 12%, transparent); } .ds-usage-fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.2s ease; } .ds-usage-fill.ds-usage-warning { background: #f59e0b; } .ds-usage-fill.ds-usage-danger { background: #dc2626; } .ds-usage-pct { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }"
-    },
-    {
-      "name": "Priority Drag Row",
-      "kind": "custom",
-      "refersTo": "card",
-      "description": "签名组件：优先级场景中的可拖拽行；拖拽时才有阴影。",
-      "html": "<div class=\"ds-drag-row\"><button class=\"ds-drag-handle\" type=\"button\" aria-label=\"拖动排序\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 14 14\" fill=\"currentColor\"><circle cx=\"4\" cy=\"3\" r=\"1.2\"/><circle cx=\"10\" cy=\"3\" r=\"1.2\"/><circle cx=\"4\" cy=\"7\" r=\"1.2\"/><circle cx=\"10\" cy=\"7\" r=\"1.2\"/><circle cx=\"4\" cy=\"11\" r=\"1.2\"/><circle cx=\"10\" cy=\"11\" r=\"1.2\"/></svg></button><span class=\"ds-drag-rank\">1</span><span class=\"ds-drag-name\">Kimi Code</span></div>",
-      "css": ".ds-drag-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; border: 1px solid rgba(79, 70, 229, 0.2); border-radius: 0.375rem; background: rgba(79, 70, 229, 0.1); color: var(--fg); } .ds-drag-row:hover { border-color: color-mix(in srgb, var(--accent) 35%, transparent); } .ds-drag-row.ds-drag-active { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); } .ds-drag-handle { padding: 0.15rem; border: none; background: none; color: var(--muted); cursor: grab; } .ds-drag-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; } .ds-drag-rank { width: 1.5rem; flex-shrink: 0; text-align: center; color: var(--accent); font-size: 0.75rem; font-variant-numeric: tabular-nums; } .ds-drag-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }"
+      "description": "表格白底、1px 栏线、直角，聚焦 2px 朱红轮廓。",
+      "html": "<input class=\"ds-input\" placeholder=\"搜索订阅\" />",
+      "css": ".ds-input{padding:.5rem .6rem;border:1px solid #C9C7BC;border-radius:0;background:#FBFAF4;color:#1B2A33;font:.82rem system-ui,sans-serif}.ds-input::placeholder{color:#5D6A70}.ds-input:focus{outline:2px solid #B23A24;outline-offset:1px}.ds-input:disabled{opacity:.6}"
     },
     {
       "name": "Dialog",
       "kind": "custom",
       "refersTo": "dialog",
-      "description": "唯一带阴影的浮层；div role=\"dialog\"，两列表单，操作区右对齐。",
-      "html": "<div class=\"ds-dialog\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"ds-dialog-title\"><h2 id=\"ds-dialog-title\" class=\"ds-dialog-title\">添加订阅</h2><div class=\"ds-dialog-actions\"><button class=\"ds-dialog-cancel\">取消</button><button class=\"ds-dialog-submit\">保存</button></div></div>",
-      "css": ".ds-dialog { width: min(38rem, 100%); max-height: 90vh; overflow-y: auto; padding: 1.25rem 1.5rem; border-radius: 0.75rem; background: var(--bg); color: var(--fg); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25); } .ds-dialog-title { margin: 0 0 0.75rem; font-size: 1.2rem; } .ds-dialog-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; } .ds-dialog-actions button { padding: 0.5rem 0.9rem; border-radius: 0.45rem; font: inherit; font-size: 0.875rem; cursor: pointer; } .ds-dialog-cancel { border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent); background: transparent; color: var(--fg); } .ds-dialog-cancel:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); } .ds-dialog-submit { border: 1px solid var(--accent); background: var(--accent); color: var(--bg); } .ds-dialog-submit:hover { filter: brightness(1.05); } .ds-dialog-actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
+      "description": "唯一带阴影的浮层，直角、两列网格、操作区右对齐。",
+      "html": "<div class=\"ds-dialog\" role=\"dialog\" aria-modal=\"true\"><h2>确认删除订阅</h2><p>确定要删除订阅吗？</p><div class=\"ds-acts\"><button class=\"ds-cancel\">取消</button><button class=\"ds-confirm\">确认删除</button></div></div>",
+      "css": ".ds-dialog{width:min(38rem,100%);max-height:90vh;overflow-y:auto;padding:1.25rem 1.5rem;border:1px solid #1B2A33;border-radius:0;background:#FBFAF4;color:#1B2A33;box-shadow:0 20px 50px rgba(14,20,22,.28)}.ds-dialog h2{margin:0 0 .75rem;font-size:1.2rem}.ds-acts{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem}.ds-acts button{padding:.5rem .9rem;border-radius:0;font:600 .8rem system-ui,sans-serif;cursor:pointer}.ds-cancel{border:1px solid #C9C7BC;background:transparent;color:#1B2A33}.ds-confirm{border:1px solid #B23A24;background:#B23A24;color:#FBFAF4}.ds-acts button:focus-visible{outline:2px solid #B23A24;outline-offset:2px}"
     }
   ],
   "narrative": {
-    "northStar": "素页账本 / The Plain Ledger",
-    "overview": "这是一本收拾干净的账本，不是仪表盘。白纸或炭黑纸面上只有细到几乎看不见的分隔线，一点靛蓝用来标记「这里可以点、这里被选中、这里正在变化」。所有视觉决定服务于一个动作：把订阅、金额、状态和到期时间记下来，然后一眼查到。PRODUCT.md 确认的定位是个人订阅记账本，因此界面不制造戏剧性、不争夺注意力，也不假装自己是一个控制平台。\n\n气质是克制、清楚、可信。信息密度不低——卡片里挤着字段、徽章、进度条和操作按钮——但密度靠对齐、留白节奏和字重差异来消化，而不是靠装饰。系统字体、四枚主题变量、几乎为零的阴影、没有宽度断点：整套实现刻意把「设计感」压到最低，让数据成为唯一的主角。\n\n明确排除的方向：仪表盘大屏、渐变与玻璃拟态、装饰性插画、拟物化。这是用户确认的视觉反例，不是临时偏好；任何新界面都不应借「更现代」之名把它们带回来。",
+    "northStar": "时刻表栏律 / Timetable Column Rhythm",
+    "overview": "这是一张被认真排过的班次表，不是一个后台。整宽深墨蓝页头压住纸白地面，1px 实线把屏切成栏与行；账单周期与 5 小时 / 周 / 月三种额度重置被压到同一条 30 天时间轴上，四条轨道对齐，朱红刻口标出即将发生的那一次。世界只贡献四件事——字、色、密度和一个签名动作；布局、导航与控件全部是标准 web 组件。\n\n气质是清楚、密、可信。信息密度高：小字号、紧行距、等宽数字、交替行底，但每条信息都在它该在的栏里。没有圆角、没有渐变、没有玻璃、没有装饰插画；层级靠栏线、字重与色轨，不靠阴影。签名动作是一条真实数据驱动的四轨共轴。\n\n明确排除且已写进实现禁令：仪表盘大屏、渐变与玻璃拟态、装饰性插画、拟物化、踢眉、字距撑开的大写小标签、Unicode 字形充当图标、卡片网格加统计数字加筛选条这一类别默认，以及它可预测的反面。",
     "keyCharacteristics": [
-      "单一靛蓝强调色 + 中性纸面，语义色只描述状态。",
-      "静止状态完全平铺；层级靠 color-mix() 的极淡叠加与 1px 发丝线，不靠投影。",
-      "系统字体、原生表单控件、手写内联 SVG 图标，零外部字体与图标依赖。",
-      "响应式由 auto-fill/auto-fit minmax() 与 flex 换行完成，没有断点。",
-      "浅色 / 深色是同一套结构换四枚变量，深色模式另配语义色的高对比版本。"
+      "整宽墨蓝页头与墨蓝按钮；纸白地、表格白面、1px 实线栏线、全直角。",
+      "朱红只标 imminent 与告警；青、琥珀是数据轨色；语义色在深色模式有独立高对比值。",
+      "系统 sans-serif 承担全部中文与拉丁文字，等宽栈只服务时刻、金额与测量值；tabular-nums 全站开启。",
+      "密度来自 0.68–0.85rem 的标签与正文、紧行距、无间隙的连续行；响应式靠 auto-fill/auto-fit minmax() 与一处 720px 收窄。",
+      "浅色 / 深色共用同一套结构，只切换主题变量；主题切换是功能，不是外观。"
     ],
     "rules": [
       {
-        "name": "The One Accent Rule",
-        "body": "靛蓝是唯一的非中性色。一屏之内它只出现在可交互与已选中的地方；若某个元素不响应用户动作，它就不该是靛蓝色。",
+        "name": "The One Axis Rule",
+        "body": "账单与三种额度重置必须画在同一条 30 天轴上；任何把某个周期拆成独立卡片的做法都破坏了这个产品唯一要证明的事。",
         "section": "colors"
       },
       {
-        "name": "The Semantic Color Rule",
-        "body": "绿、琥珀、红只表达状态与告警，永不作为装饰配色。它们各自有独立的深色值（#4ade80 / #fbbf24 / #f87171），不能靠降低透明度在深色模式里凑合——对比度修正已经是既有实现的一部分。",
+        "name": "The Signal Rarity Rule",
+        "body": "朱红只标 imminent 与告警。它出现得越少越有力；把它当品牌色铺开就退回通用后台。",
         "section": "colors"
       },
       {
-        "name": "The Reset Time Rule",
-        "body": "重置倒计时文字是唯一允许连续插值的颜色：从淡黄经橙到深红由 getResetUrgencyColor() 按剩余时间算出 hsl()，仅用于 weekly / monthly 窗口。用量进度条另有 70% / 90% 两档离散阈值，两套编码互不混用。",
+        "name": "The Ink Is The Shell Rule",
+        "body": "墨蓝承担整宽页头与主控件，不是只描一条边。承诺的配色必须占据整块区域，而不是散在中性地面上的几处点缀。",
         "section": "colors"
       },
       {
         "name": "The System Stack Rule",
-        "body": "不加载任何网页字体。中文与拉丁文字共用系统 sans-serif，等宽栈只服务机器可读的标识符。",
+        "body": "不加载任何网页字体；中文与拉丁共用系统栈，等宽只服务测量。",
+        "section": "typography"
+      },
+      {
+        "name": "The No-Kicker Rule",
+        "body": "标题上方或下方不放字距撑开的大写标签、编号或标语。标题自己承担重量。",
         "section": "typography"
       },
       {
         "name": "The Tabular Numbers Rule",
-        "body": "金额、统计值、用量百分比、优先级序号、倒计时一律 font-variant-numeric: tabular-nums，避免数字跳动破坏账本的可信感。",
+        "body": "所有金额、时刻、序号、统计值与倒计时一律等宽数字，避免账本读数跳动。",
         "section": "typography"
       },
       {
         "name": "The Grid Wraps, It Doesn't Break Rule",
-        "body": "不要为某个屏宽引入断点或另写一套布局；调整 minmax() 的最小列宽或让工具栏换行即可。",
+        "body": "不要为某个屏宽另写一套布局；调整 minmax() 最小列宽或让工具栏换行即可。",
         "section": "layout"
       },
       {
         "name": "The Flat-By-Default Rule",
-        "body": "阴影只出现在「浮层」与「拖拽中」这两种临时状态。任何常规卡片、统计块、导航或列表项都不加阴影；需要强调时提高描边浓度或叠加底色。",
+        "body": "阴影只在「浮层」与「拖拽中」两种临时状态出现。常规行、统计条、导航、表头都不加阴影。",
         "section": "elevation"
       },
       {
-        "name": "The Pill Is For Status Rule",
-        "body": "999px 只给徽章、标签与进度条；按钮与卡片一律保持可感知的直角感（0.45rem / 0.75rem），避免整页变成一堆胶囊。",
+        "name": "The No-Pill Rule",
+        "body": "999px 全圆角属于被替换的旧世界，不在这个系统里；所有控件与容器保持可感知的直角。",
         "section": "shapes"
       }
     ],
     "dos": [
-      "Do 用 color-mix(in srgb, var(--fg) N%, transparent) 生成描边与叠加面，而不是新增硬编码中性色；N 落在 10%–22% 之间。",
-      "Do 让浅色 / 深色共用同一套结构，只切换 --bg / --fg / --muted / --accent 四枚变量。",
-      "Do 为语义色使用深色模式的独立高对比值（#4ade80 / #fbbf24 / #f87171）。",
-      "Do 用 auto-fill/auto-fit minmax() 与 flex-wrap 解决窄屏，并给金额与读数加 tabular-nums。",
-      "Do 保留原生 select / radio 与 div role=\"dialog\"，图标继续使用手写内联 SVG。"
+      "Do 用 var(--tt-*) 世界层变量生成壳、栏线与数据轨色，并用 --signal 承担所有文字级告警（≥4.5:1）。",
+      "Do 让七列表头、真实日期刻度与四轨轴始终一起出现；四轨值必须来自真实订阅数据。",
+      "Do 保持全直角、1px 实线、交替行底与系统字体；金额与时刻一律等宽数字。",
+      "Do 保留原生 select / radio / div role=\"dialog\" 与手写内联 SVG。",
+      "Do 让浅色 / 深色共用同一结构，只切主题变量；为语义色使用深色独立值。"
     ],
     "donts": [
-      "Don't 引入仪表盘大屏、渐变、玻璃拟态、装饰性插画或拟物化——这是已确认的视觉反例。",
-      "Don't 给常规卡片、统计块或导航加阴影；只有对话框与拖拽行可以抬起。",
-      "Don't 用绿 / 琥珀 / 红做装饰配色，也别在深色模式里靠透明度复用浅色语义值。",
-      "Don't 引入第二枚品牌强调色、网页字体、图标库或宽度断点。",
-      "Don't 把 999px 全圆角用在按钮与卡片上，也不要把重置紧迫度色与用量进度条阈值混为一谈。"
+      "Don’t 引入圆角胶囊、渐变、玻璃、装饰插画、拟物化或仪表盘大屏。",
+      "Don’t 在标题上方/下方放字距撑开的大写踢眉、编号或标语；也别用 Unicode 字形当图标。",
+      "Don’t 把朱红当品牌色铺开，或把四轨轴做成导航、链接、可点控件。",
+      "Don’t 引入外部字体、图标库、组件库，或为某个屏宽另写一套布局。",
+      "Don’t 给常规行、统计条、导航或表头加阴影；只有对话框与拖拽行可以抬起。"
     ]
   }
 }

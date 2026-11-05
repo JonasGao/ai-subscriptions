@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>通用后台</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 1440px;
+        height: 900px;
+        overflow: hidden;
+      }
+      body {
+        background: #ffffff;
+        color: #18181b;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          "Noto Sans CJK SC",
+          "Microsoft YaHei",
+          sans-serif;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      header {
+        height: 60px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding: 0 24px;
+        border-bottom: 1px solid #e4e4e7;
+      }
+      .brand {
+        font-weight: 700;
+        font-size: 16px;
+      }
+      nav {
+        display: flex;
+        gap: 6px;
+        margin-left: auto;
+      }
+      nav a {
+        padding: 7px 12px;
+        font-size: 13px;
+        color: #52525b;
+        text-decoration: none;
+        border-radius: 6px;
+      }
+      nav a.on {
+        background: #eef2ff;
+        color: #4f46e5;
+        font-weight: 600;
+      }
+      main {
+        padding: 24px;
+      }
+      h1 {
+        font-size: 22px;
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .stat {
+        padding: 16px;
+        border: 1px solid #e4e4e7;
+        border-radius: 12px;
+        background: #fafafa;
+      }
+      .stat span {
+        font-size: 12px;
+        color: #71717a;
+      }
+      .stat b {
+        display: block;
+        font-size: 24px;
+        margin-top: 6px;
+        font-variant-numeric: tabular-nums;
+      }
+      .filters {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .filters input,
+      .filters select,
+      .primary {
+        font: inherit;
+        font-size: 13px;
+        padding: 8px 12px;
+        border: 1px solid #d4d4d8;
+        border-radius: 8px;
+        background: #fff;
+        color: #18181b;
+      }
+      .primary {
+        background: #4f46e5;
+        border-color: #4f46e5;
+        color: #fff;
+        margin-left: auto;
+        font-weight: 600;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .card {
+        padding: 16px;
+        border: 1px solid #e4e4e7;
+        border-radius: 12px;
+        background: #fff;
+      }
+      .card h3 {
+        font-size: 15px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .pill {
+        font-size: 11px;
+        padding: 2px 8px;
+        border: 1px solid #16a34a;
+        color: #16a34a;
+        border-radius: 999px;
+      }
+      .pill.warn {
+        border-color: #d97706;
+        color: #d97706;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        padding: 3px 0;
+      }
+      .row span {
+        color: #71717a;
+      }
+      .tags {
+        display: flex;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      .tag {
+        font-size: 11px;
+        padding: 2px 8px;
+        background: #eef2ff;
+        color: #4f46e5;
+        border-radius: 6px;
+      }
+      .acts {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .acts button {
+        flex: 1;
+        font: inherit;
+        font-size: 12px;
+        padding: 6px;
+        border: 1px solid #d4d4d8;
+        border-radius: 8px;
+        background: #fff;
+        color: #18181b;
+      }
+      .bar {
+        height: 6px;
+        border-radius: 999px;
+        background: #f4f4f5;
+        overflow: hidden;
+        margin-top: 10px;
+      }
+      .bar i {
+        display: block;
+        height: 100%;
+        background: #4f46e5;
+        border-radius: 999px;
+      }
+      .err {
+        padding: 10px 14px;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        color: #dc2626;
+        font-size: 13px;
+        margin-bottom: 16px;
+        background: #fef2f2;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">AI订阅管理工具</div>
+      <nav>
+        <a class="on" href="#">订阅</a><a href="#">工具</a
+        ><a href="#">代理订阅</a><a href="#">提供商</a><a href="#">通知</a>
+      </nav>
+    </header>
+    <main>
+      <h1>订阅管理</h1>
+      <div class="err">
+        1 条订阅需核对：Kimi Code 的用量查询返回窗口解析警告。
+      </div>
+      <div class="stats">
+        <div class="stat"><span>月度支出</span><b>¥343.00</b></div>
+        <div class="stat"><span>年度支出</span><b>¥4,116.00</b></div>
+        <div class="stat"><span>活跃订阅</span><b>3</b></div>
+        <div class="stat"><span>即将续费</span><b>1</b></div>
+      </div>
+      <div class="filters">
+        <input type="search" placeholder="搜索订阅" /><select>
+          <option>全部分类</option></select
+        ><select>
+          <option>全部状态</option></select
+        ><button class="primary">+ 添加订阅</button>
+      </div>
+      <div class="cards">
+        <div class="card">
+          <h3>Volcengine Ark <span class="pill">活跃</span></h3>
+          <div class="row"><span>金额</span><b>¥199.00 / 月</b></div>
+          <div class="row"><span>下次重置</span><b>11-08 09:00</b></div>
+          <div class="bar"><i style="width: 62%"></i></div>
+          <div class="tags">
+            <span class="tag">编程</span><span class="tag">主力</span>
+          </div>
+          <div class="acts">
+            <button>编辑</button><button>查询用量</button><button>删除</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Moonshot Kimi <span class="pill warn">暂停</span></h3>
+          <div class="row"><span>金额</span><b>¥99.00 / 年</b></div>
+          <div class="row"><span>下次重置</span><b>11-05 18:42</b></div>
+          <div class="bar"><i style="width: 96%"></i></div>
+          <div class="tags">
+            <span class="tag">编程</span><span class="tag">备用</span>
+          </div>
+          <div class="acts">
+            <button>编辑</button><button>查询用量</button><button>删除</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>代理线路 A <span class="pill">使用中</span></h3>
+          <div class="row"><span>金额</span><b>¥45.00 / 月</b></div>
+          <div class="row"><span>到期</span><b>不限期</b></div>
+          <div class="bar"><i style="width: 30%"></i></div>
+          <div class="tags"><span class="tag">流量型</span></div>
+          <div class="acts">
+            <button>编辑</button><button>标记状态</button><button>删除</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

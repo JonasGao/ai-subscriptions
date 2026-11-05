@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>书脊账簿 · Shelf Horizon</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 1440px;
+        height: 900px;
+        overflow: hidden;
+      }
+      body {
+        background: #f3e8d5;
+        color: #241c18;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          "Noto Sans CJK SC",
+          "Microsoft YaHei",
+          sans-serif;
+        font-size: 14px;
+        line-height: 1.35;
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-variant-numeric: tabular-nums;
+      }
+      .shell {
+        height: 52px;
+        background: #5a2230;
+        color: #f6ecdf;
+        border-bottom: 6px solid #3a151e;
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        padding: 0 28px;
+      }
+      .brand {
+        font-size: 19px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+      }
+      .brand small {
+        font-size: 11px;
+        font-weight: 400;
+        opacity: 0.72;
+        letter-spacing: 0.14em;
+        margin-left: 10px;
+      }
+      .nav {
+        display: flex;
+        gap: 2px;
+        margin-left: auto;
+      }
+      .nav a {
+        padding: 8px 14px;
+        font-size: 13px;
+        color: #f6ecdf;
+        text-decoration: none;
+        border: 2px solid transparent;
+      }
+      .nav a.on {
+        border-bottom: 2px solid #e3b23c;
+        font-weight: 700;
+      }
+      .tools {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 18px 28px 14px;
+      }
+      .tools h1 {
+        font-size: 26px;
+        letter-spacing: -0.02em;
+        margin-right: auto;
+      }
+      .tools select,
+      .tools input,
+      .btn {
+        font: inherit;
+        font-size: 13px;
+        padding: 7px 11px;
+        background: #fff9ea;
+        color: #241c18;
+        border: 2px solid #241c18;
+        border-radius: 0;
+      }
+      .btn {
+        background: #5a2230;
+        color: #f6ecdf;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .legend {
+        display: flex;
+        gap: 18px;
+        padding: 0 28px 12px;
+        font-size: 12px;
+        color: #7a6657;
+      }
+      .legend i {
+        display: inline-block;
+        width: 11px;
+        height: 11px;
+        margin-right: 6px;
+        vertical-align: -1px;
+      }
+      table {
+        width: calc(100% - 56px);
+        margin: 0 28px;
+        border-collapse: collapse;
+        background: #fff9ea;
+        border: 2px solid #241c18;
+      }
+      th {
+        background: #eadcc4;
+        text-align: left;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        padding: 9px 10px;
+        border-bottom: 2px solid #241c18;
+        border-right: 2px solid #241c18;
+      }
+      td {
+        padding: 0 10px;
+        height: 46px;
+        border-bottom: 2px solid #e3d5bc;
+        border-right: 2px solid #e3d5bc;
+        vertical-align: middle;
+      }
+      tr:nth-child(even) td {
+        background: #fbf3e4;
+      }
+      tr.alert td {
+        background: #f8e7de;
+      }
+      .num {
+        width: 52px;
+      }
+      .svc {
+        width: 210px;
+      }
+      .amt {
+        width: 110px;
+        text-align: right;
+      }
+      .cyc {
+        width: 120px;
+      }
+      .st {
+        width: 110px;
+      }
+      .pr {
+        width: 80px;
+      }
+      .amt b {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .chip {
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 12px;
+        font-weight: 700;
+        border: 2px solid;
+        background: #fff;
+      }
+      .chip.ok {
+        color: #2f6b4f;
+        border-color: #2f6b4f;
+      }
+      .chip.pause {
+        color: #c07a22;
+        border-color: #c07a22;
+      }
+      .chip.check {
+        color: #c43d30;
+        border-color: #c43d30;
+      }
+      .rank {
+        font-size: 18px;
+        font-weight: 700;
+        color: #5a2230;
+      }
+      .horizon {
+        width: 350px;
+      }
+      .hz {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 2px;
+      }
+      .hz span {
+        font-size: 11px;
+        width: 26px;
+        color: #7a6657;
+      }
+      .track {
+        position: relative;
+        flex: 1;
+        height: 11px;
+        background: #eadcc4;
+        border: 1px solid #c9b79b;
+        overflow: hidden;
+      }
+      .fill {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+      }
+      .notch {
+        position: absolute;
+        right: 6px;
+        top: -2px;
+        width: 3px;
+        height: 15px;
+        background: #c43d30;
+      }
+      .when {
+        font-size: 11px;
+        color: #241c18;
+        letter-spacing: 0.02em;
+      }
+      .foot {
+        display: flex;
+        gap: 24px;
+        padding: 16px 28px;
+        font-size: 12px;
+        color: #7a6657;
+      }
+      .foot b {
+        color: #241c18;
+      }
+      .err {
+        margin: 14px 28px 0;
+        padding: 10px 14px;
+        border: 2px solid #c43d30;
+        color: #c43d30;
+        background: #fbe9e4;
+        font-size: 13px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="brand">
+        AI订阅管理工具<small>PERSONAL LEDGER · 本地保管</small>
+      </div>
+      <div class="nav">
+        <a class="on" href="#">订阅</a><a href="#">工具</a
+        ><a href="#">代理订阅</a><a href="#">提供商</a><a href="#">优先级</a
+        ><a href="#">通知</a>
+      </div>
+    </div>
+    <div class="tools">
+      <h1>订阅台账</h1>
+      <input
+        type="search"
+        placeholder="搜索订阅"
+        aria-label="搜索订阅"
+      /><select aria-label="分类">
+        <option>全部分类</option></select
+      ><select aria-label="状态">
+        <option>全部状态</option></select
+      ><button class="btn">+ 添加订阅</button>
+    </div>
+    <div class="legend">
+      <span><i style="background: #2f4c8c"></i>账单</span
+      ><span><i style="background: #c07a22"></i>5 小时</span
+      ><span><i style="background: #3f6b4f"></i>周</span
+      ><span><i style="background: #6b4e8c"></i>月</span
+      ><span>四轨周期带显示已过比例，朱红刻口为到期/续费</span>
+    </div>
+    <div class="err">
+      1 条订阅需核对：Kimi Code
+      的用量查询返回窗口解析警告，重置时间仍按本地计划显示。
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th class="num">序号</th>
+          <th class="svc">服务</th>
+          <th class="amt">金额</th>
+          <th class="cyc">账单周期</th>
+          <th class="st">状态</th>
+          <th class="pr">优先级</th>
+          <th class="horizon">下次重置 / 周期视图</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">S-001</td>
+          <td>
+            <b>Volcengine Ark · Coding Plan</b><br /><span
+              style="font-size: 12px; color: #7a6657"
+              >编程 · 主力</span
+            >
+          </td>
+          <td class="amt"><b>¥199.00</b></td>
+          <td>月付</td>
+          <td><span class="chip ok">在册</span></td>
+          <td class="rank">01</td>
+          <td>
+            <div class="hz">
+              <span>账单</span>
+              <div class="track">
+                <div class="fill" style="width: 62%; background: #2f4c8c"></div>
+                <div class="notch"></div>
+              </div>
+            </div>
+            <div class="hz">
+              <span>5h</span>
+              <div class="track">
+                <div class="fill" style="width: 84%; background: #c07a22"></div>
+              </div>
+            </div>
+            <div class="hz">
+              <span>周</span>
+              <div class="track">
+                <div class="fill" style="width: 41%; background: #3f6b4f"></div>
+              </div>
+            </div>
+            <div class="hz">
+              <span>月</span>
+              <div class="track">
+                <div class="fill" style="width: 22%; background: #6b4e8c"></div>
+              </div>
+            </div>
+            <div class="when mono">2026-11-08 09:00 · 剩余 2天17时</div>
+          </td>
+        </tr>
+        <tr>
+          <td class="mono">S-002</td>
+          <td>
+            <b>Moonshot · Kimi Code</b><br /><span
+              style="font-size: 12px; color: #7a6657"
+              >编程 · 备用</span
+            >
+          </td>
+          <td class="amt"><b>¥99.00</b></td>
+          <td>年付</td>
+          <td><span class="chip check">需核对</span></td>
+          <td class="rank">02</td>
+          <td>
+            <div class="hz">
+              <span>账单</span>
+              <div class="track">
+                <div class="fill" style="width: 31%; background: #2f4c8c"></div>
+              </div>
+            </div>
+            <div class="hz">
+              <span>5h</span>
+              <div class="track">
+                <div class="fill" style="width: 96%; background: #c07a22"></div>
+              </div>
+            </div>
+            <div class="hz">
+              <span>周</span>
+              <div class="track">
+                <div class="fill" style="width: 73%; background: #3f6b4f"></div>
+              </div>
+            </div>
+            <div class="hz">
+              <span>月</span>
+              <div class="track">
+                <div class="fill" style="width: 18%; background: #6b4e8c"></div>
+              </div>
+            </div>
+            <div class="when mono">2026-11-05 18:42 · 剩余 3时12分</div>
+          </td>
+        </tr>
+        <tr>
+          <td class="mono">P-014</td>
+          <td>
+            <b>代理订阅 · 中转线路 A</b><br /><span
+              style="font-size: 12px; color: #7a6657"
+              >流量型 · 不限期</span
+            >
+          </td>
+          <td class="amt"><b>¥45.00</b></td>
+          <td>月付</td>
+          <td><span class="chip pause">暂停</span></td>
+          <td class="rank">03</td>
+          <td>
+            <div class="hz">
+              <span>账单</span>
+              <div class="track">
+                <div class="fill" style="width: 88%; background: #2f4c8c"></div>
+                <div class="notch"></div>
+              </div>
+            </div>
+            <div class="when mono" style="color: #7a6657">
+              无额度窗口 · 手动维护状态
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="mono">T-007</td>
+          <td>
+            <b>DeepSeek · 一次性充值</b><br /><span
+              style="font-size: 12px; color: #7a6657"
+              >余额 ¥312.40</span
+            >
+          </td>
+          <td class="amt"><b>¥500.00</b></td>
+          <td>—</td>
+          <td><span class="chip ok">在册</span></td>
+          <td class="rank">04</td>
+          <td>
+            <div class="when mono" style="color: #7a6657">一次性 · 无重置</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="foot">
+      <span><b>4</b> 条记录</span><span>月度支出 <b>¥343.00</b></span
+      ><span>年度支出 <b>¥4,116.00</b></span
+      ><span>最近查询 2 分钟前 · 仅受影响单元格更新</span>
+    </div>
+  </body>
+</html>
