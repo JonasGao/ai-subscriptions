@@ -28,13 +28,24 @@ describe("StatsCards", () => {
         subscriptions={[
           subscription({ id: "m", price: 20 }),
           subscription({ id: "y", billingCycle: "yearly", price: 120 }),
-          subscription({ id: "t1", subscriptionType: "one-time", price: 50 }),
-          subscription({ id: "t2", subscriptionType: "one-time", price: 30 }),
+          subscription({
+            id: "t1",
+            subscriptionType: "one-time",
+            price: 0,
+            balance: 50,
+          }),
+          subscription({
+            id: "t2",
+            subscriptionType: "one-time",
+            price: 0,
+            balance: 30,
+          }),
         ]}
       />
     ));
 
     // Monthly = 20 + 120/12 = 30; yearly = 20*12 + 120 = 360.
+    // One-time subscriptions carry price 0; the stat sums their balance (#3195007).
     expect(screen.getByText("¥30.00")).toBeTruthy();
     expect(screen.getByText("¥360.00")).toBeTruthy();
     expect(screen.getByText("¥80.00")).toBeTruthy();

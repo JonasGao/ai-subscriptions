@@ -3,10 +3,12 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  calculateOneTimeTotal,
   formatBalance,
   getCurrencySymbol,
   getProviderCurrency,
 } from "./format";
+import type { Subscription } from "./types";
 
 describe("getCurrencySymbol", () => {
   it("returns the correct symbol for known currencies", () => {
@@ -51,5 +53,53 @@ describe("getProviderCurrency", () => {
     expect(getProviderCurrency("openrouter")).toBe("USD");
     expect(getProviderCurrency("deepseek")).toBe("USD");
     expect(getProviderCurrency("unknown")).toBe("USD");
+  });
+});
+
+/**
+ * #3195007: a one-time subscription carries price 0; its amount lives in
+ * balance. calculateOneTimeTotal must sum balances, never prices.
+ */
+function oneTime(overrides: Partial<Subscription> = {}): Subscription {
+  return {
+    id: "one-time",
+    name: "一次性订阅",
+    category: "编程",
+    provider: "deepseek",
+    subscriptionType: "one-time",
+    price: 0,
+    status: "active",
+    createdAt: "2026-01-01",
+    updatedAt: "2026-01-01",
+    ...overrides,
+  };
+}
+
+describe("calculateOneTimeTotal", () => {
+  it("sums balance across one-time subscriptions and ignores price", () => {
+    expect(
+      calculateOneTimeTotal([
+        oneTime({ id: "a", price: 0, balance: 50 }),
+        oneTime({ id: "b", price: 0, balance: 30 }),
+      ])
+    ).toBe(80);
+  });
+
+  it("does not fall back to price when balance is absent", () => {
+    expect(calculateOneTimeTotal([oneTime({ price: 500 })])).toBe(0);
+  });
+
+  it("treats a missing balance as zero and skips recurring subscriptions", () => {
+    expect(
+      calculateOneTimeTotal([
+        oneTime({ id: "a", balance: 12.5 }),
+        oneTime({ id: "b" }),
+        { ...oneTime({ id: "c" }), subscriptionType: "recurring", price: 99 },
+      ])
+    ).toBe(12.5);
+  });
+
+  it("returns zero for an empty list", () => {
+    expect(calculateOneTimeTotal([])).toBe(0);
   });
 });

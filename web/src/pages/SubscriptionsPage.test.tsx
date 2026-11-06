@@ -49,7 +49,13 @@ function baseStubs(subs: Subscription[]) {
     "GET /api/categories": { body: ["官方订阅", "中转站"] },
     "GET /api/tags": { body: [tagStable] },
     "GET /api/providers": {
-      body: [{ id: "moonshot", name: "月之暗面", plans: [{ id: "kimi-code", name: "Kimi Code" }] }],
+      body: [
+        {
+          id: "moonshot",
+          name: "月之暗面",
+          plans: [{ id: "kimi-code", name: "Kimi Code" }],
+        },
+      ],
     },
   };
 }
@@ -64,7 +70,9 @@ describe("订阅列表页", () => {
     stubFetch(baseStubs([subscription()]));
     renderAt("/subscriptions");
 
-    expect(await screen.findByRole("heading", { name: "Kimi Code" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Kimi Code" })
+    ).toBeTruthy();
     expect(await screen.findByText("月之暗面")).toBeTruthy();
     expect(screen.getByText("稳定")).toBeTruthy();
     expect(screen.getByText("¥20.00/月")).toBeTruthy();
@@ -120,7 +128,9 @@ describe("订阅列表页", () => {
   it("pauses an active subscription through the status route", async () => {
     const fetchMock = stubFetch({
       ...baseStubs([subscription()]),
-      "PUT /api/subscriptions/sub-1": { body: subscription({ status: "paused" }) },
+      "PUT /api/subscriptions/sub-1": {
+        body: subscription({ status: "paused" }),
+      },
     });
 
     renderAt("/subscriptions");
@@ -174,8 +184,16 @@ describe("订阅列表页收尾（#40）", () => {
     window.localStorage.setItem("selectedStatuses", JSON.stringify(["paused"]));
     stubFetch(
       baseStubs([
-        subscription({ id: "hidden-cat", name: "分类不符", category: "官方订阅" }),
-        subscription({ id: "hidden-status", name: "状态不符", category: "中转站" }),
+        subscription({
+          id: "hidden-cat",
+          name: "分类不符",
+          category: "官方订阅",
+        }),
+        subscription({
+          id: "hidden-status",
+          name: "状态不符",
+          category: "中转站",
+        }),
         subscription({
           id: "shown",
           name: "命中筛选",
@@ -187,14 +205,17 @@ describe("订阅列表页收尾（#40）", () => {
 
     renderAt("/subscriptions");
 
-    expect(await screen.findByRole("heading", { name: "命中筛选" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "命中筛选" })
+    ).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "分类不符" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "状态不符" })).toBeNull();
+    expect((screen.getByLabelText("分类筛选") as HTMLSelectElement).value).toBe(
+      "中转站"
+    );
     expect(
-      (screen.getByLabelText("分类筛选") as HTMLSelectElement).value
-    ).toBe("中转站");
-    expect(
-      (screen.getByRole("checkbox", { name: "暂停" }) as HTMLInputElement).checked
+      (screen.getByRole("checkbox", { name: "暂停" }) as HTMLInputElement)
+        .checked
     ).toBe(true);
 
     fireEvent.change(screen.getByLabelText("分类筛选"), {
@@ -216,20 +237,24 @@ describe("订阅列表页收尾（#40）", () => {
           id: "t",
           name: "一次性订阅",
           subscriptionType: "one-time",
-          price: 50,
+          price: 0,
+          balance: 50,
         }),
       ])
     );
 
     renderAt("/subscriptions");
 
-    expect(await screen.findByRole("heading", { name: "月度订阅" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "月度订阅" })
+    ).toBeTruthy();
     expect(screen.getByText("¥20.00/月")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "订阅" }).getAttribute("aria-current")).toBe(
-      "page"
-    );
+    expect(
+      screen.getByRole("link", { name: "订阅" }).getAttribute("aria-current")
+    ).toBe("page");
     expect(screen.getByText("月度总支出")).toBeTruthy();
     expect(screen.getByText("¥20.00")).toBeTruthy();
+    // One-time subscriptions carry price 0; the stat sums balance (#3195007).
     expect(
       screen.getByText("一次性充值").closest("article")?.textContent
     ).toContain("¥50.00");
