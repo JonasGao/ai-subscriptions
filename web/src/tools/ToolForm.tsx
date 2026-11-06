@@ -1,13 +1,19 @@
 // Solid port of components/ToolForm.tsx (#35): create/edit a managed tool.
 
-import { Show, createEffect, createSignal, For, type Component } from "solid-js";
+import {
+  Show,
+  createEffect,
+  createSignal,
+  For,
+  type Component,
+} from "solid-js";
 import { defaultCategories } from "../subscriptions/types";
 import {
   allowedToolForms,
   type Tool,
   type ToolFormData,
   type ToolStatus,
-} from "../priorities/types";
+} from "./types";
 
 interface ToolFormProps {
   open: boolean;
@@ -116,7 +122,9 @@ export const ToolForm: Component<ToolFormProps> = (props) => {
                 <input
                   id="tool-name"
                   value={formData().name}
-                  onInput={(event) => patch({ name: event.currentTarget.value })}
+                  onInput={(event) =>
+                    patch({ name: event.currentTarget.value })
+                  }
                   placeholder="输入工具名称"
                   required
                   autocomplete="off"
@@ -152,7 +160,13 @@ export const ToolForm: Component<ToolFormProps> = (props) => {
                       <option value={provider.id}>{provider.name}</option>
                     )}
                   </For>
-                  <Show when={!props.providers.some((provider) => provider.id === "other")}>
+                  <Show
+                    when={
+                      !props.providers.some(
+                        (provider) => provider.id === "other"
+                      )
+                    }
+                  >
                     <option value="other">其他</option>
                   </Show>
                 </select>
@@ -245,7 +259,9 @@ export const ToolForm: Component<ToolFormProps> = (props) => {
                 <input
                   id="tool-notes"
                   value={formData().notes ?? ""}
-                  onInput={(event) => patch({ notes: event.currentTarget.value })}
+                  onInput={(event) =>
+                    patch({ notes: event.currentTarget.value })
+                  }
                   placeholder="输入备注信息"
                   autocomplete="off"
                 />

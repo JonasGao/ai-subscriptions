@@ -1,6 +1,6 @@
 // Page-level coverage for the tool catalog (#35): tool add/edit/delete and the
 // status cycle, plus the wiring to /api/tools. Drag reordering is exercised in
-// the browser demo; the request shape is covered by the priority-scene tests.
+// the browser demo.
 
 import {
   cleanup,
@@ -34,7 +34,6 @@ function baseRoutes(extra: Record<string, unknown> = {}) {
     "GET /api/tools": { body: [makeTool()] },
     "GET /api/categories": { body: ["官方订阅", "中转站"] },
     "GET /api/providers": { body: [{ id: "anthropic", name: "Anthropic" }] },
-    "GET /api/tool-priorities": { body: { scenes: [] } },
     ...extra,
   };
 }
@@ -129,7 +128,9 @@ describe("ToolsPage", () => {
       })
     );
     render(() => <ToolsPage />);
-    await waitFor(() => expect(screen.getByRole("button", { name: "活跃" })).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "活跃" })).toBeTruthy()
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "活跃" }));
 

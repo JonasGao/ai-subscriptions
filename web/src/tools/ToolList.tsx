@@ -9,8 +9,8 @@ import {
   closestCenter,
   type DragEvent,
 } from "@thisbeyond/solid-dnd";
-import type { Tool } from "../priorities/types";
-import { useSortableRow } from "../priorities/dnd";
+import type { Tool } from "./types";
+import { useSortableRow } from "../lib/dnd";
 import { CloseIcon, DragIcon } from "../components/icons.tsx";
 
 const STATUS_CONFIG: Record<

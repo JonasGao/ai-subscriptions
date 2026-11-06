@@ -51,9 +51,6 @@ type Options struct {
 	// Listeners serves the Feishu WS listener lifecycle. Nil falls back to the
 	// process-wide manager.
 	Listeners ListenerService
-	// Priorities serves the subscription/tool priority scenes. Nil leaves those
-	// routes unregistered.
-	Priorities PriorityService
 	// Tools serves the managed-tool catalog. Nil leaves those routes
 	// unregistered.
 	Tools ToolService
@@ -101,9 +98,6 @@ func New(opts Options) http.Handler {
 		}
 		if opts.Proxy != nil {
 			mountProxyRoutes(api, opts.Proxy)
-		}
-		if opts.Priorities != nil {
-			mountPriorityRoutes(api, opts.Priorities)
 		}
 		if opts.Tools != nil {
 			mountToolRoutes(api, opts.Tools)

@@ -27,7 +27,7 @@ import (
 )
 
 // latestSchemaVersion is bumped by every migration file under migrations/.
-const latestSchemaVersion = 2
+const latestSchemaVersion = 3
 
 // DefaultFilename is the SQLite database file inside DATA_DIR.
 const DefaultFilename = "ai-subscriptions.db"

@@ -1328,149 +1328,6 @@ body {
   color: #c2452d;
 }
 
-.priority-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 2rem;
-}
-
-.priority-section h2 {
-  margin: 0;
-  font-size: 1.15rem;
-}
-
-.priority-scenes {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.scene-grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
-}
-
-.scene-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  padding: 0.9rem;
-  border: 1px solid color-mix(in srgb, var(--fg) 31%, transparent);
-  border-radius: 0;
-}
-
-.scene-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.scene-header h3 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.scene-actions {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.scene-header input,
-.scene-create input,
-.scene-add select {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid color-mix(in srgb, var(--fg) 36%, transparent);
-  border-radius: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font: inherit;
-}
-
-.scene-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.scene-add {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.scene-empty {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.scene-create {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.priority-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.priority-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border-radius: 0;
-  background: rgba(27, 42, 51, var(--priority-bg-opacity-light, 0.1));
-  border: 1px solid rgba(27, 42, 51, var(--priority-border-opacity-light, 0.2));
-}
-
-:root.dark .priority-row {
-  background: rgba(138, 166, 181, var(--priority-bg-opacity-dark, 0.12));
-  border-color: rgba(138, 166, 181, var(--priority-border-opacity-dark, 0.24));
-}
-
-.priority-row-dragging {
-  box-shadow: 0 4px 12px rgba(14, 20, 22, 0.18);
-}
-
-.priority-drag-handle {
-  padding: 0.15rem;
-  border: none;
-  background: none;
-  color: var(--muted);
-  cursor: grab;
-  touch-action: none;
-  font: inherit;
-}
-
-.priority-rank {
-  width: 1.5rem;
-  flex-shrink: 0;
-  text-align: center;
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--accent);
-}
-
-.priority-name {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.9rem;
-}
-
-.priority-scope {
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
 .priority-badge {
   flex-shrink: 0;
   padding: 0.1rem 0.45rem;
@@ -1499,24 +1356,14 @@ body {
   border-color: color-mix(in srgb, var(--fg) 36%, transparent);
 }
 
-.priority-remove {
-  padding: 0 0.25rem;
+.priority-drag-handle {
+  padding: 0.15rem;
   border: none;
   background: none;
   color: var(--muted);
-  cursor: pointer;
+  cursor: grab;
+  touch-action: none;
   font: inherit;
-}
-
-.priority-remove:hover {
-  color: #c2452d;
-}
-
-.priority-empty {
-  padding: 0.75rem 0;
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.85rem;
 }
 
 .tools-page {
@@ -1540,12 +1387,9 @@ body {
 }
 
 /* Buttons outside the subscriptions/proxy containers (walkthrough #40):
-   tools header, scene actions and the create-scene row had no styling. */
+   tools header and the tool-card actions had no styling. */
 .tools-header button,
-.scene-create button,
-.scene-actions button,
-.tool-card-actions button,
-.priority-scenes > button {
+.tool-card-actions button {
   padding: 0.45rem 0.85rem;
   border: 1px solid var(--accent);
   border-radius: 0;
@@ -1557,30 +1401,21 @@ body {
 }
 
 .tools-header button.ghost,
-.scene-create button.ghost,
-.scene-actions button.ghost,
-.tool-card-actions button.ghost,
-.priority-scenes > button.ghost {
+.tool-card-actions button.ghost {
   border-color: color-mix(in srgb, var(--fg) 36%, transparent);
   background: transparent;
   color: var(--fg);
 }
 
 .tools-header button.danger,
-.scene-create button.danger,
-.scene-actions button.danger,
-.tool-card-actions button.danger,
-.priority-scenes > button.danger {
+.tool-card-actions button.danger {
   border-color: #c2452d;
   background: #c2452d;
   color: #fbfaf4;
 }
 
 .tools-header button:hover,
-.scene-create button:hover,
-.scene-actions button:hover,
-.tool-card-actions button:hover,
-.priority-scenes > button:hover {
+.tool-card-actions button:hover {
   filter: brightness(1.05);
 }
 
@@ -2034,10 +1869,7 @@ body {
 :root.dark .auth-form button,
 :root.dark .shell button,
 :root.dark .tools-header button,
-:root.dark .scene-create button,
-:root.dark .scene-actions button,
-:root.dark .tool-card-actions button,
-:root.dark .priority-scenes > button {
+:root.dark .tool-card-actions button {
   color: #1b2a33;
 }
 
@@ -2045,10 +1877,7 @@ body {
 :root.dark .form-actions button.ghost,
 :root.dark .auth-form button.ghost,
 :root.dark .tools-header button.ghost,
-:root.dark .scene-create button.ghost,
-:root.dark .scene-actions button.ghost,
-:root.dark .tool-card-actions button.ghost,
-:root.dark .priority-scenes > button.ghost {
+:root.dark .tool-card-actions button.ghost {
   color: var(--fg);
 }
 
@@ -2056,10 +1885,7 @@ body {
 :root.dark .form-actions button.danger,
 :root.dark .auth-form button.danger,
 :root.dark .tools-header button.danger,
-:root.dark .scene-create button.danger,
-:root.dark .scene-actions button.danger,
-:root.dark .tool-card-actions button.danger,
-:root.dark .priority-scenes > button.danger {
+:root.dark .tool-card-actions button.danger {
   color: #fff;
 }
 
@@ -2855,10 +2681,7 @@ button {
 .subscriptions-toolbar button,
 .form-actions button,
 .tools-header button,
-.scene-create button,
-.scene-actions button,
 .tool-card-actions button,
-.priority-scenes > button,
 .notifications-page button.primary,
 .notifications-dialog button.primary,
 .auth-form button,
@@ -2882,10 +2705,7 @@ button {
 .form-actions button.ghost,
 .auth-form button.ghost,
 .tools-header button.ghost,
-.scene-create button.ghost,
-.scene-actions button.ghost,
 .tool-card-actions button.ghost,
-.priority-scenes > button.ghost,
 .notifications-page button.ghost,
 .notifications-dialog button.ghost {
   background: transparent;
@@ -2894,20 +2714,14 @@ button {
 .subscriptions-toolbar button.danger:not(:disabled),
 .form-actions button.danger:not(:disabled),
 .tools-header button.danger:not(:disabled),
-.scene-create button.danger:not(:disabled),
-.scene-actions button.danger:not(:disabled),
-.tool-card-actions button.danger:not(:disabled),
-.priority-scenes > button.danger:not(:disabled) {
+.tool-card-actions button.danger:not(:disabled) {
   background: var(--tt-signal);
   border-color: var(--tt-signal);
 }
 .subscriptions-toolbar button:hover,
 .form-actions button:hover,
 .tools-header button:hover,
-.scene-create button:hover,
-.scene-actions button:hover,
-.tool-card-actions button:hover,
-.priority-scenes > button:hover {
+.tool-card-actions button:hover {
   filter: brightness(1.14);
 }
 
@@ -2919,9 +2733,6 @@ button {
 .proxy-field select,
 .proxy-field textarea,
 .notifications-threshold-row input,
-.scene-header input,
-.scene-create input,
-.scene-add select,
 .model-list-toolbar input,
 .feishu-lookup-row input,
 .notifications-page button,
@@ -3107,7 +2918,6 @@ button {
 .notification-card,
 .provider-card,
 .tool-card,
-.scene-card,
 .proxy-card,
 .tag-input-options,
 .feishu-helper,
@@ -3131,7 +2941,7 @@ button {
   letter-spacing: 0.04em;
 }
 
-/* Reset schedules, usage and priority read as ruled table rows. */
+/* Reset schedules and usage read as ruled table rows. */
 .usage-progress,
 .usage-progress-fill {
   border-radius: 0;
@@ -3150,9 +2960,7 @@ button {
   background: var(--tt-signal);
 }
 .reset-schedule-row,
-.priority-row,
 .tool-card,
-.scene-card,
 .notification-card {
   border-radius: 0;
   background: var(--tt-sheet);
@@ -3175,18 +2983,6 @@ button {
   background: color-mix(in srgb, var(--tt-amber) 20%, transparent);
   border-radius: 0;
 }
-.priority-row {
-  background: color-mix(in srgb, var(--tt-amber) 12%, var(--tt-sheet));
-  border-color: var(--tt-amber);
-}
-.priority-rank {
-  color: var(--tt-signal);
-  font-family: var(--tt-mono);
-}
-.priority-row-dragging {
-  box-shadow: 0 4px 12px rgba(14, 20, 22, 0.18);
-}
-
 /* State colours stay semantic across both themes. */
 :root.dark .status-active {
   color: var(--tt-teal);

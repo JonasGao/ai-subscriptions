@@ -18,7 +18,7 @@ import { ResetScheduleGrid } from "./ResetScheduleGrid";
 import { TimetableAxis } from "./TimetableAxis";
 import { createNow } from "../lib/useNow";
 import { TimetableHeader } from "./TimetableHeader";
-import { useSortableRow } from "../priorities/dnd";
+import { useSortableRow } from "../lib/dnd";
 import { CloseIcon, DragIcon } from "../components/icons.tsx";
 
 interface SubscriptionCardProps {

@@ -62,34 +62,6 @@ type SubscriptionData struct {
 	Tags          []Tag          `json:"tags,omitempty"`
 }
 
-// PriorityScene is one drag-ordered subscription priority scene.
-type PriorityScene struct {
-	ID                string   `json:"id"`
-	Name              string   `json:"name"`
-	SubscriptionOrder []string `json:"subscriptionOrder"`
-	CreatedAt         string   `json:"createdAt"`
-	UpdatedAt         string   `json:"updatedAt"`
-}
-
-// PriorityData is the priorities.json document shape.
-type PriorityData struct {
-	Scenes []PriorityScene `json:"scenes"`
-}
-
-// ToolPriorityScene is one drag-ordered tool priority scene.
-type ToolPriorityScene struct {
-	ID        string   `json:"id"`
-	Name      string   `json:"name"`
-	ToolOrder []string `json:"toolOrder"`
-	CreatedAt string   `json:"createdAt"`
-	UpdatedAt string   `json:"updatedAt"`
-}
-
-// ToolPriorityData is the tool-priorities.json document shape.
-type ToolPriorityData struct {
-	Scenes []ToolPriorityScene `json:"scenes"`
-}
-
 // Tool is a managed AI coding tool.
 type Tool struct {
 	ID             string   `json:"id"`

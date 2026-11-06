@@ -201,8 +201,7 @@ func (s *Store) DeleteTag(id string) (*DeleteTagResult, error) {
 	return result, nil
 }
 
-// DeleteSubscription removes a subscription and scrubs its id from every
-// priority scene, mirroring lib/db.ts deleteSubscription.
+// DeleteSubscription removes a subscription.
 func (s *Store) DeleteSubscription(id string) (bool, error) {
 	ctx := context.Background()
 	deleted := false
@@ -215,11 +214,8 @@ func (s *Store) DeleteSubscription(id string) (bool, error) {
 		if err != nil {
 			return err
 		}
-		if affected == 0 {
-			return nil
-		}
-		deleted = true
-		return prunePrioritySceneItems(ctx, tx, id)
+		deleted = affected > 0
+		return nil
 	})
 	return deleted, err
 }

@@ -67,8 +67,8 @@ func TestOpenMigratesUserVersion(t *testing.T) {
 	// Every schema-mapped document has a table after migration.
 	for _, table := range []string{
 		"subscriptions", "reset_schedules", "tags", "subscription_tags",
-		"categories", "priority_scenes", "priority_scene_items",
-		"tools", "tool_priority_scenes", "proxy_subscriptions", "proxy_tags",
+		"categories",
+		"tools", "proxy_subscriptions", "proxy_tags",
 		"notification_channels", "notification_settings",
 		"balance_transition_states", "auth_user", "app_state",
 	} {

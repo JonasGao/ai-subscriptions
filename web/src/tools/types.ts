@@ -1,27 +1,11 @@
-// Wire types for the priority-scene and tool surfaces (#35). The shapes are the
-// old stack's lib/types.ts verbatim — they are the API contract.
+// Wire types for the managed-tool catalog (#35). The shapes are the old
+// stack's lib/types.ts verbatim — they are the API contract.
 
 export type ToolStatus = "active" | "paused" | "cancelled";
 export type ToolFormType = "CLI / TUI" | "GUI" | "Web";
 
 /** allowedToolForms mirrors lib/types.ts allowedToolForms. */
 export const allowedToolForms: ToolFormType[] = ["CLI / TUI", "GUI", "Web"];
-
-export interface PriorityScene {
-  id: string;
-  name: string;
-  subscriptionOrder: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ToolPriorityScene {
-  id: string;
-  name: string;
-  toolOrder: string[];
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface Tool {
   id: string;

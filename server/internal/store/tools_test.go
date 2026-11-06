@@ -1,8 +1,8 @@
 package store
 
 // Tool CRUD storage (#35), ported from lib/tools.ts: create appends with
-// order = max+1, updates patch in place, delete also scrubs the tool from every
-// tool-priority scene, and reorder rewrites the sort_order column.
+// order = max+1, updates patch in place, and reorder rewrites the sort_order
+// column.
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func TestToolCRUDOrderingAndScenePruning(t *testing.T) {
+func TestToolCRUDAndOrdering(t *testing.T) {
 	s, advance := openClockStore(t)
 
 	tools, err := s.Tools()
@@ -69,14 +69,6 @@ func TestToolCRUDOrderingAndScenePruning(t *testing.T) {
 		t.Fatalf("update missing = (%#v, %v), want (nil, nil)", updated, err)
 	}
 
-	scene, err := s.CreateToolPriorityScene("日常")
-	if err != nil {
-		t.Fatalf("CreateToolPriorityScene: %v", err)
-	}
-	if _, err := s.SetToolPrioritySceneOrder(scene.ID, []string{first.ID, second.ID}); err != nil {
-		t.Fatalf("SetToolPrioritySceneOrder: %v", err)
-	}
-
 	reordered, err := s.ReorderTools([]string{second.ID, first.ID})
 	if err != nil {
 		t.Fatalf("ReorderTools: %v", err)
@@ -88,13 +80,6 @@ func TestToolCRUDOrderingAndScenePruning(t *testing.T) {
 	deleted, err := s.DeleteTool(first.ID)
 	if err != nil || !deleted {
 		t.Fatalf("DeleteTool = (%v, %v), want (true, nil)", deleted, err)
-	}
-	scene, err = s.ToolPrioritySceneByID(scene.ID)
-	if err != nil || scene == nil {
-		t.Fatalf("ToolPrioritySceneByID = (%#v, %v)", scene, err)
-	}
-	if len(scene.ToolOrder) != 1 || scene.ToolOrder[0] != second.ID {
-		t.Fatalf("toolOrder = %#v, want only the surviving tool", scene.ToolOrder)
 	}
 
 	deleted, err = s.DeleteTool(first.ID)

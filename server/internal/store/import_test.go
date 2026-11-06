@@ -315,24 +315,12 @@ func TestImportCarriesEveryDocument(t *testing.T) {
 			"createdAt": "2026-08-28T04:52:51.950Z", "updatedAt": "2026-08-28T04:52:51.950Z",
 		}},
 	})
-	writeJSONFile(t, dir, "priorities.json", map[string]any{
-		"scenes": []any{map[string]any{
-			"id": "scene-1", "name": "常规编码", "subscriptionOrder": []string{"sub-1"},
-			"createdAt": "2026-05-20T04:47:30.695Z", "updatedAt": "2026-10-07T12:42:57.732Z",
-		}},
-	})
 	writeJSONFile(t, dir, "tools.json", map[string]any{
 		"tools": []any{map[string]any{
 			"id": "tool-1", "name": "Claude Code", "category": "AI助手",
 			"provider": "anthropic", "forms": []string{"CLI / TUI"}, "order": 0,
 			"isOpenSource": false, "repoUrl": "", "status": "active", "notes": "",
 			"createdAt": "2026-05-21T03:10:08.822Z", "updatedAt": "2026-05-21T06:57:20.631Z",
-		}},
-	})
-	writeJSONFile(t, dir, "tool-priorities.json", map[string]any{
-		"scenes": []any{map[string]any{
-			"id": "tool-scene-1", "name": "常规开发", "toolOrder": []string{"tool-1"},
-			"createdAt": "2026-05-27T08:47:04.249Z", "updatedAt": "2026-08-15T01:20:18.361Z",
 		}},
 	})
 	writeJSONFile(t, dir, "proxy-subscriptions.json", map[string]any{
@@ -393,28 +381,12 @@ func TestImportCarriesEveryDocument(t *testing.T) {
 		t.Fatalf("subscription = %#v", sub)
 	}
 
-	priorities, err := s.PriorityData()
-	if err != nil {
-		t.Fatalf("PriorityData: %v", err)
-	}
-	if len(priorities.Scenes) != 1 || priorities.Scenes[0].SubscriptionOrder[0] != "sub-1" {
-		t.Fatalf("priorities = %#v", priorities)
-	}
-
 	tools, err := s.ToolData()
 	if err != nil {
 		t.Fatalf("ToolData: %v", err)
 	}
 	if len(tools.Tools) != 1 || tools.Tools[0].Forms[0] != "CLI / TUI" {
 		t.Fatalf("tools = %#v", tools)
-	}
-
-	toolPriorities, err := s.ToolPriorityData()
-	if err != nil {
-		t.Fatalf("ToolPriorityData: %v", err)
-	}
-	if len(toolPriorities.Scenes) != 1 || toolPriorities.Scenes[0].ToolOrder[0] != "tool-1" {
-		t.Fatalf("tool priorities = %#v", toolPriorities)
 	}
 
 	proxy, err := s.ProxySubscriptionData()
@@ -467,13 +439,6 @@ func TestImportWithOnlySomeDocuments(t *testing.T) {
 	dir := t.TempDir()
 	s := openStoreIn(t, dir)
 
-	priorities, err := s.PriorityData()
-	if err != nil {
-		t.Fatalf("PriorityData: %v", err)
-	}
-	if len(priorities.Scenes) != 0 {
-		t.Fatalf("scenes = %#v, want none", priorities.Scenes)
-	}
 	notifications, err := s.NotificationData()
 	if err != nil {
 		t.Fatalf("NotificationData: %v", err)

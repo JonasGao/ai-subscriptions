@@ -9,9 +9,6 @@ import { SubscriptionCard } from "../components/SubscriptionCard";
 import { SubscriptionForm } from "../components/SubscriptionForm";
 import { TimetableHeader } from "../components/TimetableHeader";
 import { createNow } from "../lib/useNow";
-import { priorityScenes } from "../priorities/api";
-import { PriorityScenes } from "../priorities/PriorityScenes";
-import { SortablePriorityList } from "../priorities/SortablePriorityList";
 import {
   DragDropProvider,
   DragDropSensors,
@@ -406,27 +403,6 @@ export const SubscriptionsPage: Component = () => {
             </DragDropProvider>
           </Show>
         </Show>
-
-        <section class="priority-section">
-          <h2>优先级管理</h2>
-          <PriorityScenes
-            client={priorityScenes}
-            orderOf={(scene) => scene.subscriptionOrder}
-            items={subscriptions.map((subscription) => ({
-              id: subscription.id,
-              name: subscription.name,
-            }))}
-            addLabel="订阅"
-            emptyLabel="该场景暂无订阅，请从下方列表添加"
-            renderList={(order, onRemove) => (
-              <SortablePriorityList
-                subscriptionOrder={order}
-                subscriptions={subscriptions}
-                onRemove={onRemove}
-              />
-            )}
-          />
-        </section>
 
         <Show when={formOpen()}>
           <SubscriptionForm

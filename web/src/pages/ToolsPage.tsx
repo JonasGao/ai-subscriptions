@@ -1,5 +1,5 @@
-// ToolsPage (#35): the managed-tool catalog and the tool priority scenes,
-// ported from app/tools/page.tsx + components/ToolTab.tsx.
+// Page for the managed-tool catalog (#35), ported from app/tools/page.tsx +
+// components/ToolTab.tsx.
 
 import { Show, createSignal, onMount, type Component } from "solid-js";
 import { MainPageShell } from "../components/MainPageShell";
@@ -10,12 +10,9 @@ import {
   deleteTool,
   listTools,
   reorderTools,
-  toolPriorityScenes,
   updateTool,
-} from "../priorities/api";
-import type { Tool, ToolFormData } from "../priorities/types";
-import { PriorityScenes } from "../priorities/PriorityScenes";
-import { SortableToolPriorityList } from "../priorities/SortableToolPriorityList";
+} from "../tools/api";
+import type { Tool, ToolFormData } from "../tools/types";
 import { ToolForm } from "../tools/ToolForm";
 import { ToolList } from "../tools/ToolList";
 
@@ -84,7 +81,10 @@ export const ToolsPage: Component = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (typeof window !== "undefined" && !window.confirm("确定要删除该工具吗？")) {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm("确定要删除该工具吗？")
+    ) {
       return;
     }
     setError(null);
@@ -133,39 +133,21 @@ export const ToolsPage: Component = () => {
           </button>
         </header>
 
-      <Show when={error()}>
-        <p class="form-error" role="alert">
-          {error()}
-        </p>
-      </Show>
+        <Show when={error()}>
+          <p class="form-error" role="alert">
+            {error()}
+          </p>
+        </Show>
 
-      <Show when={!loading()} fallback={<p class="loading">加载中...</p>}>
-        <ToolList
-          tools={tools()}
-          onEdit={openEdit}
-          onDelete={(id) => void handleDelete(id)}
-          onStatusChange={(id, status) => void handleStatusChange(id, status)}
-          onReorder={(ids) => void handleReorder(ids)}
-        />
-      </Show>
-
-      <section class="priority-section">
-        <h2>工具优先级管理</h2>
-        <PriorityScenes
-          client={toolPriorityScenes}
-          orderOf={(scene) => scene.toolOrder}
-          items={tools().map((tool) => ({ id: tool.id, name: tool.name }))}
-          addLabel="工具"
-          emptyLabel="该场景暂无工具，请从下方列表添加"
-          renderList={(order, onRemove) => (
-            <SortableToolPriorityList
-              toolOrder={order}
-              tools={tools()}
-              onRemove={onRemove}
-            />
-          )}
-        />
-      </section>
+        <Show when={!loading()} fallback={<p class="loading">加载中...</p>}>
+          <ToolList
+            tools={tools()}
+            onEdit={openEdit}
+            onDelete={(id) => void handleDelete(id)}
+            onStatusChange={(id, status) => void handleStatusChange(id, status)}
+            onReorder={(ids) => void handleReorder(ids)}
+          />
+        </Show>
 
         <ToolForm
           open={formOpen()}

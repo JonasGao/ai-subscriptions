@@ -26,9 +26,7 @@ import (
 
 var legacyFiles = []string{
 	"subscriptions.json",
-	"priorities.json",
 	"tools.json",
-	"tool-priorities.json",
 	"proxy-subscriptions.json",
 	"notifications.json",
 	"auth.json",
@@ -249,20 +247,6 @@ func verify(source string, st *store.Store) ([]string, error) {
 		}
 	}
 
-	if raw, err := readFile(source, "priorities.json"); err == nil {
-		var doc model.PriorityData
-		if err := json.Unmarshal(raw, &doc); err != nil {
-			return nil, err
-		}
-		got, err := st.PriorityData()
-		if err != nil {
-			return nil, err
-		}
-		if len(got.Scenes) != len(doc.Scenes) {
-			problems = append(problems, fmt.Sprintf("priority scenes: imported %d, source %d", len(got.Scenes), len(doc.Scenes)))
-		}
-	}
-
 	if raw, err := readFile(source, "tools.json"); err == nil {
 		var doc model.ToolData
 		if err := json.Unmarshal(raw, &doc); err != nil {
@@ -274,20 +258,6 @@ func verify(source string, st *store.Store) ([]string, error) {
 		}
 		if len(got.Tools) != len(doc.Tools) {
 			problems = append(problems, fmt.Sprintf("tools: imported %d, source %d", len(got.Tools), len(doc.Tools)))
-		}
-	}
-
-	if raw, err := readFile(source, "tool-priorities.json"); err == nil {
-		var doc model.ToolPriorityData
-		if err := json.Unmarshal(raw, &doc); err != nil {
-			return nil, err
-		}
-		got, err := st.ToolPriorityData()
-		if err != nil {
-			return nil, err
-		}
-		if len(got.Scenes) != len(doc.Scenes) {
-			problems = append(problems, fmt.Sprintf("tool priority scenes: imported %d, source %d", len(got.Scenes), len(doc.Scenes)))
 		}
 	}
 

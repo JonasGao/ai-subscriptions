@@ -18,9 +18,7 @@ import (
 // legacyFileNames are the documents the old stack kept in DATA_DIR.
 var legacyFileNames = []string{
 	"subscriptions.json",
-	"priorities.json",
 	"tools.json",
-	"tool-priorities.json",
 	"proxy-subscriptions.json",
 	"notifications.json",
 	"auth.json",
@@ -131,9 +129,7 @@ const legacyImportMarker = "legacy_json_imported_at"
 
 type legacyDocuments struct {
 	subscriptions    *model.SubscriptionData
-	priorities       *model.PriorityData
-	tools            *model.ToolData
-	toolPriorities   *model.ToolPriorityData
+	tools           *model.ToolData
 	proxy            *model.ProxySubscriptionData
 	notifications    *model.NotificationData
 	auth             *model.AuthData
@@ -160,24 +156,12 @@ func parseLegacyDocuments(dataDir string, files []string, cipher *crypto.Cipher)
 				return nil, fmt.Errorf("normalize %s: %w", name, err)
 			}
 			docs.subscriptions = normalized
-		case "priorities.json":
-			var doc model.PriorityData
-			if err := json.Unmarshal(body, &doc); err != nil {
-				return nil, fmt.Errorf("parse %s: %w", name, err)
-			}
-			docs.priorities = &doc
 		case "tools.json":
 			var doc model.ToolData
 			if err := json.Unmarshal(body, &doc); err != nil {
 				return nil, fmt.Errorf("parse %s: %w", name, err)
 			}
 			docs.tools = &doc
-		case "tool-priorities.json":
-			var doc model.ToolPriorityData
-			if err := json.Unmarshal(body, &doc); err != nil {
-				return nil, fmt.Errorf("parse %s: %w", name, err)
-			}
-			docs.toolPriorities = &doc
 		case "proxy-subscriptions.json":
 			var doc model.ProxySubscriptionData
 			if err := json.Unmarshal(body, &doc); err != nil {
@@ -422,23 +406,11 @@ func (s *Store) writeLegacyDocuments(docs *legacyDocuments, counts map[string]in
 			counts["categories"] = len(docs.subscriptions.Categories)
 			counts["tags"] = len(docs.subscriptions.Tags)
 		}
-		if docs.priorities != nil {
-			if err := writePriorityDataTx(ctx, tx, docs.priorities); err != nil {
-				return err
-			}
-			counts["priorityScenes"] = len(docs.priorities.Scenes)
-		}
 		if docs.tools != nil {
 			if err := writeToolDataTx(ctx, tx, docs.tools); err != nil {
 				return err
 			}
 			counts["tools"] = len(docs.tools.Tools)
-		}
-		if docs.toolPriorities != nil {
-			if err := writeToolPriorityDataTx(ctx, tx, docs.toolPriorities); err != nil {
-				return err
-			}
-			counts["toolPriorityScenes"] = len(docs.toolPriorities.Scenes)
 		}
 		if docs.proxy != nil {
 			if err := writeProxyDataTx(ctx, tx, docs.proxy); err != nil {

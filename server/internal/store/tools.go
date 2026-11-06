@@ -1,8 +1,8 @@
 package store
 
 // Tool storage (#35), ported from lib/tools.ts. Create appends with
-// order = max+1, update patches in place, delete also scrubs the tool from every
-// tool-priority scene, and reorder rewrites sort_order for the supplied ids.
+// order = max+1, update patches in place, and reorder rewrites sort_order for
+// the supplied ids.
 
 import (
 	"context"
@@ -202,34 +202,11 @@ func (s *Store) UpdateTool(id string, updates ToolUpdates) (*model.Tool, error) 
 	return &next, nil
 }
 
-// DeleteTool removes a tool and scrubs its id from every tool-priority scene
-// (lib/tools.ts deleteTool did the same for tool-priorities.json).
+// DeleteTool removes a tool from the catalog.
 func (s *Store) DeleteTool(id string) (bool, error) {
 	ctx := context.Background()
 	deleted := false
 	err := s.withTx(ctx, func(tx *sql.Tx) error {
-		sceneRows, err := tx.QueryContext(ctx,
-			"SELECT DISTINCT scene_id FROM tool_priority_scene_items WHERE tool_id = ?", id)
-		if err != nil {
-			return fmt.Errorf("query tool priority scenes: %w", err)
-		}
-		var sceneIDs []string
-		for sceneRows.Next() {
-			var sceneID string
-			if err := sceneRows.Scan(&sceneID); err != nil {
-				_ = sceneRows.Close()
-				return err
-			}
-			sceneIDs = append(sceneIDs, sceneID)
-		}
-		if err := sceneRows.Err(); err != nil {
-			_ = sceneRows.Close()
-			return err
-		}
-		if err := sceneRows.Close(); err != nil {
-			return err
-		}
-
 		result, err := tx.ExecContext(ctx, "DELETE FROM tools WHERE id = ?", id)
 		if err != nil {
 			return fmt.Errorf("delete tool: %w", err)
@@ -238,26 +215,7 @@ func (s *Store) DeleteTool(id string) (bool, error) {
 		if err != nil {
 			return err
 		}
-		if affected == 0 {
-			return nil
-		}
-		deleted = true
-
-		for _, sceneID := range sceneIDs {
-			remaining, err := toolPriorityOrder(ctx, tx, sceneID)
-			if err != nil {
-				return err
-			}
-			filtered := make([]string, 0, len(remaining))
-			for _, itemID := range remaining {
-				if itemID != id {
-					filtered = append(filtered, itemID)
-				}
-			}
-			if err := replaceSceneItems(ctx, tx, "tool_priority_scene_items", "tool_id", sceneID, filtered); err != nil {
-				return err
-			}
-		}
+		deleted = affected > 0
 		return nil
 	})
 	return deleted, err

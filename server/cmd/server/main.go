@@ -83,7 +83,6 @@ func run() error {
 			ProviderRefs: db,
 			Proxy:        db,
 			Notify:       db,
-			Priorities:   db,
 			Tools:        db,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
