@@ -30,7 +30,7 @@ make build
 
 ```bash
 mkdir -p /tmp/smoke-42
-cp <源目录>/{subscriptions,priorities,tools,tool-priorities,proxy-subscriptions,notifications,last-monthly-reset}.json \
+cp <源目录>/{subscriptions,tools,proxy-subscriptions,notifications,last-monthly-reset}.json \
    /tmp/smoke-42/
 ```
 
@@ -111,29 +111,7 @@ GET    /api/subscriptions                         -> HTTP 200，20 条
 
 结论：**通过**。list / create / update（含 active↔paused 状态切换）/ delete 全链路正常；重复标签名合并到既有标签。
 
-## 3. 优先级排序（拖拽对应的 PATCH reorder）
-
-```bash
-curl -sS -b cookies.txt http://127.0.0.1:3999/api/priorities
-curl -sS -b cookies.txt -X PATCH -H 'Content-Type: application/json' \
-  -d '{"action":"reorder","subscriptionOrder":[<逆序后的 14 个 id>]}' \
-  http://127.0.0.1:3999/api/priorities/8b284d4e-9930-49b7-8424-f05b49255eaa
-curl -sS -b cookies.txt http://127.0.0.1:3999/api/priorities
-```
-
-响应摘录：
-
-```text
-GET   /api/priorities -> HTTP 200，3 个场景；首个场景「常规编码」14 个订阅 id
-PATCH /api/priorities/8b284d4e-... -> HTTP 200
-      {"name":"常规编码","subscriptionOrder":["c67e9c7f-...","259a29ea-...","a08e2d58-...", ... 14 项],
-       "updatedAt":"2026-11-05T00:01:03.153Z"}
-GET   /api/priorities -> HTTP 200，读回顺序与 PATCH 请求完全一致
-```
-
-结论：**通过**。reorder 经 HTTP 落库，读回顺序与请求逐项相等。
-
-## 4. 重置计划与校准触发
+## 3. 重置计划与校准触发
 
 创建时携带一个 `monthly` 重置计划，随后通过 toggle 端点切换：
 
@@ -169,7 +147,7 @@ ok  	ai-subscriptions/internal/store	0.024s
 
 结论：**通过**。计划创建与手动 toggle 已实时留痕；5 分钟 tick 与查询驱动校准由上述 Go 测试覆盖（如实标注，未实时等待）。
 
-## 5. 火山 / 阿里 / DeepSeek 实时查询
+## 4. 火山 / 阿里 / DeepSeek 实时查询
 
 从迁移数据中选取真实存在、带凭据的订阅，调用只读查询端点：
 
@@ -197,7 +175,7 @@ curl -sS -b cookies.txt http://127.0.0.1:3999/api/subscriptions/18acdf8f-.../bal
 
 结论：**通过**。三家均返回 HTTP 200 且额度摘要合理（DeepSeek 为真实负余额，`isAvailable:false`）。
 
-## 6. 飞书通知：配置、WS 启停；测试发送留待人工
+## 5. 飞书通知：配置、WS 启停；测试发送留待人工
 
 配置读取（凭据已脱敏）：
 
@@ -224,7 +202,7 @@ DELETE /api/notifications/feishu-app/listen?listenId=4f36b72f-...
 
 结论：**通过**。配置读取、WS 监听启停、测试发送三项全部实时留痕。
 
-## 7. 备份快照可恢复
+## 6. 备份快照可恢复
 
 二进制启动时在 `DATA_DIR/backups` 生成快照（保留最近 10 份）。首次启动快照生成于认证种子之前，
 因此重启一次再取快照，使 `auth_user` 等懒种子数据也进入对比：
@@ -243,8 +221,7 @@ snapshot  integrity=ok  user_version=1
 all table counts match: True
 
 subscriptions 20/20   categories 2/2   tags 2/2   subscription_tags 2/2
-priority_scenes 3/3   priority_scene_items 23/23
-tools 13/13           tool_priority_scenes 1/1   tool_priority_scene_items 5/5
+tools 13/13
 proxy_subscriptions 6/6   proxy_tags 2/2   proxy_subscription_tags 3/3
 notification_channels 1/1   balance_transition_states 2/2
 auth_user 1/1   app_state 3/3
@@ -260,7 +237,6 @@ auth_user 1/1   app_state 3/3
 | ---------------------------------------- | ------------------------------ |
 | 登录 / 改密 / 首登强制改密               | 通过                           |
 | 订阅 CRUD + 标签重名合并                 | 通过                           |
-| 优先级 PATCH reorder 与读回              | 通过                           |
 | 重置计划 toggle；tick/校准由 Go 测试覆盖 | 通过（tick/校准为测试佐证）    |
 | 火山 / 阿里 / DeepSeek 实时查询          | 通过（3×HTTP 200）             |
 | 飞书通知 + WS 启停                       | 通过；测试发送留待用户人工执行 |

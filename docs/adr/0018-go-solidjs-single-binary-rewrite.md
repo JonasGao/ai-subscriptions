@@ -24,7 +24,7 @@
 
 ## cutover gate
 
-`docs/parity-matrix.md` 闭合（582 条逐条登记去向：Go 表驱动测试 / vitest + @solidjs/testing-library / 不适用 + 理由）+ 冒烟清单：登录/改密/首登强制改密、订阅 CRUD + 优先级拖拽、火山/阿里/DeepSeek 三家实时查询、重置计划与校准触发、飞书通知测试发送 + WS 启停、生产 JSON 副本迁移演练、备份快照可恢复、资源指标达标。
+`docs/parity-matrix.md` 闭合（582 条逐条登记去向：Go 表驱动测试 / vitest + @solidjs/testing-library / 不适用 + 理由）+ 冒烟清单：登录/改密/首登强制改密、订阅 CRUD + 列表拖拽排序、火山/阿里/DeepSeek 三家实时查询、重置计划与校准触发、飞书通知测试发送 + WS 启停、生产 JSON 副本迁移演练、备份快照可恢复、资源指标达标。
 
 ## Considered Options
 

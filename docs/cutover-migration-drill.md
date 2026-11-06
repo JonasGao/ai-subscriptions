@@ -9,37 +9,33 @@
 ## 执行
 
 ```bash
-cp <源目录>/{subscriptions,priorities,tools,tool-priorities,proxy-subscriptions,notifications,auth,last-monthly-reset}.json \
+cp <源目录>/{subscriptions,tools,proxy-subscriptions,notifications,auth,last-monthly-reset}.json \
    /tmp/mig-drill-42/
 cd server && go run ./cmd/migration-drill \
   --source /tmp/mig-drill-42 --work /tmp/mig-drill-42-scratch --keep
 ```
 
 `migration-drill` 把源副本再拷入 scratch 后执行导入，源副本与真实目录均未被修改；导入前生成
-JSON 快照（`subscriptions.json.backup-2026-11-04T23-47-54-987Z` 等 8 份），随后写入 SQLite。
+JSON 快照（`subscriptions.json.backup-2026-11-04T23-47-54-987Z` 等 6 份），随后写入 SQLite。
 
 ## 结果
 
-导入 8 个文档。各表行数与源 JSON 条目逐项一致：
+导入 6 个文档。各表行数与源 JSON 条目逐项一致：
 
-| 源 JSON（条目数）              | SQLite 表                         | 行数 | 一致 |
-| ------------------------------ | --------------------------------- | ---: | ---- |
-| subscriptions.json（20）       | `subscriptions`                   |   20 | ☑    |
-| subscriptions.json（2 分类）   | `categories`                      |    2 | ☑    |
-| subscriptions.json（2 标签）   | `tags`                            |    2 | ☑    |
-| subscriptions.json（tagIds 关联 2） | `subscription_tags`             |    2 | ☑    |
-| priorities.json（3 场景）      | `priority_scenes`                 |    3 | ☑    |
-| priorities.json（subscriptionOrder 共 23） | `priority_scene_items` |   23 | ☑    |
-| tools.json（13）               | `tools`                           |   13 | ☑    |
-| tool-priorities.json（1 场景） | `tool_priority_scenes`            |    1 | ☑    |
-| tool-priorities.json（toolOrder 共 5） | `tool_priority_scene_items` |    5 | ☑    |
-| proxy-subscriptions.json（6）  | `proxy_subscriptions`             |    6 | ☑    |
-| proxy-subscriptions.json（2）  | `proxy_tags`                      |    2 | ☑    |
-| proxy-subscriptions.json（tagIds 关联 3） | `proxy_subscription_tags` |    3 | ☑    |
-| notifications.json（1 频道）   | `notification_channels`           |    1 | ☑    |
-| notifications.json（2 状态）   | `balance_transition_states`       |    2 | ☑    |
-| auth.json（1）                 | `auth_user`                       |    1 | ☑    |
-| last-monthly-reset.json        | `app_state`                       |    — | ☑（值 `2026-07`） |
+| 源 JSON（条目数）                         | SQLite 表                   | 行数 | 一致              |
+| ----------------------------------------- | --------------------------- | ---: | ----------------- |
+| subscriptions.json（20）                  | `subscriptions`             |   20 | ☑                 |
+| subscriptions.json（2 分类）              | `categories`                |    2 | ☑                 |
+| subscriptions.json（2 标签）              | `tags`                      |    2 | ☑                 |
+| subscriptions.json（tagIds 关联 2）       | `subscription_tags`         |    2 | ☑                 |
+| tools.json（13）                          | `tools`                     |   13 | ☑                 |
+| proxy-subscriptions.json（6）             | `proxy_subscriptions`       |    6 | ☑                 |
+| proxy-subscriptions.json（2）             | `proxy_tags`                |    2 | ☑                 |
+| proxy-subscriptions.json（tagIds 关联 3） | `proxy_subscription_tags`   |    3 | ☑                 |
+| notifications.json（1 频道）              | `notification_channels`     |    1 | ☑                 |
+| notifications.json（2 状态）              | `balance_transition_states` |    2 | ☑                 |
+| auth.json（1）                            | `auth_user`                 |    1 | ☑                 |
+| last-monthly-reset.json                   | `app_state`                 |    — | ☑（值 `2026-07`） |
 
 加密凭据逐字节一致：源 19 条非空 `credentials` 与库中 19 条密文按 `(name, ciphertext)` 排序后完全相等，
 无差异（明文密钥未参与、未重加密）。`auth.json` 的 `username` / `passwordHash` / `isInitial` 与库中

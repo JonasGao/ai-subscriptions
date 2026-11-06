@@ -22,14 +22,14 @@ web
 
 用户确认的定位：**个人订阅记账本**——记录不同类型的订阅以及相关的金额和信息。
 
-init 中曾提出「厂商中立的额度控制台」「本地重置时间校准构成差异化主张」，用户明确把定位收敛为记账本，**该更强主张已被否定，不得替产品发明更锋利的对外定位或竞争声明**。额度重置计划、实时用量/余额/模型查询、重置时间对齐与校准、优先级场景等是产品具备的功能，属于记账信息的采集与展示方式，不是定位声明。
+init 中曾提出「厂商中立的额度控制台」「本地重置时间校准构成差异化主张」，用户明确把定位收敛为记账本，**该更强主张已被否定，不得替产品发明更锋利的对外定位或竞争声明**。额度重置计划、实时用量/余额/模型查询、重置时间对齐与校准等是产品具备的功能，属于记账信息的采集与展示方式，不是定位声明。
 
 ## Operating Context
 
 - 自托管部署，二选一且同占 3000 端口、不可同时启用：Docker（默认，`deploy/docker/`，distroless 非 root 1000:1000，数据卷 `~/docker/ai-subscriptions/data` → `/data`）或 systemd 用户服务（`deploy/systemd/`）。
 - 单个 Go 二进制内含 `go:embed` 的 SolidJS SPA；`DATA_DIR` 下为 `ai-subscriptions.db`（SQLite/WAL）与 `backups/` 快照（保留 10 份）。首次启动遇到旧 `*.json` 先做快照再单向导入，之后不再读 JSON。
 - 认证：默认 `admin/admin123`，首次登录强制改密；7 天无状态 HMAC 签名 cookie。凭据以 AES-256-CBC 加密，密钥由 `NEXTAUTH_SECRET` 派生，密文与旧栈字节级兼容。
-- 日常操作：订阅增删改查、按分类/状态筛选、支出统计、7 天内续费提醒、优先级场景拖拽排序、工具清单、代理订阅与其专属标签、用量/余额/模型查询、重置计划与校准、飞书应用机器人通知与 WS 监听。
+- 日常操作：订阅增删改查、按分类/状态筛选、支出统计、7 天内续费提醒、工具清单、代理订阅与其专属标签、用量/余额/模型查询、重置计划与校准、飞书应用机器人通知与 WS 监听。
 - 界面与文档以中文为主；领域术语以 `CONTEXT.md`、`GLOSSARY.md`、`docs/UBIQUITOUS_LANGUAGE.md` 为准（如 Subscription 避免称 Account，Plan 避免称套餐）。
 - 开发与验证：`make build` / `make test` / `make run`；分栈为 `cd server && go test ./...`、`npm --prefix web test`、`npm --prefix web run dev`（/api 代理到 127.0.0.1:3000）。
 
@@ -37,7 +37,7 @@ init 中曾提出「厂商中立的额度控制台」「本地重置时间校准
 
 以下为当前代码与 ADR 的事实（仓库证据），除「用户已确认」条目外尚未逐条经用户确认为产品级承诺。
 
-- 功能范围（README / AGENTS.md）：订阅（周期性/一次性）管理、支出统计、分类与标签、active/paused/cancelled 状态、续费提醒、优先级场景、工具清单、代理订阅、用量/余额/模型查询、重置计划与校准、飞书通知、SQLite 自动快照备份。
+- 功能范围（README / AGENTS.md）：订阅（周期性/一次性）管理、支出统计、分类与标签、active/paused/cancelled 状态、续费提醒、工具清单、代理订阅、用量/余额/模型查询、重置计划与校准、飞书通知、SQLite 自动快照备份。
 - 契约冻结：除 auth 端点外，全部 API 路径/方法/JSON 形状与旧栈字节对齐；auth 改为 `POST /api/auth/login`、`POST /api/auth/logout`、`GET /api/auth/session`。领域模型与既有 ADR 全部沿用。
 - 范围修订：图表功能按 ADR-0018 **不移植**，recharts 不引入；无对应测试用例，parity 矩阵零受影响行。
 - 前端实现约定：对话框为 `div role="dialog"` 原生元素，`select`/`radio` 用原生；图标为手写内联 SVG；错误提示为页面/对话框内联错误条。不引入 solid-ui/Kobalte、unplugin-icons、solid-sonner。

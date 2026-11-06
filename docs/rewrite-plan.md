@@ -27,16 +27,16 @@
 
 ### P4 其余 API
 
-priorities / tool-priorities / tools / tags（含 API 缓存）/ proxy-subscriptions / proxy-tags / notifications CRUD + 测试发送 / 飞书（应用机器人、WS 监听启停、chats、lookup-user）/ providers 只读注册表端点。
+tools / tags（含 API 缓存）/ proxy-subscriptions / proxy-tags / notifications CRUD + 测试发送 / 飞书（应用机器人、WS 监听启停、chats、lookup-user）/ providers 只读注册表端点。
 **Gate**：路由级用例（`*-route`）与通知/飞书行闭合；29 条 API 契约对齐复核。
 
 ### P5 SolidJS 前端
 
-`web/` 脚手架（Vite + TS + vitest + jsdom）；主题 tokens 与原生 `dialog`/`select`/`radio` 原语平移；内联 SVG 图标；订阅页（无饼图区块）、表单（含凭据测试）、卡片、优先级拖拽、工具/标签/代理订阅/通知页、登录与改密；`go:embed` 集成。初版计划的 solid-ui/Kobalte、unplugin-icons、solid-sonner 未引入（见 ADR-0018 修订记录）。
+`web/` 脚手架（Vite + TS + vitest + jsdom）；主题 tokens 与原生 `dialog`/`select`/`radio` 原语平移；内联 SVG 图标；订阅页（无饼图区块）、表单（含凭据测试）、卡片、订阅与工具主列表拖拽排序、工具/标签/代理订阅/通知页、登录与改密；`go:embed` 集成。初版计划的 solid-ui/Kobalte、unplugin-icons、solid-sonner 未引入（见 ADR-0018 修订记录）。
 **Gate**：solid 侧 9 文件 74 例闭合；全站手动走查。
 
 ### P6 部署 + cutover
 
 多阶段 Dockerfile（node 构建 web → go 编译 → distroless）；`deploy/docker` 与 `deploy/systemd`（单二进制安装）适配，make 命令族与对外契约不变。
-**cutover gate**（ADR-0018）：parity 矩阵全闭合 + 冒烟清单（登录/改密/首登强制改密、订阅 CRUD + 优先级拖拽、火山/阿里/DeepSeek 实时查询、重置计划与校准触发、飞书通知测试发送 + WS 启停、生产副本迁移演练、备份快照可恢复、镜像 <50MB 且 RSS <150MB）。
+**cutover gate**（ADR-0018）：parity 矩阵全闭合 + 冒烟清单（登录/改密/首登强制改密、订阅 CRUD + 列表拖拽排序、火山/阿里/DeepSeek 实时查询、重置计划与校准触发、飞书通知测试发送 + WS 启停、生产副本迁移演练、备份快照可恢复、镜像 <50MB 且 RSS <150MB）。
 **已通过（#42）**（冒烟清单逐项留痕见 [smoke-checklist.md](smoke-checklist.md)）：单提交删除旧栈（`app/`、`lib/`、`__tests__/`、旧构建配置），AGENTS.md、README.md 与 CONTEXT.md 同步改写。

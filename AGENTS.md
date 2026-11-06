@@ -41,25 +41,25 @@ npm --prefix web run dev               # Vite 开发服务器，/api 代理到 1
 
 ## Key Files
 
-| Path                                  | Purpose                                                        |
-| ------------------------------------- | -------------------------------------------------------------- |
-| `server/cmd/server/main.go`           | 进程入口：配置、存储、调度、HTTP 服务、嵌入 SPA 静态资源       |
-| `server/cmd/migration-drill/main.go`  | JSON→SQLite 迁移演练/校验（只读源目录，逐项核对行数与密文）    |
-| `server/internal/httpapi/`            | chi 路由与各 API handler（auth 除外与旧栈对齐）                |
-| `server/internal/store/`              | SQLite 存储层、旧 JSON 导入、快照备份；`migrations/` 为内嵌 schema |
-| `server/internal/auth/`               | 登录限流、会话 HMAC、改密                                     |
-| `server/internal/crypto/`             | AES-256-CBC 凭据加解密（字节级兼容旧栈）                       |
-| `server/internal/providers/`          | provider 注册表、用量/余额/模型查询与签名                      |
-| `server/internal/scheduler/`          | 重置/对齐/校准的 5 分钟调度 tick                               |
-| `server/internal/notify/`             | 飞书通知、payload、WS 监听                                     |
-| `server/internal/webui/`              | `go:embed` 的 SPA 暂存目录（`dist/` 由 make web-build 生成）    |
-| `web/src/routes.tsx`                  | 前端路由表                                                     |
-| `web/src/pages/`                      | 订阅、工具、代理订阅、登录、改密页面                           |
-| `web/src/components/`                 | 订阅卡片/表单、统计卡、重置计划、主题切换等                     |
-| `web/src/{auth,subscriptions,tools,proxy,priorities}/` | 各领域 API 与业务模块                        |
-| `Dockerfile` / `deploy/docker/`       | 多阶段镜像与 Docker 部署（默认）                               |
-| `deploy/systemd/`                     | systemd 用户服务部署（备选）                                   |
-| `docs/parity-matrix.md`               | 582 例旧测试逐条去向对账（cutover gate）                       |
+| Path                                        | Purpose                                                            |
+| ------------------------------------------- | ------------------------------------------------------------------ |
+| `server/cmd/server/main.go`                 | 进程入口：配置、存储、调度、HTTP 服务、嵌入 SPA 静态资源           |
+| `server/cmd/migration-drill/main.go`        | JSON→SQLite 迁移演练/校验（只读源目录，逐项核对行数与密文）        |
+| `server/internal/httpapi/`                  | chi 路由与各 API handler（auth 除外与旧栈对齐）                    |
+| `server/internal/store/`                    | SQLite 存储层、旧 JSON 导入、快照备份；`migrations/` 为内嵌 schema |
+| `server/internal/auth/`                     | 登录限流、会话 HMAC、改密                                          |
+| `server/internal/crypto/`                   | AES-256-CBC 凭据加解密（字节级兼容旧栈）                           |
+| `server/internal/providers/`                | provider 注册表、用量/余额/模型查询与签名                          |
+| `server/internal/scheduler/`                | 重置/对齐/校准的 5 分钟调度 tick                                   |
+| `server/internal/notify/`                   | 飞书通知、payload、WS 监听                                         |
+| `server/internal/webui/`                    | `go:embed` 的 SPA 暂存目录（`dist/` 由 make web-build 生成）       |
+| `web/src/routes.tsx`                        | 前端路由表                                                         |
+| `web/src/pages/`                            | 订阅、工具、代理订阅、登录、改密页面                               |
+| `web/src/components/`                       | 订阅卡片/表单、统计卡、重置计划、主题切换等                        |
+| `web/src/{auth,subscriptions,tools,proxy}/` | 各领域 API 与业务模块                                              |
+| `Dockerfile` / `deploy/docker/`             | 多阶段镜像与 Docker 部署（默认）                                   |
+| `deploy/systemd/`                           | systemd 用户服务部署（备选）                                       |
+| `docs/parity-matrix.md`                     | 582 例旧测试逐条去向对账（cutover gate）                           |
 
 ## Deployment
 
@@ -103,7 +103,6 @@ unit 写到 `~/.config/systemd/user/ai-subscriptions.service`），其余目标�
 - **Subscription**：recurring/one-time，billingCycle（monthly/yearly），status（active/paused/cancelled），
   balance（可选，一次性订阅），凭据密文。
 - **Tool**：forms（CLI/TUI、GUI、Web）、isOpenSource、order（排序）。
-- **PriorityScene**：订阅/工具顺序数组，用于拖拽优先级管理。
 - **ProxySubscription**：独立于 AI 订阅，手动状态与专属标签。
 - 领域定义与关系以 `CONTEXT.md`、`GLOSSARY.md` 与 `docs/adr/` 为准。
 
