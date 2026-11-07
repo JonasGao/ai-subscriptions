@@ -95,17 +95,13 @@ describe("ResetScheduleGrid", () => {
       }),
     ]);
 
-    // The DOM normalizes the inline HSL to rgb; hsl(28, 82.6%, 65%) is
-    // rgb(239, 161, 92). The pure colour string is asserted in reset.test.ts.
+    // The DOM normalizes the inline HSL to rgb; hsl(23, 76.7%, 31%) is
+    // rgb(140, 65, 18). The pure colour string is asserted in reset.test.ts.
     const countdowns = result.container.querySelectorAll(
       ".reset-schedule-countdown"
     );
-    expect((countdowns[0] as HTMLElement).style.color).toBe(
-      "rgb(239, 161, 92)"
-    );
-    expect((countdowns[1] as HTMLElement).style.color).toBe(
-      "rgb(239, 161, 92)"
-    );
+    expect((countdowns[0] as HTMLElement).style.color).toBe("rgb(140, 65, 18)");
+    expect((countdowns[1] as HTMLElement).style.color).toBe("rgb(140, 65, 18)");
   });
 
   it("leaves far-out and five-hour countdowns uncolored", () => {

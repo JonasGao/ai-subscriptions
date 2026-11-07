@@ -1,6 +1,10 @@
 import { For, Show, type Component } from "solid-js";
 import type { ResetSchedule, ResetScheduleType } from "../subscriptions/types";
-import { getResetUrgencyColor } from "../subscriptions/reset";
+import {
+  getResetUrgencyColor,
+  isDarkTheme,
+  urgencyColorForTheme,
+} from "../subscriptions/reset";
 
 /**
  * Timetable axis — the one signature move of the replacement visual world.
@@ -111,8 +115,10 @@ export const TimetableAxis: Component<TimetableAxisProps> = (props) => {
     );
     if (!schedule || schedule.type === "fiveHour") return undefined;
     return (
-      getResetUrgencyColor(schedule.type, schedule.nextResetTime, props.now) ??
-      undefined
+      urgencyColorForTheme(
+        getResetUrgencyColor(schedule.type, schedule.nextResetTime, props.now),
+        isDarkTheme()
+      ) ?? undefined
     );
   };
 

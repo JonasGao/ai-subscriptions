@@ -11,7 +11,9 @@ import {
   formatNextResetTime,
   getResetUrgencyColor,
   getScheduleTypeLabel,
+  isDarkTheme,
   sortResetSchedules,
+  urgencyColorForTheme,
 } from "../subscriptions/reset";
 import { createNow } from "../lib/useNow";
 
@@ -35,7 +37,12 @@ function scheduleLabel(schedule: ResetSchedule): string {
 
 function urgencyColor(schedule: ResetSchedule, now: number): string | null {
   if (schedule.type !== "weekly" && schedule.type !== "monthly") return null;
-  return getResetUrgencyColor(schedule.type, schedule.nextResetTime, now);
+  return (
+    urgencyColorForTheme(
+      getResetUrgencyColor(schedule.type, schedule.nextResetTime, now),
+      isDarkTheme()
+    ) ?? null
+  );
 }
 
 export const ResetScheduleGrid: Component<ResetScheduleGridProps> = (props) => {

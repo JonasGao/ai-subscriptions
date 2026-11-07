@@ -31,6 +31,9 @@ const mainPages: Array<{ id: MainPage; href: string; label: string }> = [
  */
 export const MainPageShell: Component<MainPageShellProps> = (props) => (
   <div class="main-shell">
+    <a class="skip-link" href="#main-content">
+      跳到主内容
+    </a>
     <header class="main-shell-header">
       <p class="main-shell-title">AI订阅管理</p>
       <div class="main-shell-actions">
@@ -66,6 +69,8 @@ export const MainPageShell: Component<MainPageShellProps> = (props) => (
         </a>
       </div>
     </header>
-    <div class="main-shell-content">{props.children}</div>
+    <div class="main-shell-content" id="main-content">
+      {props.children}
+    </div>
   </div>
 );

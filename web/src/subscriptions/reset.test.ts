@@ -23,6 +23,7 @@ import {
   calculateNextResetTime,
   parseDurationString,
   sortResetSchedules,
+  urgencyColorForTheme,
 } from "./reset";
 import type { ResetSchedule, ResetScheduleType } from "./types";
 
@@ -47,11 +48,11 @@ describe("getResetUrgencyColor", () => {
       expect(getResetUrgencyColor("weekly", resetTime, now)).toBeNull();
     });
 
-    it("weekly exactly 24h → interpolation endpoint, soft red", () => {
+    it("weekly exactly 24h → interpolation endpoint, dark red", () => {
       const now = 1_000_000_000_000;
       const resetTime = new Date(now + 24 * HOUR).toISOString();
       expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
-        "hsl(0, 65%, 55%)"
+        "hsl(0, 65%, 38%)"
       );
     });
 
@@ -61,37 +62,37 @@ describe("getResetUrgencyColor", () => {
       expect(getResetUrgencyColor("monthly", resetTime, now)).toBeNull();
     });
 
-    it("monthly exactly 120h → interpolation endpoint, soft red", () => {
+    it("monthly exactly 120h → interpolation endpoint, dark red", () => {
       const now = 1_000_000_000_000;
       const resetTime = new Date(now + 120 * HOUR).toISOString();
       expect(getResetUrgencyColor("monthly", resetTime, now)).toBe(
-        "hsl(0, 65%, 55%)"
+        "hsl(0, 65%, 38%)"
       );
     });
   });
 
   describe("red clamp", () => {
-    it("weekly 1h remaining → soft red", () => {
+    it("weekly 1h remaining → dark red", () => {
       const now = 1_000_000_000_000;
       const resetTime = new Date(now + 1 * HOUR).toISOString();
       expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
-        "hsl(0, 65%, 55%)"
+        "hsl(0, 65%, 38%)"
       );
     });
 
-    it("monthly 24h remaining → soft red", () => {
+    it("monthly 24h remaining → dark red", () => {
       const now = 1_000_000_000_000;
       const resetTime = new Date(now + 24 * HOUR).toISOString();
       expect(getResetUrgencyColor("monthly", resetTime, now)).toBe(
-        "hsl(0, 65%, 55%)"
+        "hsl(0, 65%, 38%)"
       );
     });
 
-    it("expired (past resetTime) → soft red", () => {
+    it("expired (past resetTime) → dark red", () => {
       const now = 1_000_000_000_000;
       const resetTime = new Date(now - 1 * HOUR).toISOString();
       expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
-        "hsl(0, 65%, 55%)"
+        "hsl(0, 65%, 38%)"
       );
     });
   });
@@ -101,7 +102,7 @@ describe("getResetUrgencyColor", () => {
       const now = 1_000_000_000_000;
       const resetTime = new Date(now + 48 * HOUR).toISOString();
       expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
-        "hsl(28, 82.6%, 65%)"
+        "hsl(23, 76.7%, 31%)"
       );
     });
 
@@ -109,34 +110,54 @@ describe("getResetUrgencyColor", () => {
       const now = 1_000_000_000_000;
       const resetTime = new Date(now + 180 * HOUR).toISOString();
       expect(getResetUrgencyColor("monthly", resetTime, now)).toBe(
-        "hsl(28, 82.6%, 65%)"
+        "hsl(23, 76.7%, 31%)"
       );
     });
   });
 
   describe("exponential easing", () => {
-    it("weekly 60h (x=0.25) → hue ≈ 39, slower than linear (36)", () => {
+    it("weekly 60h (x=0.25) → hue ≈ 32, slower than linear (30)", () => {
       const now = 1_000_000_000_000;
       const resetTime = new Date(now + 60 * HOUR).toISOString();
       expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
-        "hsl(39, 89.3%, 68.8%)"
+        "hsl(32, 81.2%, 28.3%)"
       );
     });
 
-    it("weekly 36h (x=0.75) → hue ≈ 15, steep catch-up vs linear (12)", () => {
+    it("weekly 36h (x=0.75) → hue ≈ 13, steep catch-up vs linear (10)", () => {
       const now = 1_000_000_000_000;
       const resetTime = new Date(now + 36 * HOUR).toISOString();
       expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
-        "hsl(15, 74.5%, 60.4%)"
+        "hsl(13, 71.4%, 34.2%)"
       );
     });
 
-    it("weekly 30h (x≈0.875) → hue ≈ 8, accelerating toward red endpoint", () => {
+    it("weekly 30h (x≈0.875) → hue ≈ 7, accelerating toward red endpoint", () => {
       const now = 1_000_000_000_000;
       const resetTime = new Date(now + 30 * HOUR).toISOString();
       expect(getResetUrgencyColor("weekly", resetTime, now)).toBe(
-        "hsl(8, 70%, 57.8%)"
+        "hsl(7, 68.3%, 36%)"
       );
+    });
+  });
+
+  describe("dark theme reflection", () => {
+    it("mirrors lightness for the dark theme, keeps light unchanged", () => {
+      expect(urgencyColorForTheme("hsl(23, 76.7%, 31%)", false)).toBe(
+        "hsl(23, 76.7%, 31%)"
+      );
+      expect(urgencyColorForTheme("hsl(23, 76.7%, 31%)", true)).toBe(
+        "hsl(23, 76.7%, 65%)"
+      );
+      expect(urgencyColorForTheme("hsl(0, 65%, 38%)", true)).toBe(
+        "hsl(0, 65%, 58%)"
+      );
+    });
+
+    it("passes null and non-HSL input through", () => {
+      expect(urgencyColorForTheme(null, true)).toBeUndefined();
+      expect(urgencyColorForTheme(null, false)).toBeUndefined();
+      expect(urgencyColorForTheme("rgb(1, 2, 3)", true)).toBe("rgb(1, 2, 3)");
     });
   });
 
@@ -165,7 +186,7 @@ describe("getResetUrgencyColor", () => {
       const fixedNow = 1_700_000_000_000;
       const resetTime = new Date(fixedNow + 48 * HOUR).toISOString();
       expect(getResetUrgencyColor("weekly", resetTime, fixedNow)).toBe(
-        "hsl(28, 82.6%, 65%)"
+        "hsl(23, 76.7%, 31%)"
       );
     });
 

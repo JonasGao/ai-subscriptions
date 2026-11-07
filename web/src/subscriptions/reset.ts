@@ -312,9 +312,13 @@ export const RESET_URGENCY_THRESHOLDS = {
  * Returns an HSL color for an upcoming reset, or null when no coloring applies
  * (resetTime null, or remaining time at/above the yellow threshold).
  *
- * Ported verbatim from lib/utils.ts / ADR-0013: pale yellow at the yellow
- * threshold through a convex 2^x−1 easing to soft red at the red threshold,
- * clamped to soft red at or below it.
+ * Ported from lib/utils.ts / ADR-0013: convex 2^x−1 easing from the yellow
+ * threshold to soft red at the red threshold, clamped at or below it. The
+ * ramp is re-anchored to text-grade lightness (ADR-0013 curve, 2026-11-07):
+ * the old pale-yellow→55% red range rendered countdown text below the 4.5:1
+ * contrast the design system commits to, so the endpoints are dark amber →
+ * dark red (both ≥4.5:1 on the sheet and the alternating-row tint) while the
+ * easing, thresholds and monotonicity stay identical.
  */
 export function getResetUrgencyColor(
   kind: "weekly" | "monthly",
@@ -332,17 +336,41 @@ export function getResetUrgencyColor(
 
   const remaining = resetMs - now;
   if (remaining >= yellowMs) return null;
-  if (remaining < redMs) return "hsl(0, 65%, 55%)";
+  if (remaining < redMs) return "hsl(0, 65%, 38%)";
 
   const x = (yellowMs - remaining) / (yellowMs - redMs);
   const tp = Math.pow(2, x) - 1;
-  const h = 48 * (1 - tp);
-  const s = 95 - 30 * tp;
-  const l = 72 - 17 * tp;
+  const h = 40 * (1 - tp);
+  const s = 85 - 20 * tp;
+  const l = 26 + 12 * tp;
 
   return `hsl(${Math.round(h)}, ${Math.round(s * 10) / 10}%, ${
     Math.round(l * 10) / 10
   }%)`;
+}
+
+/**
+ * Reflects an urgency colour's lightness for the dark theme (l → 96−l), the
+ * same move the semantic tokens make (#B23A24 → #E4654B): the ramp is
+ * anchored dark for the light theme's paper, and its mirror reads on the
+ * dark theme's sheets. No-op outside the dark theme or on non-HSL input.
+ */
+export function urgencyColorForTheme(
+  color: string | null | undefined,
+  dark: boolean
+): string | undefined {
+  if (!color || !dark) return color ?? undefined;
+  const match = color.match(/^hsl\(([\d.]+), ([\d.]+)%, ([\d.]+)%\)$/);
+  if (!match) return color;
+  const [, h, s, l] = match;
+  return `hsl(${h}, ${s}%, ${Math.round((96 - Number(l)) * 10) / 10}%)`;
+}
+
+export function isDarkTheme(): boolean {
+  return (
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark")
+  );
 }
 
 const TIMEZONE_ABBR_MAP: Record<string, string> = {
