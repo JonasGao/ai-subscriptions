@@ -263,6 +263,29 @@ describe("订阅列表页收尾（#40）", () => {
     expect(screen.getByRole("heading", { name: "Claude Pro" })).toBeTruthy();
   });
 
+  it("tells a filtered-out list apart from an empty ledger and recovers", async () => {
+    stubFetch(baseStubs([subscription({ id: "a", name: "Kimi Code" })]));
+
+    renderAt("/subscriptions");
+
+    expect(
+      await screen.findByRole("heading", { name: "Kimi Code" })
+    ).toBeTruthy();
+
+    // A search with no matches is a filter problem, not missing data.
+    fireEvent.input(screen.getByLabelText("搜索订阅"), {
+      target: { value: "不存在的服务" },
+    });
+    expect(screen.getByText("没有符合条件的订阅。")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "清除筛选" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Kimi Code" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "清除筛选" }));
+    expect(
+      await screen.findByRole("heading", { name: "Kimi Code" })
+    ).toBeTruthy();
+  });
+
   it("shows stats for the filtered set and the shared page shell", async () => {
     stubFetch(
       baseStubs([

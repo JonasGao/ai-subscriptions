@@ -3,6 +3,7 @@
 // helper panels own their own API calls and polling.
 
 import { Show, createEffect, createSignal, type Component } from "solid-js";
+import { createDialogFocus } from "../lib/dialogFocus";
 import {
   CHANNEL_TYPE_LABELS,
   EMPTY_CHANNEL_FORM,
@@ -153,6 +154,8 @@ export const ChannelFormDialog: Component<ChannelFormDialogProps> = (props) => {
   const hasStoredAppSecret = () => Boolean(props.channel?.hasAppSecret);
   const hasStoredSecret = () => Boolean(props.channel?.hasSecret);
 
+  const dialogFocus = createDialogFocus(() => props.onOpenChange(false));
+
   return (
     <Show when={props.open}>
       <div class="dialog-backdrop" role="presentation">
@@ -161,6 +164,9 @@ export const ChannelFormDialog: Component<ChannelFormDialogProps> = (props) => {
           role="dialog"
           aria-modal="true"
           aria-label={props.channel ? "编辑渠道" : "添加渠道"}
+          tabindex="-1"
+          ref={dialogFocus.ref}
+          onKeyDown={dialogFocus.onKeyDown}
         >
           <h2>{props.channel ? "编辑渠道" : "添加渠道"}</h2>
           <p class="notifications-dialog-description">

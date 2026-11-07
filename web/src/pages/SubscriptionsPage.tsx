@@ -168,6 +168,18 @@ export const SubscriptionsPage: Component = () => {
     }
   };
 
+  /** Empty-state recovery: no matches is a filter problem, not data loss. */
+  const clearFilters = () => {
+    handleCategoryChange("all");
+    setSelectedStatuses([]);
+    try {
+      window.localStorage?.setItem(SELECTED_STATUSES_KEY, "[]");
+    } catch {
+      // See handleCategoryChange.
+    }
+    setSearch("");
+  };
+
   const handleLogout = async () => {
     await auth.logout();
     navigate("/login", { replace: true });
@@ -387,7 +399,21 @@ export const SubscriptionsPage: Component = () => {
           <Show
             when={visibleSubscriptions().length > 0}
             fallback={
-              <p class="empty-state">还没有订阅，点击「添加订阅」开始记录。</p>
+              <Show
+                when={subscriptions.length > 0}
+                fallback={
+                  <p class="empty-state">
+                    还没有订阅，点击「添加订阅」开始记录。
+                  </p>
+                }
+              >
+                <div class="empty-state empty-state-filtered">
+                  <p>没有符合条件的订阅。</p>
+                  <button type="button" class="ghost" onClick={clearFilters}>
+                    清除筛选
+                  </button>
+                </div>
+              </Show>
             }
           >
             <DragDropProvider

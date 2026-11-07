@@ -6,6 +6,7 @@
 // close/reopen; refetching only happens through the 刷新 button.
 
 import { createEffect, createSignal, on, Show, type Component } from "solid-js";
+import { createDialogFocus } from "../lib/dialogFocus";
 import type { ModelsResult } from "../subscriptions/types";
 
 interface ModelListDialogProps {
@@ -35,9 +36,12 @@ export const ModelListDialog: Component<ModelListDialogProps> = (props) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/subscriptions/${props.subscriptionId}/models`, {
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `/api/subscriptions/${props.subscriptionId}/models`,
+        {
+          cache: "no-store",
+        }
+      );
       if (!res.ok) {
         const err = (await res.json()) as { error?: string };
         throw new Error(err.error || "查询失败");
@@ -72,6 +76,7 @@ export const ModelListDialog: Component<ModelListDialogProps> = (props) => {
   };
 
   const close = () => props.onOpenChange(false);
+  const dialogFocus = createDialogFocus(close);
 
   return (
     <Show when={props.open}>
@@ -81,14 +86,12 @@ export const ModelListDialog: Component<ModelListDialogProps> = (props) => {
           role="dialog"
           aria-modal="true"
           aria-label="模型列表"
-          onKeyDown={(event) => {
-            if (event.key === "Escape") close();
-          }}
+          tabindex="-1"
+          ref={dialogFocus.ref}
+          onKeyDown={dialogFocus.onKeyDown}
         >
           <h2>模型列表</h2>
-          <p class="dialog-description">
-            当前订阅可用的模型列表（会话内缓存）
-          </p>
+          <p class="dialog-description">当前订阅可用的模型列表（会话内缓存）</p>
 
           <div class="model-list-toolbar">
             <input

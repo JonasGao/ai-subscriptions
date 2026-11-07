@@ -7,9 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SubscriptionCard } from "./SubscriptionCard";
 import type { Provider, Subscription, Tag } from "../subscriptions/types";
 
-function makeSubscription(
-  overrides: Partial<Subscription> = {}
-): Subscription {
+function makeSubscription(overrides: Partial<Subscription> = {}): Subscription {
   return {
     id: "sub-1",
     name: "Test Sub",
@@ -27,7 +25,11 @@ function makeSubscription(
 }
 
 const providers: Provider[] = [
-  { id: "moonshot", name: "月之暗面", plans: [{ id: "kimi-code", name: "Kimi Code" }] },
+  {
+    id: "moonshot",
+    name: "月之暗面",
+    plans: [{ id: "kimi-code", name: "Kimi Code" }],
+  },
   { id: "openai", name: "OpenAI" },
 ];
 
@@ -50,6 +52,28 @@ function renderCard(sub: Subscription, tags: Tag[] = []) {
 
 describe("SubscriptionCard deletion confirmation", () => {
   afterEach(cleanup);
+
+  it("moves focus into the dialog and returns it on Escape", async () => {
+    const { result } = renderCard(makeSubscription());
+
+    const trigger = result.getByRole("button", { name: "删除" });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    // Focus lands on the first button inside the dialog (取消); the hook
+    // focuses in a microtask, once the dialog is attached.
+    await Promise.resolve();
+    expect(document.activeElement?.textContent).toBe("取消");
+
+    fireEvent.keyDown(result.getByText("确认删除订阅"), {
+      key: "Escape",
+    });
+    expect(result.queryByText("确认删除订阅")).toBeNull();
+    // The removal observer restores focus in its own microtask.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(document.activeElement).toBe(trigger);
+  });
 
   it("requires two confirmations before deleting a subscription", () => {
     const { onDelete, result } = renderCard(makeSubscription());
@@ -159,6 +183,9 @@ describe("SubscriptionCard tags", () => {
     );
 
     const labels = result.getAllByText(/质量高|稳定/);
-    expect(labels.map((label) => label.textContent)).toEqual(["质量高", "稳定"]);
+    expect(labels.map((label) => label.textContent)).toEqual([
+      "质量高",
+      "稳定",
+    ]);
   });
 });

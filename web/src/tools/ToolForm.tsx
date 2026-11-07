@@ -8,6 +8,7 @@ import {
   type Component,
 } from "solid-js";
 import { defaultCategories } from "../subscriptions/types";
+import { createDialogFocus } from "../lib/dialogFocus";
 import {
   allowedToolForms,
   type Tool,
@@ -110,10 +111,19 @@ export const ToolForm: Component<ToolFormProps> = (props) => {
     });
   };
 
+  const dialogFocus = createDialogFocus(() => props.onOpenChange(false));
+
   return (
     <Show when={props.open}>
       <div class="dialog-backdrop" role="presentation">
-        <div class="dialog" role="dialog" aria-modal="true">
+        <div
+          class="dialog"
+          role="dialog"
+          aria-modal="true"
+          tabindex="-1"
+          ref={dialogFocus.ref}
+          onKeyDown={dialogFocus.onKeyDown}
+        >
           <h2>{props.tool ? "编辑工具" : "添加工具"}</h2>
           <form onSubmit={(event) => void handleSubmit(event)}>
             <div class="form-grid">

@@ -6,6 +6,7 @@ import {
   Show,
   type Component,
 } from "solid-js";
+import { createDialogFocus } from "../lib/dialogFocus";
 import {
   calculateProxyExpirationDate,
   getProxyDateNotice,
@@ -154,7 +155,10 @@ export const ProxySubscriptionForm: Component<ProxySubscriptionFormProps> = (
     event.preventDefault();
     setError(null);
     if (!name().trim()) return setError("请输入代理订阅名称");
-    if (!Number.isFinite(Number(monthlyPrice())) || Number(monthlyPrice()) < 0) {
+    if (
+      !Number.isFinite(Number(monthlyPrice())) ||
+      Number(monthlyPrice()) < 0
+    ) {
       return setError("请输入有效的单月价格");
     }
     const expiration = effectiveExpiration();
@@ -188,10 +192,19 @@ export const ProxySubscriptionForm: Component<ProxySubscriptionFormProps> = (
     }
   };
 
+  const dialogFocus = createDialogFocus(() => props.onOpenChange(false));
+
   return (
     <Show when={props.open}>
       <div class="proxy-dialog-backdrop" role="presentation">
-        <div class="proxy-dialog" role="dialog" aria-modal="true">
+        <div
+          class="proxy-dialog"
+          role="dialog"
+          aria-modal="true"
+          tabindex="-1"
+          ref={dialogFocus.ref}
+          onKeyDown={dialogFocus.onKeyDown}
+        >
           <header class="proxy-dialog-header">
             <h2>{editing() ? "编辑代理订阅" : "添加代理订阅"}</h2>
             <p class="tagline">记录代理服务的价格、到期日期和使用状态。</p>
@@ -218,7 +231,9 @@ export const ProxySubscriptionForm: Component<ProxySubscriptionFormProps> = (
                   step="0.01"
                   value={monthlyPrice()}
                   required
-                  onInput={(event) => setMonthlyPrice(event.currentTarget.value)}
+                  onInput={(event) =>
+                    setMonthlyPrice(event.currentTarget.value)
+                  }
                 />
               </label>
               <label class="proxy-field" for="proxy-status">
@@ -227,11 +242,15 @@ export const ProxySubscriptionForm: Component<ProxySubscriptionFormProps> = (
                   id="proxy-status"
                   value={status()}
                   onChange={(event) =>
-                    setStatus(event.currentTarget.value as ProxySubscriptionStatus)
+                    setStatus(
+                      event.currentTarget.value as ProxySubscriptionStatus
+                    )
                   }
                 >
                   <For each={statuses}>
-                    {(value) => <option value={value}>{statusLabels[value]}</option>}
+                    {(value) => (
+                      <option value={value}>{statusLabels[value]}</option>
+                    )}
                   </For>
                 </select>
               </label>
@@ -309,7 +328,9 @@ export const ProxySubscriptionForm: Component<ProxySubscriptionFormProps> = (
                         id="proxy-start"
                         type="date"
                         value={startDate()}
-                        onInput={(event) => setStartDate(event.currentTarget.value)}
+                        onInput={(event) =>
+                          setStartDate(event.currentTarget.value)
+                        }
                       />
                     </label>
                     <label class="proxy-field" for="proxy-days">
@@ -438,7 +459,9 @@ const ProxySubscriptionCard: Component<{
         <p class="proxy-notice">今天到期</p>
       </Show>
       <Show when={notice().kind === "overdue"}>
-        <p class="proxy-notice proxy-notice-overdue">已逾期 {notice().days} 天</p>
+        <p class="proxy-notice proxy-notice-overdue">
+          已逾期 {notice().days} 天
+        </p>
       </Show>
       <Show when={props.subscription.website}>
         {(site) => (
@@ -571,7 +594,9 @@ export const ProxySubscriptionTab: Component<ProxySubscriptionTabProps> = (
           <select
             id="proxy-sort"
             value={sortKey()}
-            onChange={(event) => setSortKey(event.currentTarget.value as SortKey)}
+            onChange={(event) =>
+              setSortKey(event.currentTarget.value as SortKey)
+            }
           >
             <option value="date">录入时间（新到旧）</option>
             <option value="expiration">到期日期（晚到早）</option>
@@ -587,10 +612,7 @@ export const ProxySubscriptionTab: Component<ProxySubscriptionTabProps> = (
         </p>
       </Show>
 
-      <Show
-        when={!props.loading}
-        fallback={<p class="loading">加载中...</p>}
-      >
+      <Show when={!props.loading} fallback={<p class="loading">加载中...</p>}>
         <Show
           when={filtered().length > 0}
           fallback={<p class="proxy-empty">暂无代理订阅</p>}

@@ -1,4 +1,5 @@
 import { createMemo, createSignal, For, Show, type Component } from "solid-js";
+import { createDialogFocus } from "../lib/dialogFocus";
 import type { ProxySubscription, ProxySubscriptionTag } from "./api";
 import { getTagNameError } from "./TagInput";
 
@@ -66,9 +67,14 @@ export const ProxyTagManagerDialog: Component<ProxyTagManagerDialogProps> = (
       setPendingDelete(null);
       setError(null);
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "删除标签失败");
+      setError(
+        deleteError instanceof Error ? deleteError.message : "删除标签失败"
+      );
     }
   };
+
+  const dialogFocus = createDialogFocus(() => setOpen(false));
+  const deleteDialogFocus = createDialogFocus(() => setPendingDelete(null));
 
   return (
     <>
@@ -83,7 +89,14 @@ export const ProxyTagManagerDialog: Component<ProxyTagManagerDialogProps> = (
 
       <Show when={open()}>
         <div class="proxy-dialog-backdrop" role="presentation">
-          <div class="proxy-dialog" role="dialog" aria-modal="true">
+          <div
+            class="proxy-dialog"
+            role="dialog"
+            aria-modal="true"
+            tabindex="-1"
+            ref={dialogFocus.ref}
+            onKeyDown={dialogFocus.onKeyDown}
+          >
             <header class="proxy-dialog-header">
               <h2>管理代理标签</h2>
               <p class="tagline">重命名或删除代理订阅标签。</p>
@@ -114,7 +127,9 @@ export const ProxyTagManagerDialog: Component<ProxyTagManagerDialogProps> = (
                         <>
                           <div class="proxy-tag-manager-name">
                             <strong>{tag.name}</strong>
-                            <span>{counts().get(tag.id) ?? 0} 个代理订阅使用</span>
+                            <span>
+                              {counts().get(tag.id) ?? 0} 个代理订阅使用
+                            </span>
                           </div>
                           <button
                             type="button"
@@ -184,7 +199,14 @@ export const ProxyTagManagerDialog: Component<ProxyTagManagerDialogProps> = (
       <Show when={pendingDelete()}>
         {(target) => (
           <div class="proxy-dialog-backdrop" role="presentation">
-            <div class="proxy-dialog" role="dialog" aria-modal="true">
+            <div
+              class="proxy-dialog"
+              role="dialog"
+              aria-modal="true"
+              tabindex="-1"
+              ref={deleteDialogFocus.ref}
+              onKeyDown={deleteDialogFocus.onKeyDown}
+            >
               <header class="proxy-dialog-header">
                 <h2>删除代理标签？</h2>
                 <p class="tagline">删除后会从所有代理订阅中移除该标签。</p>

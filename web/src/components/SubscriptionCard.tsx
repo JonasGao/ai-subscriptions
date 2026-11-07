@@ -18,6 +18,7 @@ import { ResetScheduleGrid } from "./ResetScheduleGrid";
 import { TimetableAxis } from "./TimetableAxis";
 import { createNow } from "../lib/useNow";
 import { useSortableRow } from "../lib/dnd";
+import { createDialogFocus } from "../lib/dialogFocus";
 import { DragIcon } from "../components/icons.tsx";
 
 interface SubscriptionCardProps {
@@ -173,6 +174,9 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
     setDeleteOpen(false);
   };
 
+  const deleteFocus = createDialogFocus(closeDelete);
+  const confirmFocus = createDialogFocus(() => query.setConfirmOpen(false));
+
   const toggleStatus = () => {
     if (!canToggleStatus()) return;
     props.onStatusChange(
@@ -276,6 +280,11 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
           class={`status-badge status-${props.subscription.status}`}
           classList={{ clickable: canToggleStatus() }}
           onClick={toggleStatus}
+          aria-pressed={
+            canToggleStatus()
+              ? props.subscription.status === "paused"
+              : undefined
+          }
           title={canToggleStatus() ? "切换状态" : undefined}
         >
           {getStatusLabel(props.subscription.status)}
@@ -370,7 +379,14 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
 
       <Show when={deleteOpen()}>
         <div class="dialog-backdrop">
-          <div class="dialog" role="dialog" aria-modal="true">
+          <div
+            class="dialog"
+            role="dialog"
+            aria-modal="true"
+            tabindex="-1"
+            ref={deleteFocus.ref}
+            onKeyDown={deleteFocus.onKeyDown}
+          >
             <h2>{deleteStep() === 1 ? "确认删除订阅" : "再次确认删除"}</h2>
             <p>
               {deleteStep() === 1
@@ -411,7 +427,14 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
 
       <Show when={query.confirmOpen()}>
         <div class="dialog-backdrop">
-          <div class="dialog" role="dialog" aria-modal="true">
+          <div
+            class="dialog"
+            role="dialog"
+            aria-modal="true"
+            tabindex="-1"
+            ref={confirmFocus.ref}
+            onKeyDown={confirmFocus.onKeyDown}
+          >
             <h2>再次查询确认</h2>
             <p>距上次查询不足 60 秒，确定要再次查询吗？</p>
             <div class="form-actions">

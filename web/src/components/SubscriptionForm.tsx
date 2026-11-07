@@ -7,6 +7,7 @@ import {
   untrack,
   type Component,
 } from "solid-js";
+import { createDialogFocus } from "../lib/dialogFocus";
 import { TagInput } from "./TagInput";
 import { ResetScheduleConfig } from "./ResetScheduleConfig";
 import {
@@ -67,6 +68,7 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
   const [submitting, setSubmitting] = createSignal(false);
   const [error, setError] = createSignal("");
   const [credentialsOpen, setCredentialsOpen] = createSignal(false);
+  const dialogFocus = createDialogFocus(() => props.onOpenChange(false));
   const [testLoading, setTestLoading] = createSignal(false);
   const [testResult, setTestResult] = createSignal<{
     ok: boolean;
@@ -238,6 +240,9 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
         role="dialog"
         aria-modal="true"
         aria-label={props.subscription ? "编辑订阅" : "添加订阅"}
+        tabindex="-1"
+        ref={dialogFocus.ref}
+        onKeyDown={dialogFocus.onKeyDown}
       >
         <h2>{props.subscription ? "编辑订阅" : "添加订阅"}</h2>
         <form onSubmit={handleSubmit}>

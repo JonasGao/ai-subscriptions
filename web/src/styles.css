@@ -2808,6 +2808,33 @@ button {
   border-top: 1px solid var(--fg);
   border-bottom: 1px solid var(--tt-rule);
 }
+
+/* Empty states carry the dashed "not settled yet" treatment; a filtered-out
+   list is a filter problem, not missing data, and says so with a way back. */
+.empty-state {
+  margin: 0;
+  padding: 22px 16px;
+  border: 1px dashed var(--tt-rule);
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+.empty-state-filtered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.empty-state-filtered p {
+  margin: 0;
+}
+.empty-state-filtered button {
+  background: transparent;
+  border: 1px solid var(--tt-rule);
+  border-radius: 0;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+}
 .status-filter legend,
 .category-filter {
   font-size: 0.72rem;
