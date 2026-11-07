@@ -229,6 +229,40 @@ describe("订阅列表页收尾（#40）", () => {
     ).toEqual([]);
   });
 
+  it("filters rows by the title-row search box (name or provider)", async () => {
+    stubFetch(
+      baseStubs([
+        subscription({ id: "a", name: "Kimi Code", provider: "moonshot" }),
+        subscription({ id: "b", name: "Claude Pro", provider: "openai" }),
+      ])
+    );
+
+    renderAt("/subscriptions");
+
+    expect(
+      await screen.findByRole("heading", { name: "Kimi Code" })
+    ).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Claude Pro" })).toBeTruthy();
+
+    fireEvent.input(screen.getByLabelText("搜索订阅"), {
+      target: { value: "kimi" },
+    });
+    expect(screen.getByRole("heading", { name: "Kimi Code" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Claude Pro" })).toBeNull();
+
+    fireEvent.input(screen.getByLabelText("搜索订阅"), {
+      target: { value: "OpenAI" },
+    });
+    expect(screen.queryByRole("heading", { name: "Kimi Code" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "Claude Pro" })).toBeTruthy();
+
+    fireEvent.input(screen.getByLabelText("搜索订阅"), {
+      target: { value: "" },
+    });
+    expect(screen.getByRole("heading", { name: "Kimi Code" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Claude Pro" })).toBeTruthy();
+  });
+
   it("shows stats for the filtered set and the shared page shell", async () => {
     stubFetch(
       baseStubs([

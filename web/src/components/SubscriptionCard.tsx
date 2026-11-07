@@ -17,12 +17,13 @@ import { ModelListDialog } from "./ModelListDialog";
 import { ResetScheduleGrid } from "./ResetScheduleGrid";
 import { TimetableAxis } from "./TimetableAxis";
 import { createNow } from "../lib/useNow";
-import { TimetableHeader } from "./TimetableHeader";
 import { useSortableRow } from "../lib/dnd";
-import { CloseIcon, DragIcon } from "../components/icons.tsx";
+import { DragIcon } from "../components/icons.tsx";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
+  /** 1-based position in the visible list; drives the 序号 column. */
+  index?: number;
   tags?: Tag[];
   providers?: Provider[];
   onEdit: (subscription: Subscription) => void;
@@ -80,15 +81,18 @@ function priceLabel(subscription: Subscription): string {
     : `${amount}/月`;
 }
 
+function cycleLabel(subscription: Subscription): string {
+  if (subscription.subscriptionType === "one-time") return "一次性";
+  return subscription.billingCycle === "yearly" ? "年付" : "月付";
+}
+
 /**
- * SubscriptionCard renders one subscription: identity, provider/plan, category,
- * tags in association order, type, price, renewal date, notes, status badge with
- * manual toggle, the two-step delete confirmation, and (from #28) the live quota
- * query affordances — 额度 for usage/balance per subscription type and planId,
- * 模型 for model listing.
- *
- * #29 adds the usage-window auto-exhaust linkage; #34 adds reset-time
- * calibration. The usage window rendering covers what #28's demo needs.
+ * SubscriptionCard is one seven-column row of the timetable: 序号 / 服务 /
+ * 金额 / 账单周期 / 状态 / 下次重置四轨 / 操作, sharing the header's grid
+ * template so every rail lands under its date tick. Notes, reset schedules and
+ * live query reads fold into a recessed detail line spanning columns 2–6.
+ * The card keeps #28's query affordances (额度 / 模型), #29's auto-exhaust
+ * linkage, #34's reset-time calibration and the two-step delete.
  */
 export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
   const [deleteOpen, setDeleteOpen] = createSignal(false);
@@ -177,13 +181,26 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
     );
   };
 
+  const showsResetGrid = () =>
+    Boolean(props.onScheduleToggle) &&
+    isRecurring() &&
+    (props.subscription.resetSchedules ?? []).length > 0;
+
+  const hasDetails = () =>
+    showsResetGrid() ||
+    Boolean(query.balance()) ||
+    Boolean(query.usage()) ||
+    Boolean(query.error()) ||
+    Boolean(props.subscription.notes);
+
   return (
     <article
       ref={sortable.ref}
       class="subscription-card"
+      role="row"
       style={{ ...sortable.style(), opacity: sortable.isActive() ? 0.5 : 1 }}
     >
-      <header class="subscription-card-header">
+      <div class="cell cell-num" role="cell">
         <button
           type="button"
           class="priority-drag-handle"
@@ -191,137 +208,90 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
           {...sortable.attrs}
           ref={sortable.attach}
         >
+          <Show when={props.index !== undefined}>
+            <span class="row-num">{props.index}</span>
+          </Show>
           <DragIcon />
         </button>
-        <h3>{props.subscription.name}</h3>
-        <div class="subscription-card-badges">
-          <Show
-            when={
-              statusReason().reason.kind === "schedule-exhausted" &&
-              (statusReason().reason as { scheduleIds: string[] }).scheduleIds
-                .length > 0
-            }
-          >
-            <span class="quota-exhausted">额度用尽</span>
-          </Show>
-          <button
-            type="button"
-            class={`status-badge status-${props.subscription.status}`}
-            classList={{ clickable: canToggleStatus() }}
-            onClick={toggleStatus}
-            title={canToggleStatus() ? "切换状态" : undefined}
-          >
-            {getStatusLabel(props.subscription.status)}
-          </button>
-        </div>
-      </header>
+      </div>
 
-      <dl class="subscription-card-fields">
-        <div>
-          <dt>提供商</dt>
-          <dd>
+      <div class="cell cell-service" role="cell">
+        <h3>{props.subscription.name}</h3>
+        <p class="service-meta">
+          <span>
             {getProviderName(
               props.subscription.provider,
               props.subscription.providerCustom,
               props.providers ?? []
             )}
-          </dd>
-        </div>
-        <Show when={planName()}>
-          <div>
-            <dt>方案</dt>
-            <dd>{planName()}</dd>
-          </div>
-        </Show>
-        <div>
-          <dt>分类</dt>
-          <dd>{props.subscription.category}</dd>
-        </div>
-        <Show when={subscriptionTags().length > 0}>
-          <div>
-            <dt>标签</dt>
-            <dd class="subscription-card-tags">
-              <For each={subscriptionTags()}>
-                {(tag) => <span class="tag-chip-label">{tag.name}</span>}
-              </For>
-            </dd>
-          </div>
-        </Show>
-        <div>
-          <dt>类型</dt>
-          <dd>{getTypeLabel(props.subscription.subscriptionType)}</dd>
-        </div>
-        <div>
-          <dt>{isRecurring() ? "价格" : "充值金额"}</dt>
-          <dd>{priceLabel(props.subscription)}</dd>
-        </div>
-        <Show when={isRecurring() && props.subscription.renewalDate}>
-          <div>
-            <dt>续费日期</dt>
-            <dd>{props.subscription.renewalDate}</dd>
-          </div>
-        </Show>
-        <Show when={!isRecurring()}>
-          <div class="subscription-card-balance">
-            <dt>余额</dt>
-            <dd>
-              <span class="balance-amount">{balanceLabel().text}</span>
-              <Show when={balanceLabel().previous}>
-                {(previous) => (
-                  <span class="balance-previous">（{previous()}）</span>
-                )}
-              </Show>
-            </dd>
-          </div>
-        </Show>
-        <Show when={query.balance()}>
-          {(balance) => <BalanceInfoRows balance={balance()} />}
-        </Show>
-        <Show when={query.usage()}>
-          {(usage) => <UsageWindows usage={usage()} />}
-        </Show>
-      </dl>
-
-      <TimetableAxis
-        renewalDate={props.subscription.renewalDate}
-        resetSchedules={props.subscription.resetSchedules ?? []}
-        oneTime={props.subscription.subscriptionType === "one-time"}
-        now={now()}
-      />
-
-      <Show when={query.error()}>
-        <p class="subscription-card-query-error" role="alert">
-          {query.error()}
+          </span>
+          <Show when={planName()}>
+            <span aria-hidden="true">·</span>
+            <span>{planName()}</span>
+          </Show>
+          <span aria-hidden="true">·</span>
+          <span>{props.subscription.category}</span>
+          <For each={subscriptionTags()}>
+            {(tag) => <span class="tag-chip-label">{tag.name}</span>}
+          </For>
         </p>
-      </Show>
+      </div>
 
-      <Show
-        when={
-          props.onScheduleToggle &&
-          isRecurring() &&
-          (props.subscription.resetSchedules ?? []).length > 0
-        }
-      >
-        <ResetScheduleGrid
-          schedules={props.subscription.resetSchedules ?? []}
-          onToggle={(scheduleId, exhausted) =>
-            props.onScheduleToggle?.(
-              props.subscription.id,
-              scheduleId,
-              exhausted
-            )
+      <div class="cell cell-amount" role="cell">
+        <span class="cell-label">{isRecurring() ? "价格" : "充值金额"}</span>
+        <span class="cell-amount-value">{priceLabel(props.subscription)}</span>
+        <Show when={!isRecurring()}>
+          <span class="cell-balance">
+            余 <span class="balance-amount">{balanceLabel().text}</span>
+            <Show when={balanceLabel().previous}>
+              {(previous) => (
+                <span class="balance-previous">（{previous()}）</span>
+              )}
+            </Show>
+          </span>
+        </Show>
+      </div>
+
+      <div class="cell cell-cycle" role="cell">
+        <span class="cell-cycle-main">{cycleLabel(props.subscription)}</span>
+        <Show when={isRecurring()}>
+          <span class="cell-cycle-type">
+            {getTypeLabel(props.subscription.subscriptionType)}
+          </span>
+        </Show>
+      </div>
+
+      <div class="cell cell-status" role="cell">
+        <Show
+          when={
+            statusReason().reason.kind === "schedule-exhausted" &&
+            (statusReason().reason as { scheduleIds: string[] }).scheduleIds
+              .length > 0
           }
+        >
+          <span class="quota-exhausted">额度用尽</span>
+        </Show>
+        <button
+          type="button"
+          class={`status-badge status-${props.subscription.status}`}
+          classList={{ clickable: canToggleStatus() }}
+          onClick={toggleStatus}
+          title={canToggleStatus() ? "切换状态" : undefined}
+        >
+          {getStatusLabel(props.subscription.status)}
+        </button>
+      </div>
+
+      <div class="cell cell-axis" role="cell">
+        <TimetableAxis
+          renewalDate={props.subscription.renewalDate}
+          resetSchedules={props.subscription.resetSchedules ?? []}
+          oneTime={props.subscription.subscriptionType === "one-time"}
+          now={now()}
         />
-      </Show>
+      </div>
 
-      <Show when={props.subscription.notes}>
-        <div class="subscription-card-notes">
-          <span>备注</span>
-          <p>{props.subscription.notes}</p>
-        </div>
-      </Show>
-
-      <footer class="subscription-card-actions">
+      <div class="cell cell-actions" role="cell">
         <Show when={queryKind() !== null}>
           <button
             type="button"
@@ -362,7 +332,41 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
         >
           删除
         </button>
-      </footer>
+      </div>
+
+      <Show when={hasDetails()}>
+        <div class="subscription-card-details" role="cell" aria-colspan="5">
+          <Show when={showsResetGrid()}>
+            <ResetScheduleGrid
+              schedules={props.subscription.resetSchedules ?? []}
+              onToggle={(scheduleId, exhausted) =>
+                props.onScheduleToggle?.(
+                  props.subscription.id,
+                  scheduleId,
+                  exhausted
+                )
+              }
+            />
+          </Show>
+          <Show when={query.balance()}>
+            {(balance) => <BalanceInfoRows balance={balance()} />}
+          </Show>
+          <Show when={query.usage()}>
+            {(usage) => <UsageWindows usage={usage()} />}
+          </Show>
+          <Show when={query.error()}>
+            <p class="subscription-card-query-error" role="alert">
+              {query.error()}
+            </p>
+          </Show>
+          <Show when={props.subscription.notes}>
+            <div class="subscription-card-notes">
+              <span>备注</span>
+              <p>{props.subscription.notes}</p>
+            </div>
+          </Show>
+        </div>
+      </Show>
 
       <Show when={deleteOpen()}>
         <div class="dialog-backdrop">

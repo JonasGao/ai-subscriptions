@@ -2661,7 +2661,16 @@ button {
   gap: 14px;
 }
 .subscriptions-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
   gap: 10px;
+}
+.subscriptions-header h1 {
+  margin: 0;
+}
+.subscriptions-header .tagline {
+  margin-left: auto;
 }
 .subscriptions-header h1,
 .notifications-header h1 {
@@ -2675,6 +2684,10 @@ button {
 }
 .subscriptions-toolbar {
   gap: 6px;
+}
+.subscription-search {
+  padding: 6px 10px;
+  width: 180px;
 }
 
 /* Standard controls, restyled in the world's vocabulary. */
@@ -2726,6 +2739,7 @@ button {
 }
 
 .category-filter select,
+.subscription-search,
 .form-grid input,
 .form-grid select,
 .auth-form input,
@@ -2800,32 +2814,23 @@ button {
   letter-spacing: 0.06em;
 }
 
-/* Signature move — the shared 30-day axis. Pure CSS; the card list keeps its
-   DOM and every behavior. The axis is a chart, never navigation. */
+/* Signature move — the shared 30-day axis. The header and every row share
+   ONE grid template (--tt-cols), so each rail sits under the header's date
+   ticks on the same coordinate system: tick[0] aligns with rail day 0 at
+   every width. The axis is a chart, never navigation. */
+.subscriptions-page {
+  --tt-cols: 52px minmax(180px, 1.6fr) 96px 90px 88px minmax(240px, 34%) 150px;
+}
 .subscription-list {
   position: relative;
-  gap: 0;
-  grid-template-columns: 1fr;
-  border-top: 2px solid var(--tt-ink);
-}
-.subscription-list::before {
-  content: "账单 / 5h / 周 / 月 四轨 · 30 天共轴";
   display: block;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  padding: 5px 0 5px 10px;
-  background: var(--tt-paper);
-  border-bottom: 1px solid var(--tt-ink);
-  color: var(--muted);
-  font-family: var(--tt-mono);
-  font-size: 0.68rem;
-  font-weight: 700;
+  gap: 0;
+  border-top: 2px solid var(--tt-ink);
 }
 .subscription-card {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 34%;
+  grid-template-columns: var(--tt-cols);
   grid-auto-rows: min-content;
   gap: 0;
   padding: 0;
@@ -2834,7 +2839,7 @@ button {
   border-radius: 0;
   background: var(--tt-sheet);
 }
-.subscription-card:nth-child(even) {
+.subscription-card:nth-of-type(even) {
   background: color-mix(in srgb, var(--tt-sheet) 88%, var(--tt-ink) 12%);
 }
 .subscription-card:hover {
@@ -2845,13 +2850,135 @@ button {
   position: relative;
   z-index: 1;
 }
-.subscription-card > .subscription-card-fields,
-.subscription-card > .subscription-card-header,
-.subscription-card > .subscription-card-actions,
-.subscription-card > .subscription-card-notes,
-.subscription-card > .reset-schedule-grid,
-.subscription-card > .subscription-card-query-error {
-  grid-column: 1;
+
+/* Seven body cells under the seven header columns; the axis cell's
+   horizontal padding must equal the header axis cell's (both 10px) so the
+   rails and the tick scale share one origin and one width. */
+.subscription-card .cell {
+  min-width: 0;
+  padding: 9px 10px;
+  border-left: 1px solid color-mix(in srgb, var(--tt-rule) 55%, transparent);
+}
+.subscription-card .cell:first-child {
+  border-left: 0;
+}
+.cell-num {
+  padding: 9px 4px 9px 10px;
+}
+.cell-num .priority-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.row-num {
+  font-family: var(--tt-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.cell-service h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.service-meta {
+  margin: 3px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.service-meta .tag-chip-label {
+  font-size: 0.68rem;
+}
+.cell-amount {
+  text-align: right;
+}
+.cell-label {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.cell-amount-value {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--tt-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+}
+.cell-balance {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--tt-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.cell-cycle-main {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.cell-cycle-type {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+.cell-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.subscription-card .cell.cell-axis {
+  border-left: 0;
+}
+.cell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 4px;
+}
+.cell-actions button {
+  padding: 4px 8px;
+  font-size: 0.72rem;
+}
+
+/* Detail line: reset schedules, live query reads and notes in one recessed
+   band spanning columns 2–6, below the seven-column scan line. */
+.subscription-card-details {
+  grid-column: 2 / 7;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 10px 10px;
+  border-left: 1px solid color-mix(in srgb, var(--tt-rule) 55%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--tt-rule) 45%, transparent);
+}
+
+/* Inside the band, reset schedules and notes read as ruled rows, not boxed
+   cards: the band's own rule replaces their frames. */
+.subscription-card-details .reset-schedule-grid {
+  gap: 2px;
+  padding-top: 0;
+  border-top: 0;
+}
+.subscription-card-details .reset-schedule-grid-title {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+.subscription-card-details .reset-schedule-grid-body {
+  gap: 2px;
+}
+.subscription-card-details .reset-schedule-grid-row {
+  font-size: 0.72rem;
+}
+.subscription-card-details .subscription-card-notes {
+  font-size: 0.78rem;
 }
 .subscription-card-header h3 {
   font-size: 0.95rem;
@@ -3013,11 +3140,37 @@ button {
 :root.dark .feishu-helper-error {
   color: var(--tt-signal);
 }
-:root.dark .subscription-card:nth-child(even) {
+:root.dark .subscription-card:nth-of-type(even) {
   background: color-mix(in srgb, var(--tt-sheet) 88%, #000 12%);
 }
-:root.dark .subscription-card::after {
-  opacity: 0.55;
+
+/* Intermediate widths shrink the SAME template (narrower mins, flexible
+   fr tracks), never a second layout — fr tracks resolve identically in the
+   header grid and the row grids, so the shared coordinate system holds. */
+@media (max-width: 947px) {
+  .subscriptions-page {
+    --tt-cols: 40px minmax(110px, 1.5fr) minmax(88px, 0.8fr) minmax(52px, 0.5fr)
+      minmax(54px, 0.5fr) minmax(190px, 1.5fr) minmax(104px, 1fr);
+  }
+  .timetable-hcell {
+    padding: 6px;
+  }
+  .timetable-h-axis {
+    padding: 6px;
+  }
+  .subscription-card .cell {
+    padding: 8px 6px;
+  }
+  .cell-num {
+    padding: 8px 2px 8px 6px;
+  }
+  .cell-axis {
+    padding: 8px 6px 6px;
+  }
+  .cell-actions button {
+    padding: 4px 6px;
+    font-size: 0.68rem;
+  }
 }
 
 @media (max-width: 720px) {
@@ -3038,34 +3191,58 @@ button {
   .notifications-page {
     padding: 16px 14px 36px;
   }
+  /* No header left to align with: the row restacks around the axis. */
   .subscription-card {
-    grid-template-columns: 1fr;
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
-  .subscription-card::after {
-    display: none;
+  .subscription-card .cell {
+    border-left: 0;
   }
-  .subscription-list::before {
-    display: none;
+  .cell-num {
+    grid-area: 1 / 1;
+    align-self: center;
+    padding: 8px 4px 8px 10px;
+  }
+  .cell-service {
+    grid-area: 1 / 2;
+  }
+  .cell-status {
+    grid-area: 1 / 3;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+  .cell-amount {
+    grid-area: 2 / 2;
+    text-align: left;
+  }
+  .cell-cycle {
+    grid-area: 2 / 3;
+    text-align: right;
+  }
+  .cell-axis {
+    grid-area: 3 / 1 / 4 / -1;
+    border-top: 1px solid var(--tt-rule);
+    padding: 10px;
+  }
+  .subscription-card-details {
+    grid-area: 4 / 1 / 5 / -1;
+    border-left: 0;
+    border-top: 0;
+  }
+  .cell-actions {
+    grid-area: 5 / 1 / 6 / -1;
   }
   .stats-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-/* Timetable axis — real data, four labelled tracks on one shared 30-day axis. */
+/* Timetable axis — four full-width rails on the shared 30-day axis. The
+   rails span the cell's whole content box so they land under the ticks;
+   track names live once, in the header legend. */
 .timetable-axis {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: start;
-  padding: 10px 12px;
-  border-left: 1px solid var(--tt-rule);
   background: transparent;
-}
-.timetable-axis-title {
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--muted);
-  margin-bottom: 7px;
 }
 .timetable-tracks {
   display: flex;
@@ -3074,19 +3251,11 @@ button {
 }
 .timetable-row {
   display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.timetable-label {
-  width: 26px;
-  flex-shrink: 0;
-  font-size: 0.64rem;
-  color: var(--muted);
 }
 .timetable-rail {
   position: relative;
   flex: 1;
-  height: 6px;
+  height: 7px;
   background:
     repeating-linear-gradient(
       90deg,
@@ -3120,11 +3289,12 @@ button {
   position: absolute;
   top: -3px;
   width: 2px;
-  height: 12px;
+  height: 13px;
+  margin-left: -1px;
   background: var(--tt-signal);
 }
 .timetable-when {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   font-family: var(--tt-mono);
   font-variant-numeric: tabular-nums;
   font-size: 0.68rem;
@@ -3147,21 +3317,13 @@ button {
     ),
     color-mix(in srgb, var(--tt-sheet) 82%, #000 18%);
 }
-@media (max-width: 720px) {
-  .timetable-axis {
-    grid-column: 1;
-    grid-row: auto;
-    border-left: 0;
-    border-top: 1px solid var(--tt-rule);
-  }
-}
 
-/* Seven-column header + real 30-day date ticks over the shared axis. */
+/* Seven-column header + the 30-day tick scale the rails share. Ticks are
+   absolutely positioned at each tick's exact day offset (every 5 days);
+   first and last are edge-pinned so 0% and 100% stay inside the column. */
 .timetable-header {
   display: grid;
-  grid-template-columns:
-    52px minmax(180px, 1.6fr) 96px 90px 88px minmax(240px, 34%)
-    150px;
+  grid-template-columns: var(--tt-cols);
   align-items: end;
   background: var(--tt-ink);
   color: #f2efe6;
@@ -3178,32 +3340,86 @@ button {
 .timetable-hcell:last-child {
   border-right: 0;
 }
+/* The axis column carries no horizontal border on either side (header or
+   rows), so the tick scale and the rails share one exact origin and width. */
 .timetable-h-axis {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding-bottom: 4px;
+  padding: 6px 10px 4px;
+  border-right: 0;
+}
+.timetable-h-actions {
+  border-left: 1px solid rgba(242, 239, 230, 0.2);
 }
 .timetable-hlabel {
   font-size: 0.68rem;
   font-weight: 700;
 }
-.timetable-ticks {
+.timetable-legend {
   display: flex;
-  justify-content: space-between;
-  font-family: var(--tt-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.6rem;
+  gap: 10px;
+  font-size: 0.68rem;
   color: #c9d2d4;
 }
-.subscription-list::before {
-  display: none;
+.timetable-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
-.timetable-axis {
-  grid-row: 1;
+.tt-chip {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
 }
+/* 账单 is the ink track; on the ink header it reads as an outlined chip. */
+.tt-chip.timetable-bill {
+  background: transparent;
+  border: 1px solid #f2efe6;
+}
+.tt-chip.timetable-fiveHour {
+  background: #b23a24;
+}
+.tt-chip.timetable-weekly {
+  background: #2e6e73;
+}
+.tt-chip.timetable-monthly {
+  background: #d9a441;
+}
+.timetable-ticks {
+  position: relative;
+  height: 14px;
+  font-family: var(--tt-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.68rem;
+  color: #c9d2d4;
+}
+.timetable-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.timetable-tick.first {
+  transform: none;
+}
+.timetable-tick.last {
+  transform: translateX(-100%);
+}
+
 @media (max-width: 720px) {
   .timetable-header {
     display: none;
+  }
+}
+
+/* Re-declared after the header rules: this block must win the cascade over
+   the base paddings above at intermediate widths. */
+@media (max-width: 947px) {
+  .timetable-hcell {
+    padding: 6px;
+  }
+  .timetable-h-axis {
+    padding: 6px;
   }
 }

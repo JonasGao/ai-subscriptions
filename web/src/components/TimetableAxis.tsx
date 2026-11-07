@@ -10,6 +10,9 @@ import { getResetUrgencyColor } from "../subscriptions/reset";
  *   - billing: 30-day window ending at renewalDate
  *   - fiveHour / weekly / monthly: each enabled schedule's own period ending
  *     at its nextResetTime
+ * The rails span the full cell width, so they sit under the header's date
+ * ticks on the same coordinate system. Track names live once, in the header
+ * legend; the aria-label carries the per-track data for non-visual reads.
  * It is a chart, not navigation: no click handlers, no links, no controls.
  * Empty data produces an empty track, never invented numbers.
  */
@@ -25,12 +28,13 @@ const PERIOD_MS: Record<ResetScheduleType, number> = {
 const TRACKS: Array<{
   key: string;
   label: string;
+  spoken: string;
   type: ResetScheduleType | null;
 }> = [
-  { key: "bill", label: "账单", type: null },
-  { key: "fiveHour", label: "5h", type: "fiveHour" },
-  { key: "weekly", label: "周", type: "weekly" },
-  { key: "monthly", label: "月", type: "monthly" },
+  { key: "bill", label: "账单", spoken: "账单", type: null },
+  { key: "fiveHour", label: "5h", spoken: "5 小时", type: "fiveHour" },
+  { key: "weekly", label: "周", spoken: "周", type: "weekly" },
+  { key: "monthly", label: "月", spoken: "月", type: "monthly" },
 ];
 
 /** Elapsed share (0..1) of one cycle, clamped; null when the data is absent. */
@@ -56,6 +60,11 @@ function axisPosition(
   const end = new Date(endsAt).getTime();
   if (!Number.isFinite(end)) return null;
   return Math.max(0, Math.min(1, (end - now) / AXIS_MS));
+}
+
+/** A rail's hover title: the track name plus its date, when known. */
+function railTitle(label: string, endsAt: string | null | undefined): string {
+  return endsAt ? `${label} ${endsAt.slice(0, 10)}` : label;
 }
 
 interface TimetableAxisProps {
@@ -107,9 +116,25 @@ export const TimetableAxis: Component<TimetableAxisProps> = (props) => {
     );
   };
 
+  /** The rails are an image; one label speaks every track's real data. */
+  const spokenSummary = () =>
+    TRACKS.map((track) => {
+      const endsAt =
+        track.type === null
+          ? props.renewalDate
+          : schedules().find((schedule) => schedule.type === track.type)
+              ?.nextResetTime;
+      return endsAt ? `${track.spoken} ${endsAt.slice(0, 10)}` : null;
+    })
+      .filter(Boolean)
+      .join("；");
+
   return (
-    <div class="timetable-axis" aria-label="账单与额度重置的 30 天共轴视图">
-      <div class="timetable-axis-title">下次重置 / 周期视图</div>
+    <div
+      class="timetable-axis"
+      role="img"
+      aria-label={`四轨 30 天共轴：${spokenSummary() || "暂无班次"}`}
+    >
       <Show
         when={!props.oneTime}
         fallback={<p class="timetable-axis-empty">一次性订阅 · 无重置班次</p>}
@@ -129,8 +154,10 @@ export const TimetableAxis: Component<TimetableAxisProps> = (props) => {
               const marker = () => axisPosition(endsAt(), props.now);
               return (
                 <div class="timetable-row">
-                  <span class="timetable-label">{track.label}</span>
-                  <div class="timetable-rail">
+                  <div
+                    class="timetable-rail"
+                    title={railTitle(track.label, endsAt())}
+                  >
                     <Show when={share() !== null}>
                       <div
                         class={`timetable-fill timetable-${track.key}`}

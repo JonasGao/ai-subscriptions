@@ -32,7 +32,7 @@ const mainPages: Array<{ id: MainPage; href: string; label: string }> = [
 export const MainPageShell: Component<MainPageShellProps> = (props) => (
   <div class="main-shell">
     <header class="main-shell-header">
-      <h1 class="main-shell-title">AI订阅管理</h1>
+      <p class="main-shell-title">AI订阅管理</p>
       <div class="main-shell-actions">
         <nav aria-label="主要页面" class="main-shell-nav">
           <For each={mainPages}>

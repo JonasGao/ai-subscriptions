@@ -1,5 +1,5 @@
 import { createSignal, For, onMount, Show, type Component } from "solid-js";
-import { CloseIcon, DragIcon } from "../components/icons.tsx";
+import { CloseIcon } from "../components/icons.tsx";
 import { createStore, reconcile } from "solid-js/store";
 import { useNavigate } from "@solidjs/router";
 import { useAuth } from "../auth/AuthProvider";
@@ -91,6 +91,7 @@ export const SubscriptionsPage: Component = () => {
     createSignal(readStoredCategory());
   const [selectedStatuses, setSelectedStatuses] =
     createSignal<SubscriptionStatus[]>(readStoredStatuses());
+  const [search, setSearch] = createSignal("");
   const now = createNow();
 
   const loadData = async () => {
@@ -130,13 +131,19 @@ export const SubscriptionsPage: Component = () => {
   const visibleSubscriptions = () =>
     subscriptions
       .filter((subscription) => {
+        const query = search().trim().toLowerCase();
+        const searchMatch =
+          query === "" ||
+          subscription.name.toLowerCase().includes(query) ||
+          subscription.provider.toLowerCase().includes(query) ||
+          (subscription.providerCustom ?? "").toLowerCase().includes(query);
         const categoryMatch =
           selectedCategory() === "all" ||
           subscription.category === selectedCategory();
         const statusMatch =
           selectedStatuses().length === 0 ||
           selectedStatuses().includes(subscription.status);
-        return categoryMatch && statusMatch;
+        return searchMatch && categoryMatch && statusMatch;
       })
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
@@ -307,8 +314,17 @@ export const SubscriptionsPage: Component = () => {
     <MainPageShell activePage="subscriptions">
       <main class="subscriptions-page">
         <header class="subscriptions-header">
+          <h1>订阅台账</h1>
           <p class="tagline">已登录：{auth.session()?.user.name ?? ""}</p>
           <div class="subscriptions-toolbar">
+            <input
+              class="subscription-search"
+              type="search"
+              placeholder="搜索订阅"
+              aria-label="搜索订阅"
+              value={search()}
+              onInput={(event) => setSearch(event.currentTarget.value)}
+            />
             <button type="button" onClick={openCreate}>
               添加订阅
             </button>
@@ -382,12 +398,17 @@ export const SubscriptionsPage: Component = () => {
               <SortableProvider
                 ids={visibleSubscriptions().map((sub) => sub.id)}
               >
-                <TimetableHeader now={now()} />
-                <section class="subscription-list">
+                <section
+                  class="subscription-list"
+                  role="table"
+                  aria-label="订阅台账"
+                >
+                  <TimetableHeader now={now()} />
                   <For each={visibleSubscriptions()}>
-                    {(subscription) => (
+                    {(subscription, index) => (
                       <SubscriptionCard
                         subscription={subscription}
+                        index={index() + 1}
                         tags={tags()}
                         providers={providers()}
                         onEdit={openEdit}
