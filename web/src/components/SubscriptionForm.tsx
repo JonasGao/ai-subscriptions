@@ -528,9 +528,7 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
                           <span>{field.label}</span>
                           <input
                             id={`cred-${field.key}`}
-                            type={
-                              field.type === "password" ? "password" : "text"
-                            }
+                            type="text"
                             value={formData().credentials?.[field.key] ?? ""}
                             onInput={(event) =>
                               handleCredentialChange(
