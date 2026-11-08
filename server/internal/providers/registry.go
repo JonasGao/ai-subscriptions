@@ -277,6 +277,7 @@ func DefaultProviders() []Provider {
 			Name:          "滴滴滴AI",
 			Description:   "AI API 中转服务",
 			Website:       "https://api.dddai.dev",
+			UsageAPIURL:   "https://api.dddai.dev/user/balance",
 			BalanceAPIURL: "https://api.dddai.dev/user/balance",
 			ModelsAPIURL:  "https://api.dddai.dev/v1/models",
 			CredentialFields: []CredentialField{

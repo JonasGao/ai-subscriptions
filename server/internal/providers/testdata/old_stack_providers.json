@@ -215,6 +215,7 @@
     "description": "AI API 中转服务",
     "website": "https://api.dddai.dev",
     "balanceApiUrl": "https://api.dddai.dev/user/balance",
+    "usageApiUrl": "https://api.dddai.dev/user/balance",
     "modelsApiUrl": "https://api.dddai.dev/v1/models",
     "credentialFields": [
       { "key": "apiKey", "label": "API Key", "type": "password" }

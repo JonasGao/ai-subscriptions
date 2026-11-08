@@ -112,6 +112,7 @@ func usageHandlerKeys() []string {
 		"github",
 		"opencode:go",
 		"zhipu:coding-plan",
+		"dddai",
 	}
 }
 
@@ -142,6 +143,7 @@ func UsageHandlers(clients ...HTTPDoer) map[string]UsageHandler {
 		"github":              &githubUsageHandler{client: client},
 		"opencode:go":         &opencodeUsageHandler{client: client},
 		"zhipu:coding-plan":   &zhipuUsageHandler{client: client},
+		"dddai":               &dddaiUsageHandler{client: client},
 	}
 }
 
@@ -685,4 +687,94 @@ func signVolcengineRequest(url, body, ak, sk string) map[string]string {
 		AK:     ak,
 		SK:     sk,
 	})
+}
+
+// --- 滴滴滴AI usage (relay balance as monthly window) ---
+//
+// dddai is a relay with a balance endpoint, not a windowed quota API. For
+// recurring subscriptions the card only queries usage (resolveQueryKind returns
+// "usage"), so the usage handler re-uses the same /user/balance endpoint and
+// maps the result into a single Monthly window: limit and remaining are the
+// balance, used is zero.
+
+const dddaiUsageURL = "https://api.dddai.dev/user/balance"
+
+type dddaiUsageHandler struct{ client HTTPDoer }
+
+func (h *dddaiUsageHandler) FetchUsage(ctx context.Context, credentials map[string]string) (UsageResult, error) {
+	return FetchDDDaiUsage(ctx, h.client, credentials["apiKey"])
+}
+
+func (h *dddaiUsageHandler) TestConnection(ctx context.Context, credentials map[string]string) (ConnectionResult, error) {
+	return testConnection(ctx, h.client, dddaiUsageURL, credentials["apiKey"])
+}
+
+// FetchDDDaiUsage queries /user/balance and returns a UsageResult with a single
+// Monthly window derived from the balance amount.
+func FetchDDDaiUsage(ctx context.Context, client HTTPDoer, apiKey string) (UsageResult, error) {
+	response, err := doGET(ctx, client, dddaiUsageURL, map[string]string{
+		"Authorization": "Bearer " + apiKey,
+	})
+	if err != nil {
+		return UsageResult{}, err
+	}
+	if !isSuccess(response) {
+		response.Body.Close()
+		return UsageResult{}, fmt.Errorf("DDDai API returned %d", response.StatusCode)
+	}
+
+	data, err := decodeObject(response)
+	if err != nil {
+		return UsageResult{}, err
+	}
+
+	// Shape 1: DeepSeek-compatible balance_infos array — use the first item.
+	if rawInfos, ok := data["balance_infos"].([]any); ok && len(rawInfos) > 0 {
+		info, ok := rawInfos[0].(map[string]any)
+		if !ok {
+			return UsageResult{}, fmt.Errorf("Unexpected DDDai API response format")
+		}
+		balance := numberOrZero(info["total_balance"])
+		currency, _ := info["currency"].(string)
+		if currency == "" {
+			currency = "USD"
+		}
+		balanceStr := toFixed2(balance)
+		zero := "0.00"
+		return UsageResult{
+			Provider: "dddai",
+			Monthly: &UsageWindow{
+				Limit:     balanceStr,
+				Used:      zero,
+				Remaining: balanceStr,
+			},
+			Warnings: []string{"币别: " + currency},
+		}, nil
+	}
+
+	// Shape 2: flat relay payload.
+	remaining := numberOrZero(data["balance"])
+	if _, hasBalance := jsNumber(data["balance"]); !hasBalance {
+		remaining = numberOrZero(data["remaining"])
+	}
+	unit, _ := data["unit"].(string)
+	if unit == "" {
+		unit = "USD"
+	}
+	planName, _ := data["planName"].(string)
+	if planName == "" {
+		planName = "余额"
+	}
+
+	balanceStr := toFixed2(remaining)
+	zero := "0.00"
+	return UsageResult{
+		Provider: "dddai",
+		Monthly: &UsageWindow{
+			Limit:     balanceStr,
+			Used:      zero,
+			Remaining: balanceStr,
+		},
+		Warnings: []string{planName + " · " + unit},
+	}, nil
 }

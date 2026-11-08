@@ -179,6 +179,71 @@ func TestBalanceHandlerErrors(t *testing.T) {
 	})
 }
 
+// TestDDDaiUsageHandler covers the usage query path for recurring subscriptions
+// that maps the balance endpoint into a Monthly window.
+func TestDDDaiUsageHandler(t *testing.T) {
+	t.Run("flat relay payload maps balance to Monthly window", func(t *testing.T) {
+		client := cannedHTTPDoer{body: `{"is_active":true,"isValid":true,"planName":"订阅套餐","balance":100.5,"unit":"USD"}`}
+
+		result, err := FetchDDDaiUsage(context.Background(), client, "test-key")
+		if err != nil {
+			t.Fatalf("FetchDDDaiUsage: %v", err)
+		}
+		if result.Provider != "dddai" {
+			t.Errorf("provider = %q, want dddai", result.Provider)
+		}
+		if result.Monthly == nil {
+			t.Fatal("Monthly = nil, want non-nil")
+		}
+		if result.Monthly.Remaining != "100.50" {
+			t.Errorf("Monthly.Remaining = %q, want 100.50", result.Monthly.Remaining)
+		}
+		if result.Monthly.Limit != "100.50" {
+			t.Errorf("Monthly.Limit = %q, want 100.50", result.Monthly.Limit)
+		}
+		if result.Monthly.Used != "0.00" {
+			t.Errorf("Monthly.Used = %q, want 0.00", result.Monthly.Used)
+		}
+		if len(result.Warnings) != 1 || result.Warnings[0] != "订阅套餐 · USD" {
+			t.Errorf("Warnings = %v, want [订阅套餐 · USD]", result.Warnings)
+		}
+	})
+
+	t.Run("flat relay falls back to remaining when balance is absent", func(t *testing.T) {
+		client := cannedHTTPDoer{body: `{"is_active":true,"isValid":true,"remaining":50,"unit":"CNY"}`}
+
+		result, err := FetchDDDaiUsage(context.Background(), client, "test-key")
+		if err != nil {
+			t.Fatalf("FetchDDDaiUsage: %v", err)
+		}
+		if result.Monthly.Remaining != "50.00" {
+			t.Errorf("Monthly.Remaining = %q, want 50.00", result.Monthly.Remaining)
+		}
+	})
+
+	t.Run("DeepSeek-style balance_infos uses first item", func(t *testing.T) {
+		client := cannedHTTPDoer{body: `{"is_available":true,"balance_infos":[{"currency":"USD","total_balance":"100"}]}`}
+
+		result, err := FetchDDDaiUsage(context.Background(), client, "test-key")
+		if err != nil {
+			t.Fatalf("FetchDDDaiUsage: %v", err)
+		}
+		if result.Monthly.Remaining != "100.00" {
+			t.Errorf("Monthly.Remaining = %q, want 100.00", result.Monthly.Remaining)
+		}
+		if len(result.Warnings) != 1 || result.Warnings[0] != "币别: USD" {
+			t.Errorf("Warnings = %v, want [币别: USD]", result.Warnings)
+		}
+	})
+
+	t.Run("API error surfaces status code", func(t *testing.T) {
+		_, err := FetchDDDaiUsage(context.Background(), cannedHTTPDoer{statusCode: http.StatusUnauthorized, body: "Unauthorized"}, "k")
+		if err == nil || !strings.Contains(err.Error(), "DDDai API returned 401") {
+			t.Errorf("err = %v, want DDDai API returned 401", err)
+		}
+	})
+}
+
 // TestDDDaiBalanceHandler covers the two response shapes the 滴滴滴AI relay
 // returns (DeepSeek-compatible balance_infos vs flat relay payload).
 func TestDDDaiBalanceHandler(t *testing.T) {
