@@ -2494,6 +2494,7 @@ body {
   --tt-mark: #c2452d;
   --tt-teal: #2e6e73;
   --tt-amber: #d9a441;
+  --tt-bill-fill: var(--tt-ink);
   --tt-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 :root.dark {
@@ -2505,6 +2506,7 @@ body {
   --tt-mark: #e4654b;
   --tt-teal: #6fb8a8;
   --tt-amber: #d9a441;
+  --tt-bill-fill: #8aa6b5;
 }
 
 body {
@@ -3079,7 +3081,7 @@ button {
   background: var(--tt-rule);
 }
 .usage-progress-fill {
-  background: var(--tt-ink);
+  background: var(--tt-bill-fill);
 }
 .usage-progress-fill.warning {
   background: var(--tt-amber);
@@ -3275,7 +3277,7 @@ button {
   bottom: 0;
 }
 .timetable-bill {
-  background: var(--tt-ink);
+  background: var(--tt-bill-fill);
 }
 .timetable-fiveHour {
   background: var(--tt-signal);
