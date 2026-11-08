@@ -179,14 +179,119 @@ func TestBalanceHandlerErrors(t *testing.T) {
 	})
 }
 
+// TestDDDaiBalanceHandler covers the two response shapes the 滴滴滴AI relay
+// returns (DeepSeek-compatible balance_infos vs flat relay payload).
+func TestDDDaiBalanceHandler(t *testing.T) {
+	t.Run("flat relay payload maps balance/isValid/unit to BalanceResult", func(t *testing.T) {
+		client := cannedHTTPDoer{body: `{"is_active":true,"isValid":true,"planName":"订阅套餐","balance":100.5,"unit":"USD"}`}
+
+		result, err := FetchDDDaiBalance(context.Background(), client, "test-key")
+		if err != nil {
+			t.Fatalf("FetchDDDaiBalance: %v", err)
+		}
+		if result.Provider != "dddai" {
+			t.Errorf("provider = %q, want dddai", result.Provider)
+		}
+		if !result.IsAvailable {
+			t.Error("isAvailable = false, want true")
+		}
+		if len(result.BalanceInfos) != 1 {
+			t.Fatalf("balanceInfos length = %d, want 1", len(result.BalanceInfos))
+		}
+		info := result.BalanceInfos[0]
+		if info.Currency != "USD" {
+			t.Errorf("currency = %q, want USD", info.Currency)
+		}
+		if info.Available != "100.50" {
+			t.Errorf("available = %q, want 100.50", info.Available)
+		}
+		if info.Total == nil || *info.Total != "订阅套餐" {
+			t.Errorf("total = %v, want 订阅套餐", info.Total)
+		}
+	})
+
+	t.Run("flat relay falls back to remaining when balance is absent", func(t *testing.T) {
+		client := cannedHTTPDoer{body: `{"is_active":true,"isValid":true,"remaining":50,"unit":"CNY"}`}
+
+		result, err := FetchDDDaiBalance(context.Background(), client, "test-key")
+		if err != nil {
+			t.Fatalf("FetchDDDaiBalance: %v", err)
+		}
+		if len(result.BalanceInfos) != 1 {
+			t.Fatalf("balanceInfos length = %d, want 1", len(result.BalanceInfos))
+		}
+		if result.BalanceInfos[0].Available != "50.00" {
+			t.Errorf("available = %q, want 50.00", result.BalanceInfos[0].Available)
+		}
+		if result.BalanceInfos[0].Currency != "CNY" {
+			t.Errorf("currency = %q, want CNY", result.BalanceInfos[0].Currency)
+		}
+	})
+
+	t.Run("flat relay defaults unit to USD and planName to 余额", func(t *testing.T) {
+		client := cannedHTTPDoer{body: `{"is_active":true,"isValid":true,"balance":10}`}
+
+		result, err := FetchDDDaiBalance(context.Background(), client, "test-key")
+		if err != nil {
+			t.Fatalf("FetchDDDaiBalance: %v", err)
+		}
+		if result.BalanceInfos[0].Currency != "USD" {
+			t.Errorf("currency = %q, want USD", result.BalanceInfos[0].Currency)
+		}
+		if result.BalanceInfos[0].Total == nil || *result.BalanceInfos[0].Total != "余额" {
+			t.Errorf("planName = %v, want 余额", result.BalanceInfos[0].Total)
+		}
+	})
+
+	t.Run("flat relay is_available=false marks unavailable", func(t *testing.T) {
+		client := cannedHTTPDoer{body: `{"is_active":false,"isValid":true,"message":"账户已过期","balance":0,"unit":"USD"}`}
+
+		result, err := FetchDDDaiBalance(context.Background(), client, "test-key")
+		if err != nil {
+			t.Fatalf("FetchDDDaiBalance: %v", err)
+		}
+		if result.IsAvailable {
+			t.Error("isAvailable = true, want false")
+		}
+	})
+
+	t.Run("DeepSeek-style balance_infos maps currency/total/toppedUp/granted", func(t *testing.T) {
+		client := cannedHTTPDoer{body: `{"is_available":true,"balance_infos":[{"currency":"USD","total_balance":"100","topped_up_balance":"80","granted_balance":"20"}]}`}
+
+		result, err := FetchDDDaiBalance(context.Background(), client, "test-key")
+		if err != nil {
+			t.Fatalf("FetchDDDaiBalance: %v", err)
+		}
+		if !result.IsAvailable {
+			t.Error("isAvailable = false, want true")
+		}
+		if len(result.BalanceInfos) != 1 {
+			t.Fatalf("balanceInfos length = %d, want 1", len(result.BalanceInfos))
+		}
+		info := result.BalanceInfos[0]
+		if info.Currency != "USD" || info.Available != "100.00" {
+			t.Errorf("info = (%q, %q), want (USD, 100.00)", info.Currency, info.Available)
+		}
+		assertPtr(t, "toppedUp", info.ToppedUp, "80.00")
+		assertPtr(t, "granted", info.Granted, "20.00")
+	})
+
+	t.Run("API error surfaces status code", func(t *testing.T) {
+		_, err := FetchDDDaiBalance(context.Background(), cannedHTTPDoer{statusCode: http.StatusUnauthorized, body: "Unauthorized"}, "k")
+		if err == nil || !strings.Contains(err.Error(), "DDDai API returned 401") {
+			t.Errorf("err = %v, want DDDai API returned 401", err)
+		}
+	})
+}
+
 // Supplementary guard: the registry keys are the four providers the old stack
 // registered, and every one of them resolves to a working handler.
 func TestBalanceHandlersRegistration(t *testing.T) {
 	handlers := BalanceHandlers(cannedHTTPDoer{body: `{"status":true,"data":{"available_balance":1}}`})
-	if len(handlers) != 4 {
-		t.Fatalf("registered handlers = %d, want 4", len(handlers))
+	if len(handlers) != 5 {
+		t.Fatalf("registered handlers = %d, want 5", len(handlers))
 	}
-	for _, key := range []string{"moonshot", "deepseek", "siliconflow", "openrouter"} {
+	for _, key := range []string{"moonshot", "deepseek", "siliconflow", "openrouter", "dddai"} {
 		if handlers[key] == nil {
 			t.Errorf("balanceHandlers[%q] is nil", key)
 		}

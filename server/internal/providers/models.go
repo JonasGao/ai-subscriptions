@@ -169,4 +169,5 @@ var (
 	_ BalanceHandler = (*deepseekBalanceHandler)(nil)
 	_ BalanceHandler = (*siliconFlowBalanceHandler)(nil)
 	_ BalanceHandler = (*openRouterBalanceHandler)(nil)
+	_ BalanceHandler = (*dddaiBalanceHandler)(nil)
 )

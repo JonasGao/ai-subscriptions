@@ -154,6 +154,7 @@ func balanceHandlerKeys() map[string]struct{} {
 		"deepseek":    {},
 		"siliconflow": {},
 		"openrouter":  {},
+		"dddai":       {},
 	}
 }
 

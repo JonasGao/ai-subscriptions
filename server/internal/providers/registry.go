@@ -273,6 +273,17 @@ func DefaultProviders() []Provider {
 			Description: "自托管模型",
 		},
 		{
+			ID:            "dddai",
+			Name:          "滴滴滴AI",
+			Description:   "AI API 中转服务",
+			Website:       "https://api.dddai.dev",
+			BalanceAPIURL: "https://api.dddai.dev/user/balance",
+			ModelsAPIURL:  "https://api.dddai.dev/v1/models",
+			CredentialFields: []CredentialField{
+				{Key: "apiKey", Label: "API Key", Type: "password"},
+			},
+		},
+		{
 			ID:          "other",
 			Name:        "其他",
 			Description: "自定义提供商",

@@ -1,1 +1,342 @@
-[{"id":"anthropic","name":"Anthropic","description":"Claude 系列","website":"https://anthropic.com","supportsBalanceQuery":false,"supportsUsageQuery":false,"supportsModelsQuery":false,"subscriptionCount":0,"toolCount":0},{"id":"openai","name":"OpenAI","description":"GPT 系列","website":"https://openai.com","supportsBalanceQuery":false,"supportsUsageQuery":false,"supportsModelsQuery":false,"subscriptionCount":0,"toolCount":0},{"id":"google","name":"Google","description":"Gemini 系列","website":"https://ai.google.dev","supportsBalanceQuery":false,"supportsUsageQuery":false,"supportsModelsQuery":false,"subscriptionCount":0,"toolCount":0},{"id":"github","name":"GitHub","description":"GitHub Copilot","website":"https://github.com","usageApiUrl":"https://api.github.com/copilot_internal/user","modelsApiUrl":"https://api.githubcopilot.com/models","credentialFields":[{"key":"token","label":"Token","type":"password"}],"supportsBalanceQuery":false,"supportsUsageQuery":true,"supportsModelsQuery":true,"subscriptionCount":0,"toolCount":0},{"id":"alibaba","name":"阿里云百炼","description":"Qwen 系列","website":"https://bailian.console.aliyun.com","credentialFields":[{"key":"ak","label":"Access Key ID","type":"text"},{"key":"sk","label":"Access Key Secret","type":"password"},{"key":"workspaceId","label":"Workspace ID","type":"text"},{"key":"apiKey","label":"API Key","type":"password"}],"plans":[{"id":"coding-plan","name":"Coding Plan","modelsApiUrl":"https://coding.dashscope.aliyuncs.com/v1/models","modelsRequireCredentials":false},{"id":"token-plan","name":"Token Plan","usageApiUrl":"https://modelstudio.cn-beijing.aliyuncs.com/tokenplan/subscription/seat-detail","modelsApiUrl":"https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/models"}],"supportsBalanceQuery":false,"supportsUsageQuery":true,"supportsModelsQuery":true,"subscriptionCount":0,"toolCount":0},{"id":"moonshot","name":"月之暗面","description":"Kimi 系列","website":"https://kimi.moonshot.cn","balanceApiUrl":"https://api.moonshot.cn/v1/users/me/balance","modelsApiUrl":"https://api.moonshot.cn/v1/models","credentialFields":[{"key":"apiKey","label":"API Key","type":"password"}],"plans":[{"id":"kimi-code","name":"Kimi Code","usageApiUrl":"https://api.kimi.com/coding/v1/usages","modelsApiUrl":"https://api.kimi.com/coding/v1/models"}],"supportsBalanceQuery":true,"supportsUsageQuery":true,"supportsModelsQuery":true,"subscriptionCount":0,"toolCount":0},{"id":"deepseek","name":"DeepSeek","description":"DeepSeek 系列","website":"https://deepseek.com","balanceApiUrl":"https://api.deepseek.com/user/balance","modelsApiUrl":"https://api.deepseek.com/models","credentialFields":[{"key":"apiKey","label":"API Key","type":"password"}],"supportsBalanceQuery":true,"supportsUsageQuery":false,"supportsModelsQuery":true,"subscriptionCount":0,"toolCount":0},{"id":"zhipu","name":"智谱 AI","description":"GLM 系列","website":"https://bigmodel.cn","credentialFields":[{"key":"apiKey","label":"API Key","type":"password"}],"plans":[{"id":"coding-plan","name":"Coding Plan","usageApiUrl":"https://open.bigmodel.cn/api/monitor/usage/quota/limit","modelsApiUrl":"https://open.bigmodel.cn/api/coding/paas/v4/models"}],"supportsBalanceQuery":false,"supportsUsageQuery":true,"supportsModelsQuery":true,"subscriptionCount":0,"toolCount":0},{"id":"siliconflow","name":"SiliconFlow","description":"模型托管平台","website":"https://siliconflow.cn","balanceApiUrl":"https://api.siliconflow.cn/v1/user/info","modelsApiUrl":"https://api.siliconflow.cn/v1/models","credentialFields":[{"key":"apiKey","label":"API Key","type":"password"}],"supportsBalanceQuery":true,"supportsUsageQuery":false,"supportsModelsQuery":true,"subscriptionCount":0,"toolCount":0},{"id":"openrouter","name":"OpenRouter","description":"多模型统一 API","website":"https://openrouter.ai","balanceApiUrl":"https://openrouter.ai/api/v1/credits","modelsApiUrl":"https://openrouter.ai/api/v1/models","credentialFields":[{"key":"apiKey","label":"API Key","type":"password"}],"supportsBalanceQuery":true,"supportsUsageQuery":false,"supportsModelsQuery":true,"subscriptionCount":0,"toolCount":0},{"id":"minimax","name":"MiniMax","description":"MiniMax 系列","website":"https://minimaxi.com","supportsBalanceQuery":false,"supportsUsageQuery":false,"supportsModelsQuery":false,"subscriptionCount":0,"toolCount":0},{"id":"byteDance","name":"字节跳动","description":"豆包系列","website":"https://doubao.com","supportsBalanceQuery":false,"supportsUsageQuery":false,"supportsModelsQuery":false,"subscriptionCount":0,"toolCount":0},{"id":"fangzhou","name":"火山方舟","description":"火山方舟模型服务","website":"https://www.volcengine.com/product/ark","modelsApiUrl":"https://open.volcengineapi.com/?Action=ListFoundationModels&Version=2024-01-01","credentialFields":[{"key":"ak","label":"Access Key","type":"text"},{"key":"sk","label":"Secret Key","type":"password"}],"plans":[{"id":"codingplan","name":"Coding Plan","usageApiUrl":"https://open.volcengineapi.com/open/GetCodingPlanUsage","modelsApiUrl":"https://open.volcengineapi.com/?Action=ListArkCodeLatestModel&Version=2024-01-01"},{"id":"agentplan","name":"Agent Plan","usageApiUrl":"https://open.volcengineapi.com/open/GetAFPUsage","modelsApiUrl":"https://open.volcengineapi.com/?Action=ListAgentPlanLatestModel&Version=2024-01-01"}],"supportsBalanceQuery":false,"supportsUsageQuery":true,"supportsModelsQuery":true,"subscriptionCount":0,"toolCount":0},{"id":"opencode","name":"OpenCode","description":"OpenCode 编码助手","website":"https://opencode.ai","credentialFields":[{"key":"apiKey","label":"API Key","type":"password"}],"plans":[{"id":"go","name":"Go","usageApiUrl":"https://opencode.ai/zen/go/v1/usage","modelsApiUrl":"https://opencode.ai/zen/go/v1/models"},{"id":"zen","name":"Zen"}],"supportsBalanceQuery":false,"supportsUsageQuery":true,"supportsModelsQuery":true,"subscriptionCount":0,"toolCount":0},{"id":"baidu","name":"百度","description":"文心一言","website":"https://yiyan.baidu.com","supportsBalanceQuery":false,"supportsUsageQuery":false,"supportsModelsQuery":false,"subscriptionCount":0,"toolCount":0},{"id":"xiaomi","name":"小米","description":"MiMo 系列","website":"https://mimo.mi.com","supportsBalanceQuery":false,"supportsUsageQuery":false,"supportsModelsQuery":false,"subscriptionCount":0,"toolCount":0},{"id":"xunfei","name":"讯飞","description":"星火大模型","website":"https://xinghuo.xfyun.cn","supportsBalanceQuery":false,"supportsUsageQuery":false,"supportsModelsQuery":false,"subscriptionCount":0,"toolCount":0},{"id":"ollama","name":"Ollama","description":"本地模型运行","website":"https://ollama.ai","supportsBalanceQuery":false,"supportsUsageQuery":false,"supportsModelsQuery":false,"subscriptionCount":0,"toolCount":0},{"id":"lmstudio","name":"LM Studio","description":"本地模型运行","website":"https://lmstudio.ai","supportsBalanceQuery":false,"supportsUsageQuery":false,"supportsModelsQuery":false,"subscriptionCount":0,"toolCount":0},{"id":"local","name":"本地部署","description":"自托管模型","supportsBalanceQuery":false,"supportsUsageQuery":false,"supportsModelsQuery":false,"subscriptionCount":0,"toolCount":0},{"id":"other","name":"其他","description":"自定义提供商","supportsBalanceQuery":false,"supportsUsageQuery":false,"supportsModelsQuery":false,"subscriptionCount":0,"toolCount":0}]
+[
+  {
+    "id": "anthropic",
+    "name": "Anthropic",
+    "description": "Claude 系列",
+    "website": "https://anthropic.com",
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": false,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "openai",
+    "name": "OpenAI",
+    "description": "GPT 系列",
+    "website": "https://openai.com",
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": false,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "google",
+    "name": "Google",
+    "description": "Gemini 系列",
+    "website": "https://ai.google.dev",
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": false,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "github",
+    "name": "GitHub",
+    "description": "GitHub Copilot",
+    "website": "https://github.com",
+    "usageApiUrl": "https://api.github.com/copilot_internal/user",
+    "modelsApiUrl": "https://api.githubcopilot.com/models",
+    "credentialFields": [
+      { "key": "token", "label": "Token", "type": "password" }
+    ],
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": true,
+    "supportsModelsQuery": true,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "alibaba",
+    "name": "阿里云百炼",
+    "description": "Qwen 系列",
+    "website": "https://bailian.console.aliyun.com",
+    "credentialFields": [
+      { "key": "ak", "label": "Access Key ID", "type": "text" },
+      { "key": "sk", "label": "Access Key Secret", "type": "password" },
+      { "key": "workspaceId", "label": "Workspace ID", "type": "text" },
+      { "key": "apiKey", "label": "API Key", "type": "password" }
+    ],
+    "plans": [
+      {
+        "id": "coding-plan",
+        "name": "Coding Plan",
+        "modelsApiUrl": "https://coding.dashscope.aliyuncs.com/v1/models",
+        "modelsRequireCredentials": false
+      },
+      {
+        "id": "token-plan",
+        "name": "Token Plan",
+        "usageApiUrl": "https://modelstudio.cn-beijing.aliyuncs.com/tokenplan/subscription/seat-detail",
+        "modelsApiUrl": "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/models"
+      }
+    ],
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": true,
+    "supportsModelsQuery": true,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "moonshot",
+    "name": "月之暗面",
+    "description": "Kimi 系列",
+    "website": "https://kimi.moonshot.cn",
+    "balanceApiUrl": "https://api.moonshot.cn/v1/users/me/balance",
+    "modelsApiUrl": "https://api.moonshot.cn/v1/models",
+    "credentialFields": [
+      { "key": "apiKey", "label": "API Key", "type": "password" }
+    ],
+    "plans": [
+      {
+        "id": "kimi-code",
+        "name": "Kimi Code",
+        "usageApiUrl": "https://api.kimi.com/coding/v1/usages",
+        "modelsApiUrl": "https://api.kimi.com/coding/v1/models"
+      }
+    ],
+    "supportsBalanceQuery": true,
+    "supportsUsageQuery": true,
+    "supportsModelsQuery": true,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "deepseek",
+    "name": "DeepSeek",
+    "description": "DeepSeek 系列",
+    "website": "https://deepseek.com",
+    "balanceApiUrl": "https://api.deepseek.com/user/balance",
+    "modelsApiUrl": "https://api.deepseek.com/models",
+    "credentialFields": [
+      { "key": "apiKey", "label": "API Key", "type": "password" }
+    ],
+    "supportsBalanceQuery": true,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": true,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "zhipu",
+    "name": "智谱 AI",
+    "description": "GLM 系列",
+    "website": "https://bigmodel.cn",
+    "credentialFields": [
+      { "key": "apiKey", "label": "API Key", "type": "password" }
+    ],
+    "plans": [
+      {
+        "id": "coding-plan",
+        "name": "Coding Plan",
+        "usageApiUrl": "https://open.bigmodel.cn/api/monitor/usage/quota/limit",
+        "modelsApiUrl": "https://open.bigmodel.cn/api/coding/paas/v4/models"
+      }
+    ],
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": true,
+    "supportsModelsQuery": true,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "siliconflow",
+    "name": "SiliconFlow",
+    "description": "模型托管平台",
+    "website": "https://siliconflow.cn",
+    "balanceApiUrl": "https://api.siliconflow.cn/v1/user/info",
+    "modelsApiUrl": "https://api.siliconflow.cn/v1/models",
+    "credentialFields": [
+      { "key": "apiKey", "label": "API Key", "type": "password" }
+    ],
+    "supportsBalanceQuery": true,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": true,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "openrouter",
+    "name": "OpenRouter",
+    "description": "多模型统一 API",
+    "website": "https://openrouter.ai",
+    "balanceApiUrl": "https://openrouter.ai/api/v1/credits",
+    "modelsApiUrl": "https://openrouter.ai/api/v1/models",
+    "credentialFields": [
+      { "key": "apiKey", "label": "API Key", "type": "password" }
+    ],
+    "supportsBalanceQuery": true,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": true,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "minimax",
+    "name": "MiniMax",
+    "description": "MiniMax 系列",
+    "website": "https://minimaxi.com",
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": false,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "byteDance",
+    "name": "字节跳动",
+    "description": "豆包系列",
+    "website": "https://doubao.com",
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": false,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "fangzhou",
+    "name": "火山方舟",
+    "description": "火山方舟模型服务",
+    "website": "https://www.volcengine.com/product/ark",
+    "modelsApiUrl": "https://open.volcengineapi.com/?Action=ListFoundationModels&Version=2024-01-01",
+    "credentialFields": [
+      { "key": "ak", "label": "Access Key", "type": "text" },
+      { "key": "sk", "label": "Secret Key", "type": "password" }
+    ],
+    "plans": [
+      {
+        "id": "codingplan",
+        "name": "Coding Plan",
+        "usageApiUrl": "https://open.volcengineapi.com/open/GetCodingPlanUsage",
+        "modelsApiUrl": "https://open.volcengineapi.com/?Action=ListArkCodeLatestModel&Version=2024-01-01"
+      },
+      {
+        "id": "agentplan",
+        "name": "Agent Plan",
+        "usageApiUrl": "https://open.volcengineapi.com/open/GetAFPUsage",
+        "modelsApiUrl": "https://open.volcengineapi.com/?Action=ListAgentPlanLatestModel&Version=2024-01-01"
+      }
+    ],
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": true,
+    "supportsModelsQuery": true,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "opencode",
+    "name": "OpenCode",
+    "description": "OpenCode 编码助手",
+    "website": "https://opencode.ai",
+    "credentialFields": [
+      { "key": "apiKey", "label": "API Key", "type": "password" }
+    ],
+    "plans": [
+      {
+        "id": "go",
+        "name": "Go",
+        "usageApiUrl": "https://opencode.ai/zen/go/v1/usage",
+        "modelsApiUrl": "https://opencode.ai/zen/go/v1/models"
+      },
+      { "id": "zen", "name": "Zen" }
+    ],
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": true,
+    "supportsModelsQuery": true,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "baidu",
+    "name": "百度",
+    "description": "文心一言",
+    "website": "https://yiyan.baidu.com",
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": false,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "xiaomi",
+    "name": "小米",
+    "description": "MiMo 系列",
+    "website": "https://mimo.mi.com",
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": false,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "xunfei",
+    "name": "讯飞",
+    "description": "星火大模型",
+    "website": "https://xinghuo.xfyun.cn",
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": false,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "ollama",
+    "name": "Ollama",
+    "description": "本地模型运行",
+    "website": "https://ollama.ai",
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": false,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "lmstudio",
+    "name": "LM Studio",
+    "description": "本地模型运行",
+    "website": "https://lmstudio.ai",
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": false,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "local",
+    "name": "本地部署",
+    "description": "自托管模型",
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": false,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "dddai",
+    "name": "滴滴滴AI",
+    "description": "AI API 中转服务",
+    "website": "https://api.dddai.dev",
+    "balanceApiUrl": "https://api.dddai.dev/user/balance",
+    "modelsApiUrl": "https://api.dddai.dev/v1/models",
+    "credentialFields": [
+      { "key": "apiKey", "label": "API Key", "type": "password" }
+    ],
+    "supportsBalanceQuery": true,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": true,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  },
+  {
+    "id": "other",
+    "name": "其他",
+    "description": "自定义提供商",
+    "supportsBalanceQuery": false,
+    "supportsUsageQuery": false,
+    "supportsModelsQuery": false,
+    "subscriptionCount": 0,
+    "toolCount": 0
+  }
+]

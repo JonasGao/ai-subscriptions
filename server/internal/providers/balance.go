@@ -46,6 +46,7 @@ func BalanceHandlers(clients ...HTTPDoer) map[string]BalanceHandler {
 		"deepseek":    &deepseekBalanceHandler{client: client},
 		"siliconflow": &siliconFlowBalanceHandler{client: client},
 		"openrouter":  &openRouterBalanceHandler{client: client},
+		"dddai":       &dddaiBalanceHandler{client: client},
 	}
 }
 
@@ -352,6 +353,103 @@ func FetchOpenRouterBalance(ctx context.Context, client HTTPDoer, apiKey string)
 			Available: toFixed2(remaining),
 			Total:     strPtr(toFixed2(totalCredits)),
 			Used:      strPtr(toFixed2(totalUsage)),
+		}},
+	}, nil
+}
+
+// --- 滴滴滴AI (OpenAI-compatible relay) ---
+//
+// The balance endpoint (GET /user/balance) returns one of two shapes:
+//
+//  1. DeepSeek-like: {"is_available":true,"balance_infos":[{...}]}
+//     In this case data["balance_infos"] is a non-empty array and each item
+//     has currency + total_balance + topped_up + granted.
+//
+//  2. Flat relay: {"is_active":true,"isValid":true,"planName":"余额",
+//     "balance":100,"unit":"USD"}
+//     balance or remaining is the available amount; is_active/is_valid drive
+//     IsAvailable; unit falls back to USD.
+const dddaiBalanceURL = "https://api.dddai.dev/user/balance"
+
+type dddaiBalanceHandler struct{ client HTTPDoer }
+
+func (h *dddaiBalanceHandler) FetchBalance(ctx context.Context, credentials map[string]string) (BalanceResult, error) {
+	return FetchDDDaiBalance(ctx, h.client, credentials["apiKey"])
+}
+
+func (h *dddaiBalanceHandler) TestConnection(ctx context.Context, credentials map[string]string) (ConnectionResult, error) {
+	return testConnection(ctx, h.client, dddaiBalanceURL, credentials["apiKey"])
+}
+
+// FetchDDDaiBalance queries the 滴滴滴AI balance endpoint.
+// The response format is flexible: if the API returns balance_infos (DeepSeek
+// style), those items are used directly; otherwise the top-level balance /
+// remaining fields drive a single balance line.
+func FetchDDDaiBalance(ctx context.Context, client HTTPDoer, apiKey string) (BalanceResult, error) {
+	response, err := doGET(ctx, client, dddaiBalanceURL, map[string]string{
+		"Authorization": "Bearer " + apiKey,
+	})
+	if err != nil {
+		return BalanceResult{}, err
+	}
+	if !isSuccess(response) {
+		response.Body.Close()
+		return BalanceResult{}, fmt.Errorf("DDDai API returned %d", response.StatusCode)
+	}
+
+	data, err := decodeObject(response)
+	if err != nil {
+		return BalanceResult{}, err
+	}
+
+	// Shape 1: DeepSeek-compatible balance_infos array.
+	if rawInfos, ok := data["balance_infos"].([]any); ok && len(rawInfos) > 0 {
+		infos := make([]BalanceInfo, 0, len(rawInfos))
+		for _, raw := range rawInfos {
+			info, ok := raw.(map[string]any)
+			if !ok {
+				continue
+			}
+			currency, _ := info["currency"].(string)
+			if currency == "" {
+				currency = "USD"
+			}
+			infos = append(infos, BalanceInfo{
+				Currency:  currency,
+				Available: toFixed2(numberOrZero(info["total_balance"])),
+				ToppedUp:  strPtr(toFixed2(numberOrZero(info["topped_up_balance"]))),
+				Granted:   strPtr(toFixed2(numberOrZero(info["granted_balance"]))),
+			})
+		}
+		return BalanceResult{
+			Provider:     "dddai",
+			IsAvailable:  jsTruthy(data["is_available"]),
+			BalanceInfos: infos,
+		}, nil
+	}
+
+	// Shape 2: flat relay payload.
+	isAvailable := data["is_active"] != false && data["isValid"] != false
+	remaining := numberOrZero(data["balance"])
+	if _, hasBalance := jsNumber(data["balance"]); !hasBalance {
+		remaining = numberOrZero(data["remaining"])
+	}
+	currency, _ := data["unit"].(string)
+	if currency == "" {
+		currency = "USD"
+	}
+	planName, _ := data["planName"].(string)
+	if planName == "" {
+		planName = "余额"
+	}
+
+	return BalanceResult{
+		Provider:    "dddai",
+		IsAvailable: isAvailable,
+		BalanceInfos: []BalanceInfo{{
+			Currency:  currency,
+			Available: toFixed2(remaining),
+			Total:     &planName,
 		}},
 	}, nil
 }
