@@ -245,7 +245,7 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
         onKeyDown={dialogFocus.onKeyDown}
       >
         <h2>{props.subscription ? "编辑订阅" : "添加订阅"}</h2>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autocomplete="off">
           <div class="form-grid">
             <label for="name">
               <span>名称 *</span>
@@ -255,7 +255,6 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
                 onInput={(event) => patch({ name: event.currentTarget.value })}
                 placeholder="输入订阅名称"
                 required
-                autocomplete="off"
               />
             </label>
 
@@ -307,7 +306,6 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
                     patch({ providerCustom: event.currentTarget.value })
                   }
                   placeholder="输入自定义提供商名称"
-                  autocomplete="off"
                 />
               </label>
             </Show>
@@ -402,7 +400,6 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
                 }
                 placeholder="0.00"
                 required
-                autocomplete="off"
               />
             </label>
 
@@ -420,7 +417,6 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
                     patch({ balance: raw ? parseFloat(raw) : undefined });
                   }}
                   placeholder="手动输入余额"
-                  autocomplete="off"
                 />
               </label>
 
@@ -444,7 +440,6 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
                     }
                   }}
                   placeholder="留空使用全局默认阈值"
-                  autocomplete="off"
                 />
               </label>
             </Show>
@@ -460,7 +455,6 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
                     patch({ startDate: event.currentTarget.value })
                   }
                   required
-                  autocomplete="off"
                 />
               </label>
 
@@ -474,7 +468,6 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
                     patch({ renewalDate: event.currentTarget.value })
                   }
                   required
-                  autocomplete="off"
                 />
               </label>
             </Show>
@@ -541,7 +534,6 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
                                 ? "已配置，留空保持不变"
                                 : `输入 ${field.label}`
                             }
-                            autocomplete="off"
                           />
                         </label>
                       )}
@@ -582,7 +574,6 @@ export const SubscriptionForm: Component<SubscriptionFormProps> = (props) => {
                 value={formData().notes ?? ""}
                 onInput={(event) => patch({ notes: event.currentTarget.value })}
                 placeholder="可选备注信息"
-                autocomplete="off"
               />
             </label>
           </div>
