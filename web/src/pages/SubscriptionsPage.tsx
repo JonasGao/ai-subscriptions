@@ -266,6 +266,25 @@ export const SubscriptionsPage: Component = () => {
     );
   };
 
+  // Balance query writes the new amount back server-side (ADR-0016); merge it
+  // into the list so the card and stats reflect the change without a refresh.
+  const handleBalanceUpdate = (
+    id: string,
+    balance: number,
+    currency: string
+  ) => {
+    setSubscriptions(
+      reconcile(
+        subscriptions.map((item) =>
+          item.id === id
+            ? { ...item, balance, balanceCurrency: currency }
+            : item
+        ),
+        { key: "id" }
+      )
+    );
+  };
+
   const handleScheduleToggle = async (
     id: string,
     scheduleId: string,
@@ -440,6 +459,7 @@ export const SubscriptionsPage: Component = () => {
                         onEdit={openEdit}
                         onDelete={handleDelete}
                         onStatusChange={handleStatusChange}
+                        onBalanceUpdate={handleBalanceUpdate}
                         onSubscriptionUpdate={handleSubscriptionUpdate}
                         onScheduleToggle={handleScheduleToggle}
                       />

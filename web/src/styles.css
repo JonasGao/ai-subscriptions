@@ -2846,7 +2846,8 @@ button {
   background: color-mix(in srgb, var(--tt-sheet) 82%, var(--tt-amber) 18%);
 }
 
-.subscription-card > * {
+.subscription-card > .cell,
+.subscription-card > .subscription-card-details {
   position: relative;
   z-index: 1;
 }
