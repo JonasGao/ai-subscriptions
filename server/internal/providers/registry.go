@@ -297,6 +297,18 @@ func DefaultProviders() []Provider {
 			},
 		},
 		{
+			ID:            "morphapi",
+			Name:          "MorphAPI",
+			Description:   "AI API 中转服务",
+			Website:       "https://www.aidjapi.top",
+			BalanceAPIURL: "https://www.aidjapi.top/v1/usage",
+			UsageAPIURL:   "https://www.aidjapi.top/v1/usage",
+			ModelsAPIURL:  "https://www.aidjapi.top/v1/models",
+			CredentialFields: []CredentialField{
+				{Key: "apiKey", Label: "API Key", Type: "password"},
+			},
+		},
+		{
 			ID:          "other",
 			Name:        "其他",
 			Description: "自定义提供商",

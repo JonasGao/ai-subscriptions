@@ -22,9 +22,11 @@ import (
 //	 "unit":"USD","usage":{"total":{"actual_cost":10.02009565,"cost":40.08,...}}}
 //
 // Unlike dddai there is no balance_infos / data[] array to branch on: the
-// nullish-coalescing chain above is the whole contract. Both the recurring
-// (usage) and one-time (balance) queries share this single fetch/parse helper
-// so the two handlers cannot drift apart.
+// nullish-coalescing chain above is the whole contract. The generic extractor
+// lives in coalescing.go (shared with MorphAPI); this file only layers the
+// FastAI-specific mode / usage.total fields on top. Both the recurring (usage)
+// and one-time (balance) queries share this single fetch/parse helper so the
+// two handlers cannot drift apart.
 
 const fastaiUsageURL = "https://www.fastaitoken.com/v1/usage"
 
@@ -39,44 +41,20 @@ type fastaiQuota struct {
 	hasUsed   bool
 }
 
-// fastaiFirstPresent mirrors JS `a ?? b ?? c`: a missing or JSON-null value
-// falls through, while any other value (including false / 0 / "") stops the
-// chain. That distinction matters for `is_active: false` and `remaining: 0`.
-func fastaiFirstPresent(values ...any) any {
-	for _, value := range values {
-		if value != nil {
-			return value
-		}
-	}
-	return nil
-}
-
-// parseFastAIQuota implements the ccswitch extractor over a decoded response.
+// parseFastAIQuota layers the FastAI-specific fields on top of the shared
+// ccswitch extractor (see coalescing.go). The额度 fields (remaining/unit/
+// is_active/planName) come from parseRelayQuota so the extractor contract has
+// exactly one implementation.
 func parseFastAIQuota(data map[string]any) fastaiQuota {
-	quota, _ := data["quota"].(map[string]any)
+	relay := parseRelayQuota(data)
 
-	q := fastaiQuota{}
-	q.remaining = numberOrZero(fastaiFirstPresent(data["remaining"], quota["remaining"], data["balance"]))
-
-	if unit := fastaiFirstPresent(data["unit"], quota["unit"]); unit != nil {
-		q.unit, _ = unit.(string)
-	}
-	if q.unit == "" {
-		q.unit = "USD"
+	q := fastaiQuota{
+		remaining: relay.remaining,
+		unit:      relay.unit,
+		planName:  relay.planName,
+		isValid:   relay.isValid,
 	}
 
-	// `?? true` means an absent value defaults to valid, but an explicit
-	// false (is_active / isValid) must survive — hence the nil check, not
-	// jsTruthy on the whole chain.
-	q.isValid = true
-	if valid := fastaiFirstPresent(data["is_active"], data["isValid"]); valid != nil {
-		q.isValid = jsTruthy(valid)
-	}
-
-	q.planName, _ = data["planName"].(string)
-	if q.planName == "" {
-		q.planName = "余额"
-	}
 	q.mode, _ = data["mode"].(string)
 
 	if usage, ok := data["usage"].(map[string]any); ok {

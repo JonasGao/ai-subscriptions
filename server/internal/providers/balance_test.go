@@ -353,10 +353,10 @@ func TestDDDaiBalanceHandler(t *testing.T) {
 // registered, and every one of them resolves to a working handler.
 func TestBalanceHandlersRegistration(t *testing.T) {
 	handlers := BalanceHandlers(cannedHTTPDoer{body: `{"status":true,"data":{"available_balance":1}}`})
-	if len(handlers) != 6 {
-		t.Fatalf("registered handlers = %d, want 6", len(handlers))
+	if len(handlers) != 7 {
+		t.Fatalf("registered handlers = %d, want 7", len(handlers))
 	}
-	for _, key := range []string{"moonshot", "deepseek", "siliconflow", "openrouter", "dddai", "fastai"} {
+	for _, key := range []string{"moonshot", "deepseek", "siliconflow", "openrouter", "dddai", "fastai", "morphapi"} {
 		if handlers[key] == nil {
 			t.Errorf("balanceHandlers[%q] is nil", key)
 		}

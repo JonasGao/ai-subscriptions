@@ -114,6 +114,7 @@ func usageHandlerKeys() []string {
 		"zhipu:coding-plan",
 		"dddai",
 		"fastai",
+		"morphapi",
 	}
 }
 
@@ -146,6 +147,7 @@ func UsageHandlers(clients ...HTTPDoer) map[string]UsageHandler {
 		"zhipu:coding-plan":   &zhipuUsageHandler{client: client},
 		"dddai":               &dddaiUsageHandler{client: client},
 		"fastai":              &fastaiUsageHandler{client: client},
+		"morphapi":            &morphapiUsageHandler{client: client},
 	}
 }
 
@@ -160,6 +162,7 @@ func balanceHandlerKeys() map[string]struct{} {
 		"openrouter":  {},
 		"dddai":       {},
 		"fastai":      {},
+		"morphapi":    {},
 	}
 }
 

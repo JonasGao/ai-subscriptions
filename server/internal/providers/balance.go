@@ -48,6 +48,7 @@ func BalanceHandlers(clients ...HTTPDoer) map[string]BalanceHandler {
 		"openrouter":  &openRouterBalanceHandler{client: client},
 		"dddai":       &dddaiBalanceHandler{client: client},
 		"fastai":      &fastaiBalanceHandler{client: client},
+		"morphapi":    &morphapiBalanceHandler{client: client},
 	}
 }
 

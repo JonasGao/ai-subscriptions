@@ -131,7 +131,7 @@ func TestDefaultProvidersModelsAPIURLPlanLevel(t *testing.T) {
 }
 
 func TestModelsQueryCoverage(t *testing.T) {
-	t.Run("exactly the 10 query-plumbed providers are models-capable", func(t *testing.T) {
+	t.Run("exactly the 12 query-plumbed providers are models-capable", func(t *testing.T) {
 		capable := []string{}
 		for _, provider := range DefaultProviders() {
 			if SupportsModelsQuery(provider) {
@@ -140,7 +140,7 @@ func TestModelsQueryCoverage(t *testing.T) {
 		}
 		sort.Strings(capable)
 
-		want := []string{"github", "alibaba", "moonshot", "deepseek", "zhipu", "siliconflow", "openrouter", "fangzhou", "opencode", "dddai", "fastai"}
+		want := []string{"github", "alibaba", "moonshot", "deepseek", "zhipu", "siliconflow", "openrouter", "fangzhou", "opencode", "dddai", "fastai", "morphapi"}
 		sort.Strings(want)
 		assertStrings(t, capable, want)
 	})
