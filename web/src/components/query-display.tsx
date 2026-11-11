@@ -165,6 +165,21 @@ const UsageWindowRow: Component<{ label: string; window: UsageWindow }> = (
 };
 
 /**
+ * UsageWarnings renders the provider's free-form额度 metadata lines (plan
+ * name, currency, cumulative spend, …). The field is declared in UsageResult
+ * and produced by relay-style handlers, but was previously never displayed.
+ */
+export const UsageWarnings: Component<{ warnings?: string[] }> = (props) => (
+  <Show when={props.warnings?.length}>
+    <ul class="usage-warnings">
+      <For each={props.warnings}>
+        {(warning) => <li class="usage-warning">{warning}</li>}
+      </For>
+    </ul>
+  </Show>
+);
+
+/**
  * UsageWindows renders the non-null usage buckets with their consumption
  * ratio and normal/warning/danger progress tier. Reset-time urgency coloring
  * belongs to the countdown ticket (#27/#40).

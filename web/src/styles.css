@@ -1023,6 +1023,21 @@ body {
   gap: 0.25rem;
 }
 
+.usage-warnings {
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+.usage-warning {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .usage-progress {
   width: 100%;
   height: 0.35rem;

@@ -113,6 +113,7 @@ func usageHandlerKeys() []string {
 		"opencode:go",
 		"zhipu:coding-plan",
 		"dddai",
+		"fastai",
 	}
 }
 
@@ -144,6 +145,7 @@ func UsageHandlers(clients ...HTTPDoer) map[string]UsageHandler {
 		"opencode:go":         &opencodeUsageHandler{client: client},
 		"zhipu:coding-plan":   &zhipuUsageHandler{client: client},
 		"dddai":               &dddaiUsageHandler{client: client},
+		"fastai":              &fastaiUsageHandler{client: client},
 	}
 }
 
@@ -157,6 +159,7 @@ func balanceHandlerKeys() map[string]struct{} {
 		"siliconflow": {},
 		"openrouter":  {},
 		"dddai":       {},
+		"fastai":      {},
 	}
 }
 

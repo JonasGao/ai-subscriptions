@@ -1,0 +1,5 @@
+.husky/_
+
+# Byte-alignment test fixtures: the exact compact JSON bytes are the assertion.
+server/internal/providers/testdata/old_stack_providers.json
+server/internal/httpapi/testdata/old_stack_providers_enriched.json

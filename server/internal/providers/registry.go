@@ -285,6 +285,18 @@ func DefaultProviders() []Provider {
 			},
 		},
 		{
+			ID:            "fastai",
+			Name:          "FastAI",
+			Description:   "AI API 中转服务",
+			Website:       "https://www.fastaitoken.com",
+			BalanceAPIURL: "https://www.fastaitoken.com/v1/usage",
+			UsageAPIURL:   "https://www.fastaitoken.com/v1/usage",
+			ModelsAPIURL:  "https://www.fastaitoken.com/v1/models",
+			CredentialFields: []CredentialField{
+				{Key: "apiKey", Label: "API Key", Type: "password"},
+			},
+		},
+		{
 			ID:          "other",
 			Name:        "其他",
 			Description: "自定义提供商",

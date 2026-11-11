@@ -12,7 +12,12 @@ import {
   resolveModelsRequireCredentials,
   resolveQueryKind,
 } from "../subscriptions/urls";
-import { BalanceInfoRows, oneTimeBalance, UsageWindows } from "./query-display";
+import {
+  BalanceInfoRows,
+  oneTimeBalance,
+  UsageWarnings,
+  UsageWindows,
+} from "./query-display";
 import { ModelListDialog } from "./ModelListDialog";
 import { ResetScheduleGrid } from "./ResetScheduleGrid";
 import { TimetableAxis } from "./TimetableAxis";
@@ -362,6 +367,9 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
           </Show>
           <Show when={query.usage()}>
             {(usage) => <UsageWindows usage={usage()} />}
+          </Show>
+          <Show when={query.usage()}>
+            {(usage) => <UsageWarnings warnings={usage().warnings} />}
           </Show>
           <Show when={query.error()}>
             <p class="subscription-card-query-error" role="alert">

@@ -5,7 +5,7 @@
 
 import { cleanup, render } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it } from "vitest";
-import { UsageWindows } from "./query-display";
+import { UsageWarnings, UsageWindows } from "./query-display";
 import type { UsageWindow } from "../subscriptions/types";
 
 function makeWindow(overrides: Partial<UsageWindow> = {}): UsageWindow {
@@ -87,5 +87,30 @@ describe("UsageWindows", () => {
     const fills = result.container.querySelectorAll(".usage-progress-fill");
     expect(fills[0].classList.contains("normal")).toBe(true);
     expect(fills[1].classList.contains("danger")).toBe(true);
+  });
+});
+
+// Relay providers (FastAI) surface plan name, currency and cumulative spend
+// through UsageResult.warnings. The field was previously declared but never
+// rendered, so this pins its visibility.
+describe("UsageWarnings", () => {
+  afterEach(cleanup);
+
+  it("renders each warning as a list item", () => {
+    const result = render(() => (
+      <UsageWarnings warnings={["钱包余额 · USD", "累计消耗: 10.02 USD"]} />
+    ));
+
+    const items = result.container.querySelectorAll(".usage-warning");
+    expect(items.length).toBe(2);
+    expect(items[0].textContent).toBe("钱包余额 · USD");
+    expect(items[1].textContent).toBe("累计消耗: 10.02 USD");
+  });
+
+  it("renders nothing when there are no warnings", () => {
+    for (const warnings of [undefined, [] as string[]]) {
+      const result = render(() => <UsageWarnings warnings={warnings} />);
+      expect(result.container.querySelector(".usage-warnings")).toBeNull();
+    }
   });
 });

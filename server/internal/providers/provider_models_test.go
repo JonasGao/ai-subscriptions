@@ -140,7 +140,7 @@ func TestModelsQueryCoverage(t *testing.T) {
 		}
 		sort.Strings(capable)
 
-		want := []string{"github", "alibaba", "moonshot", "deepseek", "zhipu", "siliconflow", "openrouter", "fangzhou", "opencode", "dddai"}
+		want := []string{"github", "alibaba", "moonshot", "deepseek", "zhipu", "siliconflow", "openrouter", "fangzhou", "opencode", "dddai", "fastai"}
 		sort.Strings(want)
 		assertStrings(t, capable, want)
 	})
