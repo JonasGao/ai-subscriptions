@@ -440,18 +440,19 @@ func FetchDDDaiBalance(ctx context.Context, client HTTPDoer, apiKey string) (Bal
 	if currency == "" {
 		currency = "USD"
 	}
-	planName, _ := data["planName"].(string)
-	if planName == "" {
-		planName = "余额"
-	}
 
+	amount := toFixed2(remaining)
 	return BalanceResult{
 		Provider:    "dddai",
 		IsAvailable: isAvailable,
 		BalanceInfos: []BalanceInfo{{
 			Currency:  currency,
-			Available: toFixed2(remaining),
-			Total:     &planName,
+			Available: amount,
+			// A relay wallet reports only its remaining quota, not a top-up
+			// total. Reflect that amount as 总额度 (the frontend renders this
+			// as a numeric balance) instead of the plan-name string, which
+			// formatBalance would silently coerce to 0.
+			Total: &amount,
 		}},
 	}, nil
 }

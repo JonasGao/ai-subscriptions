@@ -270,8 +270,8 @@ func TestDDDaiBalanceHandler(t *testing.T) {
 		if info.Available != "100.50" {
 			t.Errorf("available = %q, want 100.50", info.Available)
 		}
-		if info.Total == nil || *info.Total != "订阅套餐" {
-			t.Errorf("total = %v, want 订阅套餐", info.Total)
+		if info.Total == nil || *info.Total != "100.50" {
+			t.Errorf("total = %v, want 100.50 (the queried quota)", info.Total)
 		}
 	})
 
@@ -303,8 +303,8 @@ func TestDDDaiBalanceHandler(t *testing.T) {
 		if result.BalanceInfos[0].Currency != "USD" {
 			t.Errorf("currency = %q, want USD", result.BalanceInfos[0].Currency)
 		}
-		if result.BalanceInfos[0].Total == nil || *result.BalanceInfos[0].Total != "余额" {
-			t.Errorf("planName = %v, want 余额", result.BalanceInfos[0].Total)
+		if result.BalanceInfos[0].Total == nil || *result.BalanceInfos[0].Total != "10.00" {
+			t.Errorf("total = %v, want 10.00 (the queried quota)", result.BalanceInfos[0].Total)
 		}
 	})
 

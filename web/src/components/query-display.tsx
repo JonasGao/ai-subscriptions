@@ -12,6 +12,15 @@ import type {
 import { formatBalance, getProviderCurrency } from "../subscriptions/format";
 import { getProgressTier, getUsagePercent } from "../subscriptions/usage";
 
+/**
+ * Amount rows must hold numeric strings. formatBalance coerces a non-numeric
+ * value to 0, so a relay's plan-name string once put in `total` rendered a
+ * misleading "¥0.00" instead of nothing. Hide such rows rather than lying.
+ */
+function isNumericAmount(value: string | null): value is string {
+  return value !== null && Number.isFinite(parseFloat(value));
+}
+
 /** BalanceInfoRows renders the non-null amount lines of a balance result. */
 export const BalanceInfoRows: Component<{ balance: BalanceResult }> = (
   props
@@ -19,7 +28,7 @@ export const BalanceInfoRows: Component<{ balance: BalanceResult }> = (
   <For each={props.balance.balanceInfos}>
     {(info: BalanceInfo) => (
       <>
-        <Show when={info.total !== null}>
+        <Show when={isNumericAmount(info.total)}>
           <div class="balance-row">
             <dt>总额度</dt>
             <dd>{formatBalance(info.total!, info.currency)}</dd>

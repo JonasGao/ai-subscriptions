@@ -96,8 +96,8 @@ func TestMorphAPIQueryRoutes(t *testing.T) {
 		if info.Currency != "USD" || info.Available != "27.43" {
 			t.Errorf("info = (%q, %q), want (USD, 27.43)", info.Currency, info.Available)
 		}
-		if info.Total == nil || *info.Total != "订阅" {
-			t.Errorf("total = %v, want 订阅", info.Total)
+		if info.Total == nil || *info.Total != "27.43" {
+			t.Errorf("total = %v, want 27.43 (the queried quota)", info.Total)
 		}
 	})
 

@@ -176,7 +176,7 @@ func TestMorphAPIBalanceHandler(t *testing.T) {
 		if info.Currency != "USD" || info.Available != "27.43" {
 			t.Errorf("info = (%q, %q), want (USD, 27.43)", info.Currency, info.Available)
 		}
-		assertPtr(t, "total", info.Total, "订阅")
+		assertPtr(t, "total", info.Total, "27.43")
 	})
 
 	t.Run("is_active: false marks the account unavailable", func(t *testing.T) {
@@ -219,7 +219,7 @@ func TestMorphAPIBalanceHandler(t *testing.T) {
 		if result.BalanceInfos[0].Currency != "USD" {
 			t.Errorf("currency = %q, want USD", result.BalanceInfos[0].Currency)
 		}
-		assertPtr(t, "total", result.BalanceInfos[0].Total, "余额")
+		assertPtr(t, "total", result.BalanceInfos[0].Total, "3.00")
 	})
 
 	t.Run("API error surfaces status code", func(t *testing.T) {

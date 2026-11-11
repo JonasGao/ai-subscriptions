@@ -149,7 +149,7 @@ func TestFastAIBalanceHandler(t *testing.T) {
 		if info.Currency != "USD" || info.Available != "-0.02" {
 			t.Errorf("info = (%q, %q), want (USD, -0.02)", info.Currency, info.Available)
 		}
-		assertPtr(t, "total", info.Total, "钱包余额")
+		assertPtr(t, "total", info.Total, "-0.02")
 	})
 
 	t.Run("is_active: false marks the account unavailable", func(t *testing.T) {
@@ -177,7 +177,7 @@ func TestFastAIBalanceHandler(t *testing.T) {
 		if result.BalanceInfos[0].Currency != "USD" {
 			t.Errorf("currency = %q, want USD", result.BalanceInfos[0].Currency)
 		}
-		assertPtr(t, "total", result.BalanceInfos[0].Total, "余额")
+		assertPtr(t, "total", result.BalanceInfos[0].Total, "3.00")
 	})
 
 	t.Run("API error surfaces status code", func(t *testing.T) {

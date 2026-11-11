@@ -5,8 +5,8 @@
 
 import { cleanup, render } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it } from "vitest";
-import { UsageWarnings, UsageWindows } from "./query-display";
-import type { UsageWindow } from "../subscriptions/types";
+import { BalanceInfoRows, UsageWarnings, UsageWindows } from "./query-display";
+import type { BalanceInfo, UsageWindow } from "../subscriptions/types";
 
 function makeWindow(overrides: Partial<UsageWindow> = {}): UsageWindow {
   return {
@@ -87,6 +87,53 @@ describe("UsageWindows", () => {
     const fills = result.container.querySelectorAll(".usage-progress-fill");
     expect(fills[0].classList.contains("normal")).toBe(true);
     expect(fills[1].classList.contains("danger")).toBe(true);
+  });
+});
+
+function makeBalanceInfo(overrides: Partial<BalanceInfo> = {}): BalanceInfo {
+  return {
+    currency: "USD",
+    available: "12.35",
+    total: null,
+    toppedUp: null,
+    granted: null,
+    used: null,
+    frozen: null,
+    ...overrides,
+  };
+}
+
+// A relay plan-name string once landed in BalanceInfo.total. formatBalance
+// coerced it to 0, so 总额度 showed "¥0.00". Non-numeric totals are now hidden.
+describe("BalanceInfoRows", () => {
+  afterEach(cleanup);
+
+  it("renders a numeric total as a formatted amount", () => {
+    const result = render(() => (
+      <BalanceInfoRows
+        balance={{
+          provider: "morphapi",
+          isAvailable: true,
+          balanceInfos: [makeBalanceInfo({ total: "12.35" })],
+        }}
+      />
+    ));
+    expect(result.getByText("总额度")).toBeTruthy();
+    expect(result.getByText("$12.35")).toBeTruthy();
+  });
+
+  it("hides 总额度 when total is a non-numeric label instead of showing 0", () => {
+    const result = render(() => (
+      <BalanceInfoRows
+        balance={{
+          provider: "morphapi",
+          isAvailable: true,
+          balanceInfos: [makeBalanceInfo({ total: "订阅" })],
+        }}
+      />
+    ));
+    expect(result.queryByText("总额度")).toBeNull();
+    expect(result.container.textContent).not.toContain("$0.00");
   });
 });
 

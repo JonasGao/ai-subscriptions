@@ -132,14 +132,17 @@ func (h *morphapiBalanceHandler) FetchBalance(ctx context.Context, credentials m
 	if err != nil {
 		return BalanceResult{}, err
 	}
-	planName := q.planName
+	amount := toFixed2(q.remaining)
 	return BalanceResult{
 		Provider:    "morphapi",
 		IsAvailable: q.isValid,
 		BalanceInfos: []BalanceInfo{{
 			Currency:  q.unit,
-			Available: toFixed2(q.remaining),
-			Total:     &planName,
+			Available: amount,
+			// A relay wallet reports only its remaining quota, not a top-up
+			// total. Reflect that amount as 总额度 (a numeric balance) instead
+			// of the plan-name string, which formatBalance coerces to 0.
+			Total: &amount,
 		}},
 	}, nil
 }

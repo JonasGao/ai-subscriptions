@@ -95,8 +95,8 @@ func TestFastAIQueryRoutes(t *testing.T) {
 		if info.Currency != "USD" || info.Available != "12.35" {
 			t.Errorf("info = (%q, %q), want (USD, 12.35)", info.Currency, info.Available)
 		}
-		if info.Total == nil || *info.Total != "订阅" {
-			t.Errorf("total = %v, want 订阅", info.Total)
+		if info.Total == nil || *info.Total != "12.35" {
+			t.Errorf("total = %v, want 12.35 (the queried quota)", info.Total)
 		}
 	})
 
