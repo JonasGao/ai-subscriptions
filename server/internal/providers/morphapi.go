@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// --- MorphAPI (https://www.aidjapi.top) 余额查询 ---
+// --- MorphAPI (https://www.aidjapi.top) 额度查询 ---
 //
 // MorphAPI is an OpenAI-compatible (new-api / one-api class) relay panel. Its
 // ccswitch usageScript contract is:
@@ -17,25 +17,24 @@ import (
 //	GET {baseUrl}/v1/usage        (baseUrl has trailing "/" and "/v1" stripped)
 //	Authorization: Bearer <API_KEY>
 //
-// The response is a wallet balance (remaining / balance / unit / is_active),
-// NOT a windowed usage quota, so it serves one-time subscriptions only:
-// recurring subscriptions have no额度 query endpoint for this provider. The
-//额度 extractor (?? chain) is shared with FastAI in coalescing.go.
+// The额度 payload is normalized by the shared ccswitch extractor in
+// coalescing.go (remaining ?? quota.remaining ?? balance, etc.). See that file
+// for the `??` semantics.
 //
 // A live probe documented in the handoff showed the panel's non-2xx body is a
 // JSON object rather than plain text, e.g.
 //
 //	HTTP 403 {"code":"GROUP_DELETED","message":"API Key 所属分组已删除"}
 //
-// so decodeRelayError surfaces that message instead of a bare status code.
+// so decodedRelayError surfaces that message instead of a bare status code.
 // The backend guard chain maps a handler error to a 502 with this text.
 
-const morphapiBalanceURL = "https://www.aidjapi.top/v1/usage"
+const morphapiUsageURL = "https://www.aidjapi.top/v1/usage"
 
-// fetchMorphAPIQuota issues the余额 request and normalizes it with the shared
-// ccswitch extractor. It is the single fetch seam for the provider.
+// fetchMorphAPIQuota issues the额度 request shared by both MorphAPI handlers so
+// the recurring (usage) and one-time (balance) queries cannot drift apart.
 func fetchMorphAPIQuota(ctx context.Context, client HTTPDoer, apiKey string) (relayQuota, error) {
-	response, err := doGET(ctx, client, morphapiBalanceURL, map[string]string{
+	response, err := doGET(ctx, client, morphapiUsageURL, map[string]string{
 		"Authorization": "Bearer " + apiKey,
 	})
 	if err != nil {
@@ -78,6 +77,52 @@ func decodeRelayError(response *http.Response) string {
 	return strings.TrimSpace(strings.TrimPrefix(response.Status, fmt.Sprintf("%d ", response.StatusCode)))
 }
 
+// morphapiWarnings carries额度 metadata that UsageWindow has no slot for,
+// following the dddai/fastai precedent of surfacing plan labels as warnings.
+func morphapiWarnings(q relayQuota) []string {
+	warnings := []string{q.planName + " · " + q.unit}
+	if !q.isValid {
+		warnings = append(warnings, "账户状态: 无效")
+	}
+	return warnings
+}
+
+// --- recurring subscriptions (usage query) ---
+
+type morphapiUsageHandler struct{ client HTTPDoer }
+
+func (h *morphapiUsageHandler) FetchUsage(ctx context.Context, credentials map[string]string) (UsageResult, error) {
+	q, err := fetchMorphAPIQuota(ctx, h.client, credentials["apiKey"])
+	if err != nil {
+		return UsageResult{}, err
+	}
+
+	// A relay wallet has no 5-hour/weekly/monthly window. As with dddai/fastai,
+	// the额度 rides in a single Monthly window: limit and remaining are the
+	// available额度, used is zero. The panel does not expose per-window spend,
+	// so fabricating a used value would be misleading.
+	amount := toFixed2(q.remaining)
+	zero := "0.00"
+	return UsageResult{
+		Provider: "morphapi",
+		Monthly: &UsageWindow{
+			Limit:     amount,
+			Used:      zero,
+			Remaining: amount,
+		},
+		Warnings: morphapiWarnings(q),
+	}, nil
+}
+
+func (h *morphapiUsageHandler) TestConnection(ctx context.Context, credentials map[string]string) (ConnectionResult, error) {
+	return testConnection(ctx, h.client, morphapiUsageURL, credentials["apiKey"])
+}
+
+// FetchMorphAPIUsage is the exported entry point for the recurring path.
+func FetchMorphAPIUsage(ctx context.Context, client HTTPDoer, apiKey string) (UsageResult, error) {
+	return (&morphapiUsageHandler{client: client}).FetchUsage(ctx, map[string]string{"apiKey": apiKey})
+}
+
 // --- one-time subscriptions (balance query) ---
 
 type morphapiBalanceHandler struct{ client HTTPDoer }
@@ -100,7 +145,7 @@ func (h *morphapiBalanceHandler) FetchBalance(ctx context.Context, credentials m
 }
 
 func (h *morphapiBalanceHandler) TestConnection(ctx context.Context, credentials map[string]string) (ConnectionResult, error) {
-	return testConnection(ctx, h.client, morphapiBalanceURL, credentials["apiKey"])
+	return testConnection(ctx, h.client, morphapiUsageURL, credentials["apiKey"])
 }
 
 // FetchMorphAPIBalance is the exported entry point for the one-time path.
@@ -108,4 +153,7 @@ func FetchMorphAPIBalance(ctx context.Context, client HTTPDoer, apiKey string) (
 	return (&morphapiBalanceHandler{client: client}).FetchBalance(ctx, map[string]string{"apiKey": apiKey})
 }
 
-var _ BalanceHandler = (*morphapiBalanceHandler)(nil)
+var (
+	_ UsageHandler   = (*morphapiUsageHandler)(nil)
+	_ BalanceHandler = (*morphapiBalanceHandler)(nil)
+)

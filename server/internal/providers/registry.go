@@ -290,6 +290,7 @@ func DefaultProviders() []Provider {
 			Description:   "AI API 中转服务",
 			Website:       "https://www.fastaitoken.com",
 			BalanceAPIURL: "https://www.fastaitoken.com/v1/usage",
+			UsageAPIURL:   "https://www.fastaitoken.com/v1/usage",
 			ModelsAPIURL:  "https://www.fastaitoken.com/v1/models",
 			CredentialFields: []CredentialField{
 				{Key: "apiKey", Label: "API Key", Type: "password"},
@@ -301,6 +302,7 @@ func DefaultProviders() []Provider {
 			Description:   "AI API 中转服务",
 			Website:       "https://www.aidjapi.top",
 			BalanceAPIURL: "https://www.aidjapi.top/v1/usage",
+			UsageAPIURL:   "https://www.aidjapi.top/v1/usage",
 			ModelsAPIURL:  "https://www.aidjapi.top/v1/models",
 			CredentialFields: []CredentialField{
 				{Key: "apiKey", Label: "API Key", Type: "password"},
