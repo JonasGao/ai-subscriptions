@@ -417,6 +417,7 @@ export const ProxySubscriptionForm: Component<ProxySubscriptionFormProps> = (
 
 const ProxySubscriptionCard: Component<{
   subscription: ProxySubscription;
+  index: number;
   tags: ProxySubscriptionTag[];
   onEdit: () => void;
   onDelete: () => void;
@@ -426,61 +427,103 @@ const ProxySubscriptionCard: Component<{
     (props.subscription.tagIds ?? [])
       .map((id) => props.tags.find((tag) => tag.id === id))
       .filter((tag): tag is ProxySubscriptionTag => !!tag);
+  const hasDetails = () =>
+    Boolean(props.subscription.website) || Boolean(props.subscription.notes);
 
   return (
-    <article class="proxy-card">
-      <header>
+    <article class="proxy-row" role="row">
+      <div class="proxy-cell proxy-cell-num" role="cell">
+        <span class="proxy-row-num">{props.index}</span>
+      </div>
+
+      <div class="proxy-cell proxy-cell-service" role="cell">
         <h3>{props.subscription.name}</h3>
+        <Show when={subscriptionTags().length > 0}>
+          <p class="proxy-service-meta">
+            <For each={subscriptionTags()}>
+              {(tag) => <span class="proxy-tag">{tag.name}</span>}
+            </For>
+          </p>
+        </Show>
+      </div>
+
+      <div class="proxy-cell proxy-cell-amount" role="cell">
+        <span class="proxy-cell-label">月价</span>
+        <span class="proxy-cell-money">
+          {money(props.subscription.monthlyPrice)}
+        </span>
+      </div>
+
+      <div class="proxy-cell proxy-cell-expiry" role="cell">
+        <span class="proxy-cell-label">到期日期</span>
+        <span class="proxy-cell-mono">
+          {props.subscription.expirationDate ?? "无限期"}
+        </span>
+        <Show when={notice().kind === "remaining"}>
+          <span class="proxy-notice">剩余 {notice().days} 天</span>
+        </Show>
+        <Show when={notice().kind === "today"}>
+          <span class="proxy-notice proxy-notice-imminent">今天到期</span>
+        </Show>
+        <Show when={notice().kind === "overdue"}>
+          <span class="proxy-notice proxy-notice-overdue">
+            已逾期 {notice().days} 天
+          </span>
+        </Show>
+      </div>
+
+      <div class="proxy-cell proxy-cell-status" role="cell">
         <span class={`proxy-status proxy-status-${props.subscription.status}`}>
           {statusLabels[props.subscription.status]}
         </span>
-      </header>
-      <Show when={subscriptionTags().length > 0}>
-        <ul class="proxy-tag-list">
-          <For each={subscriptionTags()}>
-            {(tag) => <li class="proxy-tag">{tag.name}</li>}
-          </For>
-        </ul>
-      </Show>
-      <dl class="proxy-facts">
-        <dt>单月价格</dt>
-        <dd>{money(props.subscription.monthlyPrice)}</dd>
-        <dt>到期日期</dt>
-        <dd>
-          {props.subscription.expirationDate
-            ? formatDate(props.subscription.expirationDate)
-            : "无限期"}
-        </dd>
-      </dl>
-      <Show when={notice().kind === "remaining"}>
-        <p class="proxy-notice">剩余 {notice().days} 天</p>
-      </Show>
-      <Show when={notice().kind === "today"}>
-        <p class="proxy-notice">今天到期</p>
-      </Show>
-      <Show when={notice().kind === "overdue"}>
-        <p class="proxy-notice proxy-notice-overdue">
-          已逾期 {notice().days} 天
-        </p>
-      </Show>
-      <Show when={props.subscription.website}>
-        {(site) => (
-          <a href={site()} target="_blank" rel="noreferrer" class="proxy-link">
-            {site()}
-          </a>
-        )}
-      </Show>
-      <Show when={props.subscription.notes}>
-        {(value) => <p class="proxy-notes">{value()}</p>}
-      </Show>
-      <footer>
-        <button type="button" title="编辑代理订阅" onClick={props.onEdit}>
+      </div>
+
+      <div class="proxy-cell proxy-cell-actions" role="cell">
+        <button
+          type="button"
+          class="ghost"
+          title="编辑代理订阅"
+          onClick={props.onEdit}
+        >
           编辑
         </button>
-        <button type="button" title="删除代理订阅" onClick={props.onDelete}>
+        <button
+          type="button"
+          class="danger"
+          title="删除代理订阅"
+          onClick={props.onDelete}
+        >
           删除
         </button>
-      </footer>
+      </div>
+
+      <Show when={hasDetails()}>
+        <div class="proxy-row-details" role="cell">
+          <Show when={props.subscription.website}>
+            {(site) => (
+              <span class="proxy-detail-line">
+                <span class="proxy-detail-key">网址</span>
+                <a
+                  href={site()}
+                  target="_blank"
+                  rel="noreferrer"
+                  class="proxy-link"
+                >
+                  {site()}
+                </a>
+              </span>
+            )}
+          </Show>
+          <Show when={props.subscription.notes}>
+            {(value) => (
+              <span class="proxy-detail-line">
+                <span class="proxy-detail-key">备注</span>
+                <span class="proxy-notes">{value()}</span>
+              </span>
+            )}
+          </Show>
+        </div>
+      </Show>
     </article>
   );
 };
@@ -533,6 +576,17 @@ export const ProxySubscriptionTab: Component<ProxySubscriptionTabProps> = (
     filtered().reduce((sum, item) => sum + item.monthlyPrice, 0)
   );
 
+  const inUseCount = createMemo(
+    () => filtered().filter((item) => item.status === "in-use").length
+  );
+  const expiringCount = createMemo(
+    () =>
+      filtered().filter((item) => {
+        const kind = getProxyDateNotice(item).kind;
+        return kind === "today" || kind === "remaining";
+      }).length
+  );
+
   const submit = async (data: ProxySubscriptionFormData) => {
     const current = editing();
     return current ? props.onUpdate(current.id, data) : props.onCreate(data);
@@ -548,32 +602,48 @@ export const ProxySubscriptionTab: Component<ProxySubscriptionTabProps> = (
   return (
     <section class="proxy-tab">
       <header class="proxy-tab-header">
-        <div>
-          <h2>代理订阅</h2>
-          <p class="tagline">
-            共 {filtered().length} 条 · 月价合计 {money(totalPrice())}
-          </p>
-        </div>
-        <div class="proxy-tab-actions">
-          <ProxyTagManagerDialog
-            tags={props.tags}
-            subscriptions={props.subscriptions}
-            onRename={props.onRenameTag}
-            onDelete={props.onDeleteTag}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-          >
-            添加代理订阅
-          </button>
+        <div class="proxy-heading">
+          <h1>代理订阅台账</h1>
+          <div class="proxy-tab-actions">
+            <ProxyTagManagerDialog
+              tags={props.tags}
+              subscriptions={props.subscriptions}
+              onRename={props.onRenameTag}
+              onDelete={props.onDeleteTag}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+            >
+              添加代理订阅
+            </button>
+          </div>
         </div>
       </header>
 
-      <div class="proxy-filters">
+      <section class="proxy-stats" aria-label="代理订阅统计">
+        <div class="proxy-stat">
+          <h2>记录条数</h2>
+          <p class="proxy-stat-value">{filtered().length}</p>
+        </div>
+        <div class="proxy-stat">
+          <h2>月价合计</h2>
+          <p class="proxy-stat-value">{money(totalPrice())}</p>
+        </div>
+        <div class="proxy-stat">
+          <h2>正在使用</h2>
+          <p class="proxy-stat-value">{inUseCount()}</p>
+        </div>
+        <div class="proxy-stat">
+          <h2>即将到期</h2>
+          <p class="proxy-stat-value">{expiringCount()}</p>
+        </div>
+      </section>
+
+      <section class="proxy-filters" aria-label="筛选">
         <label class="proxy-field" for="proxy-status-filter">
           <span>状态</span>
           <select
@@ -604,7 +674,7 @@ export const ProxySubscriptionTab: Component<ProxySubscriptionTabProps> = (
             <option value="name">名称（A-Z）</option>
           </select>
         </label>
-      </div>
+      </section>
 
       <Show when={props.error}>
         <p class="auth-error" role="alert">
@@ -617,11 +687,32 @@ export const ProxySubscriptionTab: Component<ProxySubscriptionTabProps> = (
           when={filtered().length > 0}
           fallback={<p class="proxy-empty">暂无代理订阅</p>}
         >
-          <div class="proxy-grid-cards">
+          <section class="proxy-list" role="table" aria-label="代理订阅台账">
+            <div class="proxy-list-header" role="row">
+              <span class="proxy-hcell proxy-h-num" role="columnheader">
+                序号
+              </span>
+              <span class="proxy-hcell" role="columnheader">
+                服务 / 标签
+              </span>
+              <span class="proxy-hcell proxy-h-amt" role="columnheader">
+                月价
+              </span>
+              <span class="proxy-hcell" role="columnheader">
+                到期 / 提醒
+              </span>
+              <span class="proxy-hcell" role="columnheader">
+                状态
+              </span>
+              <span class="proxy-hcell proxy-h-actions" role="columnheader">
+                操作
+              </span>
+            </div>
             <For each={filtered()}>
-              {(subscription) => (
+              {(subscription, index) => (
                 <ProxySubscriptionCard
                   subscription={subscription}
+                  index={index() + 1}
                   tags={props.tags}
                   onEdit={() => {
                     setEditing(subscription);
@@ -631,7 +722,7 @@ export const ProxySubscriptionTab: Component<ProxySubscriptionTabProps> = (
                 />
               )}
             </For>
-          </div>
+          </section>
         </Show>
       </Show>
 
