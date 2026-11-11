@@ -9,57 +9,12 @@ import (
 )
 
 // TestFastAIQueryRoutes closes the end-to-end wiring for the FastAI provider:
-// a recurring subscription dispatches to the usage handler and a one-time
-// subscription to the balance handler, both against GET /v1/usage with the
-// stored apiKey decrypted into a Bearer header.
-const fastaiProbeBody = `{"balance":12.345,"isValid":true,"mode":"unrestricted","planName":"订阅","remaining":12.345,"unit":"USD","usage":{"total":{"actual_cost":3.2}}}`
+// /v1/usage is a wallet-balance endpoint serving one-time subscriptions only,
+// so the balance route dispatches to the handler while the usage route for a
+// recurring subscription is rejected.
+const fastaiProbeBody = `{"balance":12.345,"isValid":true,"mode":"unrestricted","planName":"订阅","remaining":12.345,"unit":"USD"}`
 
 func TestFastAIQueryRoutes(t *testing.T) {
-	t.Run("recurring subscription queries usage", func(t *testing.T) {
-		f := newSubscriptionQueryFixture(t, fastaiProbeBody)
-		id := seedOneTimeSubscription(t, f, store.SubscriptionInput{
-			Provider:         "fastai",
-			SubscriptionType: "recurring",
-			BillingCycle:     "monthly",
-			Credentials:      f.encrypt(t, map[string]string{"apiKey": "sk-fastai"}),
-		})
-
-		rec := request(t, f.srv, http.MethodGet, "/api/subscriptions/"+id+"/usage", "", f.cookie)
-		if rec.Code != http.StatusOK {
-			t.Fatalf("status = %d, want 200 (body %s)", rec.Code, rec.Body.String())
-		}
-
-		var payload map[string]any
-		if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		if payload["provider"] != "fastai" {
-			t.Errorf("provider = %v, want fastai", payload["provider"])
-		}
-		monthly, ok := payload["monthly"].(map[string]any)
-		if !ok {
-			t.Fatalf("monthly = %v, want a window", payload["monthly"])
-		}
-		if monthly["remaining"] != "12.35" || monthly["limit"] != "12.35" || monthly["used"] != "0.00" {
-			t.Errorf("monthly = %v, want remaining/limit 12.35 and used 0.00", monthly)
-		}
-		warnings, _ := payload["warnings"].([]any)
-		if len(warnings) == 0 {
-			t.Errorf("warnings = %v, want额度 metadata lines", payload["warnings"])
-		}
-
-		if len(f.client.requests) != 1 {
-			t.Fatalf("outbound requests = %d, want 1", len(f.client.requests))
-		}
-		req := f.client.requests[0]
-		if got := req.URL.String(); got != "https://www.fastaitoken.com/v1/usage" {
-			t.Errorf("url = %q, want FastAI /v1/usage", got)
-		}
-		if got := req.Header.Get("Authorization"); got != "Bearer sk-fastai" {
-			t.Errorf("Authorization = %q, want Bearer sk-fastai", got)
-		}
-	})
-
 	t.Run("one-time subscription queries balance", func(t *testing.T) {
 		f := newSubscriptionQueryFixture(t, fastaiProbeBody)
 		id := seedOneTimeSubscription(t, f, store.SubscriptionInput{
@@ -98,9 +53,38 @@ func TestFastAIQueryRoutes(t *testing.T) {
 		if info.Total == nil || *info.Total != "订阅" {
 			t.Errorf("total = %v, want 订阅", info.Total)
 		}
+
+		if len(f.client.requests) != 1 {
+			t.Fatalf("outbound requests = %d, want 1", len(f.client.requests))
+		}
+		req := f.client.requests[0]
+		if got := req.URL.String(); got != "https://www.fastaitoken.com/v1/usage" {
+			t.Errorf("url = %q, want FastAI /v1/usage", got)
+		}
+		if got := req.Header.Get("Authorization"); got != "Bearer sk-fastai" {
+			t.Errorf("Authorization = %q, want Bearer sk-fastai", got)
+		}
 	})
 
-	t.Run("test-connection dispatches to the FastAI usage handler", func(t *testing.T) {
+	t.Run("recurring subscription has no usage endpoint", func(t *testing.T) {
+		f := newSubscriptionQueryFixture(t, fastaiProbeBody)
+		id := seedOneTimeSubscription(t, f, store.SubscriptionInput{
+			Provider:         "fastai",
+			SubscriptionType: "recurring",
+			BillingCycle:     "monthly",
+			Credentials:      f.encrypt(t, map[string]string{"apiKey": "sk-fastai"}),
+		})
+
+		rec := request(t, f.srv, http.MethodGet, "/api/subscriptions/"+id+"/usage", "", f.cookie)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status = %d, want 400 (body %s)", rec.Code, rec.Body.String())
+		}
+		if len(f.client.requests) != 0 {
+			t.Errorf("outbound requests = %d, want 0 (no usage endpoint)", len(f.client.requests))
+		}
+	})
+
+	t.Run("test-connection dispatches to the FastAI balance handler", func(t *testing.T) {
 		f := newSubscriptionQueryFixture(t, fastaiProbeBody)
 		rec := request(t, f.srv, http.MethodPost, "/api/test-connection",
 			`{"provider":"fastai","credentials":{"apiKey":"sk-fastai"}}`, f.cookie)

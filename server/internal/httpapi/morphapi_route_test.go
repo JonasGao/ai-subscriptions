@@ -10,57 +10,12 @@ import (
 )
 
 // TestMorphAPIQueryRoutes closes the end-to-end wiring for the MorphAPI
-// provider: a recurring subscription dispatches to the usage handler and a
-// one-time subscription to the balance handler, both against GET /v1/usage
-// with the stored apiKey decrypted into a Bearer header.
+// provider: /v1/usage is a wallet-balance endpoint serving one-time
+// subscriptions only, so the balance route dispatches to the handler while the
+// usage route for a recurring subscription is rejected.
 const morphapiProbeBody = `{"remaining":27.431972,"unit":"USD","is_active":true,"isValid":true,"planName":"订阅"}`
 
 func TestMorphAPIQueryRoutes(t *testing.T) {
-	t.Run("recurring subscription queries usage", func(t *testing.T) {
-		f := newSubscriptionQueryFixture(t, morphapiProbeBody)
-		id := seedOneTimeSubscription(t, f, store.SubscriptionInput{
-			Provider:         "morphapi",
-			SubscriptionType: "recurring",
-			BillingCycle:     "monthly",
-			Credentials:      f.encrypt(t, map[string]string{"apiKey": "sk-morphapi"}),
-		})
-
-		rec := request(t, f.srv, http.MethodGet, "/api/subscriptions/"+id+"/usage", "", f.cookie)
-		if rec.Code != http.StatusOK {
-			t.Fatalf("status = %d, want 200 (body %s)", rec.Code, rec.Body.String())
-		}
-
-		var payload map[string]any
-		if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		if payload["provider"] != "morphapi" {
-			t.Errorf("provider = %v, want morphapi", payload["provider"])
-		}
-		monthly, ok := payload["monthly"].(map[string]any)
-		if !ok {
-			t.Fatalf("monthly = %v, want a window", payload["monthly"])
-		}
-		if monthly["remaining"] != "27.43" || monthly["limit"] != "27.43" || monthly["used"] != "0.00" {
-			t.Errorf("monthly = %v, want remaining/limit 27.43 and used 0.00", monthly)
-		}
-		warnings, _ := payload["warnings"].([]any)
-		if len(warnings) == 0 {
-			t.Errorf("warnings = %v, want额度 metadata lines", payload["warnings"])
-		}
-
-		if len(f.client.requests) != 1 {
-			t.Fatalf("outbound requests = %d, want 1", len(f.client.requests))
-		}
-		req := f.client.requests[0]
-		if got := req.URL.String(); got != "https://www.aidjapi.top/v1/usage" {
-			t.Errorf("url = %q, want MorphAPI /v1/usage", got)
-		}
-		if got := req.Header.Get("Authorization"); got != "Bearer sk-morphapi" {
-			t.Errorf("Authorization = %q, want Bearer sk-morphapi", got)
-		}
-	})
-
 	t.Run("one-time subscription queries balance", func(t *testing.T) {
 		f := newSubscriptionQueryFixture(t, morphapiProbeBody)
 		id := seedOneTimeSubscription(t, f, store.SubscriptionInput{
@@ -99,9 +54,38 @@ func TestMorphAPIQueryRoutes(t *testing.T) {
 		if info.Total == nil || *info.Total != "订阅" {
 			t.Errorf("total = %v, want 订阅", info.Total)
 		}
+
+		if len(f.client.requests) != 1 {
+			t.Fatalf("outbound requests = %d, want 1", len(f.client.requests))
+		}
+		req := f.client.requests[0]
+		if got := req.URL.String(); got != "https://www.aidjapi.top/v1/usage" {
+			t.Errorf("url = %q, want MorphAPI /v1/usage", got)
+		}
+		if got := req.Header.Get("Authorization"); got != "Bearer sk-morphapi" {
+			t.Errorf("Authorization = %q, want Bearer sk-morphapi", got)
+		}
 	})
 
-	t.Run("test-connection dispatches to the MorphAPI usage handler", func(t *testing.T) {
+	t.Run("recurring subscription has no usage endpoint", func(t *testing.T) {
+		f := newSubscriptionQueryFixture(t, morphapiProbeBody)
+		id := seedOneTimeSubscription(t, f, store.SubscriptionInput{
+			Provider:         "morphapi",
+			SubscriptionType: "recurring",
+			BillingCycle:     "monthly",
+			Credentials:      f.encrypt(t, map[string]string{"apiKey": "sk-morphapi"}),
+		})
+
+		rec := request(t, f.srv, http.MethodGet, "/api/subscriptions/"+id+"/usage", "", f.cookie)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status = %d, want 400 (body %s)", rec.Code, rec.Body.String())
+		}
+		if len(f.client.requests) != 0 {
+			t.Errorf("outbound requests = %d, want 0 (no usage endpoint)", len(f.client.requests))
+		}
+	})
+
+	t.Run("test-connection dispatches to the MorphAPI balance handler", func(t *testing.T) {
 		f := newSubscriptionQueryFixture(t, morphapiProbeBody)
 		rec := request(t, f.srv, http.MethodPost, "/api/test-connection",
 			`{"provider":"morphapi","credentials":{"apiKey":"sk-morphapi"}}`, f.cookie)
@@ -126,12 +110,11 @@ func TestMorphAPIQueryRoutes(t *testing.T) {
 		f.client.body = `{"code":"GROUP_DELETED","message":"API Key 所属分组已删除"}`
 		id := seedOneTimeSubscription(t, f, store.SubscriptionInput{
 			Provider:         "morphapi",
-			SubscriptionType: "recurring",
-			BillingCycle:     "monthly",
+			SubscriptionType: "one-time",
 			Credentials:      f.encrypt(t, map[string]string{"apiKey": "dead-key"}),
 		})
 
-		rec := request(t, f.srv, http.MethodGet, "/api/subscriptions/"+id+"/usage", "", f.cookie)
+		rec := request(t, f.srv, http.MethodGet, "/api/subscriptions/"+id+"/balance", "", f.cookie)
 		if rec.Code != http.StatusBadGateway {
 			t.Fatalf("status = %d, want 502 (body %s)", rec.Code, rec.Body.String())
 		}

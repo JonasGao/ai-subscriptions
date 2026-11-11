@@ -14,8 +14,8 @@ package providers
 // explicitly invalid account) and `remaining: 0` (an exhausted wallet).
 //
 // This is the shared parse seam for relay providers that use this contract
-// (MorphAPI). FastAI keeps its own parseFastAIQuota because it additionally
-// reads the panel-specific `mode` and `usage.total.actual_cost` fields.
+// (FastAI, MorphAPI). Both expose the panel balance as a one-time subscription
+//额度 query; neither has a windowed usage endpoint.
 
 // firstPresent mirrors JS `a ?? b ?? c` over decoded JSON values: a missing key
 // or JSON null falls through, any other value (including false / 0 / "") wins.

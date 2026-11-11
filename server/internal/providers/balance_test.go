@@ -349,8 +349,8 @@ func TestDDDaiBalanceHandler(t *testing.T) {
 	})
 }
 
-// Supplementary guard: the registry keys are the four providers the old stack
-// registered, and every one of them resolves to a working handler.
+// Supplementary guard: every registered balance key resolves to a working
+// handler.
 func TestBalanceHandlersRegistration(t *testing.T) {
 	handlers := BalanceHandlers(cannedHTTPDoer{body: `{"status":true,"data":{"available_balance":1}}`})
 	if len(handlers) != 7 {
