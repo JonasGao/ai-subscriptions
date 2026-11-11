@@ -46,5 +46,8 @@ pnpm-workspace.yaml
 !/server/internal/webui/dist/.gitkeep
 /server/.data/
 
-# Impeccable live 运行时状态（PRODUCT.md / DESIGN.md / config.json / design.json 仍入库）
+# Impeccable 运行时状态与过程存档（PRODUCT.md / DESIGN.md / config.json / design.json 仍入库）
 /.impeccable/live/
+# 一次性评审快照与迭代中的布局核验截图，修完即废，不作为产品资产入库
+/.impeccable/critique/
+/.impeccable/layout-*/
