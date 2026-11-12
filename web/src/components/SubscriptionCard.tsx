@@ -15,6 +15,7 @@ import {
 import {
   BalanceInfoRows,
   oneTimeBalance,
+  QuotaProgress,
   UsageWarnings,
   UsageWindows,
 } from "./query-display";
@@ -174,6 +175,11 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
       query.previousBalance()
     );
 
+  // 一次性订阅的额度进度：当前值取实时查询到的可用额度，没查过就用台账里
+  // 填写的余额；总值就是充值金额（price）。当前值超过总值按 100% 计。
+  const quotaCurrent = () => balanceLabel().amount;
+  const quotaTotal = () => props.subscription.price;
+
   const closeDelete = () => {
     setDeleteStep(1);
     setDeleteOpen(false);
@@ -258,6 +264,11 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
               )}
             </Show>
           </span>
+          <QuotaProgress
+            current={quotaCurrent()}
+            total={quotaTotal()}
+            label="额度余额"
+          />
         </Show>
       </div>
 

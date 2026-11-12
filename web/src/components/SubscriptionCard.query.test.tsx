@@ -11,12 +11,7 @@
 //  - Time is driven by a fake clock for the 60s cooldown instead of Date.now
 //    spying plus rerender.
 
-import {
-  cleanup,
-  fireEvent,
-  render,
-  waitFor,
-} from "@solidjs/testing-library";
+import { cleanup, fireEvent, render, waitFor } from "@solidjs/testing-library";
 import { createSignal } from "solid-js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SubscriptionCard } from "./SubscriptionCard";
@@ -126,29 +121,27 @@ function renderCard(sub: Subscription) {
 
 /** stubQueries answers the balance route with a fixed result and records calls. */
 function stubQueries(balance: BalanceResult = makeBalanceResult()) {
-  const mock = vi.fn(
-    async (input: RequestInfo | URL, _init?: RequestInit) => {
-      const url = String(input);
-      if (url.endsWith("/usage")) {
-        return {
-          ok: true,
-          json: async () => ({
-            provider: "fangzhou",
-            fiveHour: null,
-            weekly: null,
-            monthly: {
-              limit: "100",
-              used: "10",
-              remaining: "90",
-              resetTime: "2099-07-15T12:00:00Z",
-            },
-            subscription: null,
-          }),
-        };
-      }
-      return { ok: true, json: async () => balance };
+  const mock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+    const url = String(input);
+    if (url.endsWith("/usage")) {
+      return {
+        ok: true,
+        json: async () => ({
+          provider: "fangzhou",
+          fiveHour: null,
+          weekly: null,
+          monthly: {
+            limit: "100",
+            used: "10",
+            remaining: "90",
+            resetTime: "2099-07-15T12:00:00Z",
+          },
+          subscription: null,
+        }),
+      };
     }
-  );
+    return { ok: true, json: async () => balance };
+  });
   vi.stubGlobal("fetch", mock);
   return mock;
 }
@@ -167,7 +160,11 @@ describe("SubscriptionCard auto-query on mount", () => {
   it("triggers a balance query on mount for active + eligible one-time subscription", async () => {
     const mockFetch = stubQueries();
     const { onEdit } = renderCard(
-      makeSubscription({ status: "active", hasCredentials: true, provider: "moonshot" })
+      makeSubscription({
+        status: "active",
+        hasCredentials: true,
+        provider: "moonshot",
+      })
     );
 
     await waitFor(() => expect(mockFetch).toHaveBeenCalled());
@@ -223,7 +220,11 @@ describe("SubscriptionCard auto-query on mount", () => {
     ["cancelled", { status: "cancelled" as const }],
     [
       "provider/plan with no usageApiUrl or balanceApiUrl",
-      { status: "active" as const, hasCredentials: true, provider: "anthropic" },
+      {
+        status: "active" as const,
+        hasCredentials: true,
+        provider: "anthropic",
+      },
     ],
   ])("does NOT trigger a query for %s", async (_label, overrides) => {
     const mockFetch = stubQueries();
@@ -235,7 +236,11 @@ describe("SubscriptionCard auto-query on mount", () => {
   it("does NOT trigger a query and does NOT open edit dialog when hasCredentials is false", async () => {
     const mockFetch = stubQueries();
     const { onEdit } = renderCard(
-      makeSubscription({ status: "active", hasCredentials: false, provider: "moonshot" })
+      makeSubscription({
+        status: "active",
+        hasCredentials: false,
+        provider: "moonshot",
+      })
     );
 
     await settle();
@@ -246,7 +251,11 @@ describe("SubscriptionCard auto-query on mount", () => {
   it("triggers the query only once on mount", async () => {
     const mockFetch = stubQueries();
     const [subscription, setSubscription] = createSignal(
-      makeSubscription({ status: "active", hasCredentials: true, provider: "moonshot" })
+      makeSubscription({
+        status: "active",
+        hasCredentials: true,
+        provider: "moonshot",
+      })
     );
 
     render(() => (
@@ -280,7 +289,11 @@ describe("SubscriptionCard auto-query on mount", () => {
   it("does NOT issue a client PUT write-back after balance query", async () => {
     const mockFetch = stubQueries();
     renderCard(
-      makeSubscription({ status: "active", hasCredentials: true, provider: "moonshot" })
+      makeSubscription({
+        status: "active",
+        hasCredentials: true,
+        provider: "moonshot",
+      })
     );
 
     await waitFor(
@@ -310,7 +323,11 @@ describe("SubscriptionCard quota query cooldown", () => {
   async function renderWithCompletedAutoQuery() {
     const mockFetch = stubQueries();
     const rendered = renderCard(
-      makeSubscription({ status: "active", hasCredentials: true, provider: "moonshot" })
+      makeSubscription({
+        status: "active",
+        hasCredentials: true,
+        provider: "moonshot",
+      })
     );
     await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1), {
       timeout: 1000,
@@ -374,7 +391,11 @@ describe("SubscriptionCard quota query cooldown", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const { result } = renderCard(
-      makeSubscription({ status: "active", hasCredentials: true, provider: "moonshot" })
+      makeSubscription({
+        status: "active",
+        hasCredentials: true,
+        provider: "moonshot",
+      })
     );
 
     await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
@@ -499,6 +520,106 @@ describe("SubscriptionCard balance display", () => {
     await waitFor(() => expect(result.getByText("$42.50")).toBeTruthy(), {
       timeout: 1000,
     });
+  });
+});
+
+describe("SubscriptionCard one-time额度 progress bar", () => {
+  it("uses the filled balance against 充值金额 when no query fires", () => {
+    // No balance API for this provider: the bar reads the persisted balance.
+    const { result } = renderCard(
+      makeSubscription({
+        provider: "anthropic",
+        price: 200,
+        balance: 50,
+        hasCredentials: false,
+      })
+    );
+
+    const bar = result.getByRole("progressbar", { name: "额度余额" });
+    expect(bar.getAttribute("aria-valuenow")).toBe("25");
+  });
+
+  it("uses the queried current额度 instead of the stale filled balance", async () => {
+    stubQueries(
+      makeBalanceResult({
+        balanceInfos: [
+          {
+            currency: "CNY",
+            available: "30.00",
+            total: null,
+            toppedUp: null,
+            granted: null,
+            used: null,
+            frozen: null,
+          },
+        ],
+      })
+    );
+
+    const { result } = renderCard(
+      makeSubscription({ price: 100, balance: 90, balanceCurrency: "CNY" })
+    );
+
+    await waitFor(
+      () => {
+        const bar = result.getByRole("progressbar", { name: "额度余额" });
+        expect(bar.getAttribute("aria-valuenow")).toBe("30");
+      },
+      { timeout: 1000 }
+    );
+  });
+
+  it("clamps the bar to 100% when the current额度 exceeds 充值金额", () => {
+    const { result } = renderCard(
+      makeSubscription({
+        provider: "anthropic",
+        price: 100,
+        balance: 130,
+        hasCredentials: false,
+      })
+    );
+
+    expect(result.getByRole("progressbar").getAttribute("aria-valuenow")).toBe(
+      "100"
+    );
+  });
+
+  it("hides the bar when neither a query nor a filled balance exists", () => {
+    const { result } = renderCard(
+      makeSubscription({
+        provider: "anthropic",
+        price: 100,
+        balance: undefined,
+        hasCredentials: false,
+      })
+    );
+
+    expect(result.queryByRole("progressbar")).toBeNull();
+  });
+
+  it("hides the bar when 充值金额 is zero", () => {
+    const { result } = renderCard(
+      makeSubscription({
+        provider: "anthropic",
+        price: 0,
+        balance: 50,
+        hasCredentials: false,
+      })
+    );
+
+    expect(result.queryByRole("progressbar")).toBeNull();
+  });
+
+  it("never renders a额度 bar for recurring subscriptions", () => {
+    const { result } = renderCard(
+      makeSubscription({
+        subscriptionType: "recurring",
+        price: 100,
+        balance: 50,
+      })
+    );
+
+    expect(result.queryByRole("progressbar")).toBeNull();
   });
 });
 

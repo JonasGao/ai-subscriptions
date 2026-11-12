@@ -4,11 +4,39 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  getAmountPercent,
   getProgressTier,
   getUsagePercent,
   PROGRESS_DANGER_THRESHOLD,
   PROGRESS_WARNING_THRESHOLD,
 } from "./usage";
+
+describe("getAmountPercent (one-time额度 bar)", () => {
+  it("computes the current/total ratio, unrounded", () => {
+    expect(getAmountPercent(50, 100)).toBe(50);
+    expect(getAmountPercent(1, 3)).toBeCloseTo(33.333, 2);
+    expect(getAmountPercent(0, 100)).toBe(0);
+  });
+
+  it("clamps to 100 when the current value exceeds the total", () => {
+    expect(getAmountPercent(150, 100)).toBe(100);
+    expect(getAmountPercent(100, 100)).toBe(100);
+  });
+
+  it("returns null when total is missing, zero, negative or non-finite", () => {
+    expect(getAmountPercent(10, null)).toBeNull();
+    expect(getAmountPercent(10, undefined)).toBeNull();
+    expect(getAmountPercent(10, 0)).toBeNull();
+    expect(getAmountPercent(10, -5)).toBeNull();
+    expect(getAmountPercent(10, NaN)).toBeNull();
+  });
+
+  it("returns null when current is missing or non-finite", () => {
+    expect(getAmountPercent(null, 100)).toBeNull();
+    expect(getAmountPercent(undefined, 100)).toBeNull();
+    expect(getAmountPercent(NaN, 100)).toBeNull();
+  });
+});
 
 describe("getUsagePercent", () => {
   it("computes the exact used/limit ratio, unrounded", () => {

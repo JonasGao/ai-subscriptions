@@ -10,7 +10,11 @@ import type {
   UsageWindow,
 } from "../subscriptions/types";
 import { formatBalance, getProviderCurrency } from "../subscriptions/format";
-import { getProgressTier, getUsagePercent } from "../subscriptions/usage";
+import {
+  getAmountPercent,
+  getProgressTier,
+  getUsagePercent,
+} from "../subscriptions/usage";
 
 /**
  * Amount rows must hold numeric strings. formatBalance coerces a non-numeric
@@ -80,7 +84,7 @@ export function oneTimeBalance(
   subscription: Subscription,
   balance: BalanceResult | null,
   previousBalance: { amount: number; currency: string } | null
-): { text: string; previous: string | null } {
+): { text: string; previous: string | null; amount: number | null } {
   const currency =
     balance?.balanceInfos[0]?.currency ??
     subscription.balanceCurrency ??
@@ -105,6 +109,7 @@ export function oneTimeBalance(
     return {
       text: formatBalance(first.available, currency),
       previous: showPrevious ? previousLabel : null,
+      amount: Number.isFinite(newAmount) ? newAmount : null,
     };
   }
 
@@ -114,6 +119,7 @@ export function oneTimeBalance(
         ? formatBalance(subscription.balance, currency)
         : "-",
     previous: null,
+    amount: subscription.balance ?? null,
   };
 }
 
@@ -125,6 +131,48 @@ const USAGE_LABELS: {
   { key: "weekly", label: "每周" },
   { key: "monthly", label: "每月" },
 ];
+
+/**
+ * QuotaProgress renders the one-time top-up额度 bar: the current remaining
+ * amount against the top-up total. The fill is the remaining share, so it
+ * depletes as额度 is used. Unlike the usage bars (high = danger), a one-time
+ *余额 is healthiest when full: low remaining is the warning/danger state.
+ * The bar is hidden when the ratio cannot be computed — no total, or no current
+ * amount at all — rather than showing a misleading 0% track. A current amount
+ * above the total is clamped to 100% by getAmountPercent.
+ */
+export const QuotaProgress: Component<{
+  current: number | null;
+  total: number;
+  label: string;
+}> = (props) => {
+  const percent = () => getAmountPercent(props.current, props.total);
+  const tier = () => {
+    const value = percent();
+    return value === null ? null : getProgressTier(100 - value);
+  };
+  const rounded = () => Math.round(percent() ?? 0);
+
+  return (
+    <Show when={tier()}>
+      {(value) => (
+        <div
+          class="usage-progress quota-progress"
+          role="progressbar"
+          aria-label={props.label}
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow={rounded()}
+        >
+          <div
+            class={`usage-progress-fill ${value()}`}
+            style={{ width: `${rounded()}%` }}
+          />
+        </div>
+      )}
+    </Show>
+  );
+};
 
 /**
  * UsageWindowRow renders one usage bucket: the amounts, the rounded ratio and

@@ -3269,6 +3269,18 @@ button {
 .usage-progress-fill.danger {
   background: var(--tt-signal);
 }
+
+/* One-time top-up额度 bar inside the 金额 column: a thin ruled track flush
+   under the 余 line. The fill is the remaining share, so the bar depletes as
+   额度 is spent; it shares the usage bar's tier colors and square corners. */
+.cell-amount .quota-progress.usage-progress {
+  height: 3px;
+  margin-top: 5px;
+  background: color-mix(in srgb, var(--tt-rule) 70%, transparent);
+}
+.cell-amount .quota-progress .usage-progress-fill {
+  transition: width 0.2s ease;
+}
 .reset-schedule-row,
 .tool-card,
 .notification-card {
