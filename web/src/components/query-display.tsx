@@ -133,22 +133,25 @@ const USAGE_LABELS: {
 ];
 
 /**
- * QuotaProgress renders the one-time top-up额度 bar: the current remaining
- * amount against the top-up total. The fill is the remaining share, so it
- * depletes as额度 is used. Unlike the usage bars (high = danger), a one-time
- *余额 is healthiest when full: low remaining is the warning/danger state.
- * The bar is hidden when the ratio cannot be computed — no total, or no current
- * amount at all — rather than showing a misleading 0% track. A current amount
- * above the total is clamped to 100% by getAmountPercent.
+ * QuotaProgress renders the one-time top-up额度 row inside the card's detail
+ * band, alongside the recurring usage windows. It uses the same usage-block /
+ * usage-row / progress-bar structure so a one-time balance reads like any other
+ *额度 window: a label, a "current / total" reading, the remaining percentage and
+ * a depleting bar. The current value is the live queried available额度, or the
+ * filled balance when nothing was queried; the total is the top-up price. A
+ * current value above the total is clamped to 100% by getAmountPercent.
+ * The whole row is hidden when the ratio cannot be computed — no total, or no
+ * current amount — rather than showing a misleading 0%.
  */
 export const QuotaProgress: Component<{
   current: number | null;
   total: number;
-  label: string;
 }> = (props) => {
   const percent = () => getAmountPercent(props.current, props.total);
   const tier = () => {
     const value = percent();
+    // A one-time余额 is healthiest when full. Invert the consumption ratio so
+    // low remaining (not high usage) drives the warning/danger tier.
     return value === null ? null : getProgressTier(100 - value);
   };
   const rounded = () => Math.round(percent() ?? 0);
@@ -156,18 +159,27 @@ export const QuotaProgress: Component<{
   return (
     <Show when={tier()}>
       {(value) => (
-        <div
-          class="usage-progress quota-progress"
-          role="progressbar"
-          aria-label={props.label}
-          aria-valuemin="0"
-          aria-valuemax="100"
-          aria-valuenow={rounded()}
-        >
+        <div class="usage-block quota-block">
+          <div class="usage-row">
+            <span class="usage-label">额度余额</span>
+            <span class="usage-amount">
+              {props.current} / {props.total}
+            </span>
+            <span class="usage-percent">{percent()!.toFixed(1)}%</span>
+          </div>
           <div
-            class={`usage-progress-fill ${value()}`}
-            style={{ width: `${rounded()}%` }}
-          />
+            class="usage-progress"
+            role="progressbar"
+            aria-label="额度余额"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={rounded()}
+          >
+            <div
+              class={`usage-progress-fill ${value()}`}
+              style={{ width: `${rounded()}%` }}
+            />
+          </div>
         </div>
       )}
     </Show>

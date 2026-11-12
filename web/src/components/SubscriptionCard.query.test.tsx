@@ -523,9 +523,8 @@ describe("SubscriptionCard balance display", () => {
   });
 });
 
-describe("SubscriptionCard one-time额度 progress bar", () => {
-  it("uses the filled balance against 充值金额 when no query fires", () => {
-    // No balance API for this provider: the bar reads the persisted balance.
+describe("SubscriptionCard one-time额度 progress bar (detail band)", () => {
+  it("renders inside the detail band, not the 金额 cell", () => {
     const { result } = renderCard(
       makeSubscription({
         provider: "anthropic",
@@ -535,6 +534,26 @@ describe("SubscriptionCard one-time额度 progress bar", () => {
       })
     );
 
+    const bar = result.getByRole("progressbar", { name: "额度余额" });
+    expect(bar.closest(".subscription-card-details")).not.toBeNull();
+    expect(bar.closest(".cell-amount")).toBeNull();
+  });
+
+  it("uses the filled balance against 充值金额 when no query fires", () => {
+    // No balance API for this provider: the bar reads the persisted balance,
+    // and the detail band still opens even though nothing was queried.
+    const { result } = renderCard(
+      makeSubscription({
+        provider: "anthropic",
+        price: 200,
+        balance: 50,
+        hasCredentials: false,
+      })
+    );
+
+    expect(
+      result.container.querySelector(".subscription-card-details")
+    ).not.toBeNull();
     const bar = result.getByRole("progressbar", { name: "额度余额" });
     expect(bar.getAttribute("aria-valuenow")).toBe("25");
   });
@@ -584,7 +603,7 @@ describe("SubscriptionCard one-time额度 progress bar", () => {
     );
   });
 
-  it("hides the bar when neither a query nor a filled balance exists", () => {
+  it("hides the bar and the detail band when neither a query nor a filled balance exists", () => {
     const { result } = renderCard(
       makeSubscription({
         provider: "anthropic",
@@ -595,6 +614,9 @@ describe("SubscriptionCard one-time额度 progress bar", () => {
     );
 
     expect(result.queryByRole("progressbar")).toBeNull();
+    expect(
+      result.container.querySelector(".subscription-card-details")
+    ).toBeNull();
   });
 
   it("hides the bar when 充值金额 is zero", () => {

@@ -12,6 +12,7 @@ import {
   resolveModelsRequireCredentials,
   resolveQueryKind,
 } from "../subscriptions/urls";
+import { getAmountPercent } from "../subscriptions/usage";
 import {
   BalanceInfoRows,
   oneTimeBalance,
@@ -179,6 +180,8 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
   // 填写的余额；总值就是充值金额（price）。当前值超过总值按 100% 计。
   const quotaCurrent = () => balanceLabel().amount;
   const quotaTotal = () => props.subscription.price;
+  const hasQuotaProgress = () =>
+    !isRecurring() && getAmountPercent(quotaCurrent(), quotaTotal()) !== null;
 
   const closeDelete = () => {
     setDeleteStep(1);
@@ -203,6 +206,7 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
 
   const hasDetails = () =>
     showsResetGrid() ||
+    hasQuotaProgress() ||
     Boolean(query.balance()) ||
     Boolean(query.usage()) ||
     Boolean(query.error()) ||
@@ -264,11 +268,6 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
               )}
             </Show>
           </span>
-          <QuotaProgress
-            current={quotaCurrent()}
-            total={quotaTotal()}
-            label="额度余额"
-          />
         </Show>
       </div>
 
@@ -372,6 +371,9 @@ export const SubscriptionCard: Component<SubscriptionCardProps> = (props) => {
                 )
               }
             />
+          </Show>
+          <Show when={hasQuotaProgress()}>
+            <QuotaProgress current={quotaCurrent()} total={quotaTotal()} />
           </Show>
           <Show when={query.balance()}>
             {(balance) => <BalanceInfoRows balance={balance()} />}

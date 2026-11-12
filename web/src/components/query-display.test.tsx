@@ -23,14 +23,17 @@ function makeWindow(overrides: Partial<UsageWindow> = {}): UsageWindow {
   };
 }
 
-describe("QuotaProgress (one-time额度 bar)", () => {
+describe("QuotaProgress (one-time额度 row for the detail band)", () => {
   afterEach(cleanup);
 
-  it("renders a progressbar with the remaining share", () => {
-    const result = render(() => (
-      <QuotaProgress current={25} total={100} label="额度余额" />
-    ));
+  it("renders a labeled usage row and a progressbar with the remaining share", () => {
+    const result = render(() => <QuotaProgress current={25} total={100} />);
 
+    expect(result.getByText("额度余额")).toBeTruthy();
+    expect(result.getByText("25 / 100")).toBeTruthy();
+    expect(result.container.querySelector(".usage-percent")!.textContent).toBe(
+      "25.0%"
+    );
     const bar = result.getByRole("progressbar", { name: "额度余额" });
     expect(bar.getAttribute("aria-valuenow")).toBe("25");
     const fill = bar.querySelector(".usage-progress-fill") as HTMLElement;
@@ -38,9 +41,7 @@ describe("QuotaProgress (one-time额度 bar)", () => {
   });
 
   it("uses the filled balance as the current value without any query", () => {
-    const result = render(() => (
-      <QuotaProgress current={180} total={200} label="额度余额" />
-    ));
+    const result = render(() => <QuotaProgress current={180} total={200} />);
 
     expect(result.getByRole("progressbar").getAttribute("aria-valuenow")).toBe(
       "90"
@@ -48,9 +49,7 @@ describe("QuotaProgress (one-time额度 bar)", () => {
   });
 
   it("clamps a current value above the total to 100%", () => {
-    const result = render(() => (
-      <QuotaProgress current={260} total={200} label="额度余额" />
-    ));
+    const result = render(() => <QuotaProgress current={260} total={200} />);
 
     expect(result.getByRole("progressbar").getAttribute("aria-valuenow")).toBe(
       "100"
@@ -62,9 +61,7 @@ describe("QuotaProgress (one-time额度 bar)", () => {
   });
 
   it("tiers by depletion: low remaining is danger, full is normal", () => {
-    const low = render(() => (
-      <QuotaProgress current={5} total={100} label="额度余额" />
-    ));
+    const low = render(() => <QuotaProgress current={5} total={100} />);
     expect(
       low.container
         .querySelector(".usage-progress-fill")!
@@ -72,9 +69,7 @@ describe("QuotaProgress (one-time额度 bar)", () => {
     ).toBe(true);
     cleanup();
 
-    const warning = render(() => (
-      <QuotaProgress current={25} total={100} label="额度余额" />
-    ));
+    const warning = render(() => <QuotaProgress current={25} total={100} />);
     expect(
       warning.container
         .querySelector(".usage-progress-fill")!
@@ -82,9 +77,7 @@ describe("QuotaProgress (one-time额度 bar)", () => {
     ).toBe(true);
     cleanup();
 
-    const normal = render(() => (
-      <QuotaProgress current={100} total={100} label="额度余额" />
-    ));
+    const normal = render(() => <QuotaProgress current={100} total={100} />);
     expect(
       normal.container
         .querySelector(".usage-progress-fill")!
@@ -92,16 +85,15 @@ describe("QuotaProgress (one-time额度 bar)", () => {
     ).toBe(true);
   });
 
-  it("hides the bar when there is no total or no current amount", () => {
+  it("hides the whole row when there is no total or no current amount", () => {
     for (const props of [
       { current: null, total: 100 },
       { current: 50, total: 0 },
       { current: 50, total: -1 },
     ]) {
-      const result = render(() => (
-        <QuotaProgress {...props} label="额度余额" />
-      ));
+      const result = render(() => <QuotaProgress {...props} />);
       expect(result.queryByRole("progressbar")).toBeNull();
+      expect(result.container.querySelector(".usage-row")).toBeNull();
       cleanup();
     }
   });
